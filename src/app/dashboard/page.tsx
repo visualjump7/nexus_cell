@@ -1217,7 +1217,7 @@ const PromptArmory = () => {
                         e.stopPropagation();
                         setInfoModal(platform.id);
                       }}
-                      className="absolute top-2 right-2 text-[10px] text-white/20 hover:text-amber-400 cursor-pointer transition-colors duration-200"
+                      className="absolute top-2 right-2 text-xs text-white/50 hover:text-amber-400 cursor-pointer transition-colors duration-200"
                       title="Learn more about this model"
                     >
                       ⓘ
@@ -1351,7 +1351,7 @@ const PromptArmory = () => {
                               e.stopPropagation();
                               setInfoModal(card.id);
                             }}
-                            className="text-[10px] text-white/30 hover:text-amber-400 cursor-pointer transition-colors duration-200"
+                            className="text-xs text-white/50 hover:text-amber-400 cursor-pointer transition-colors duration-200"
                             title="Learn more"
                           >
                             ⓘ
