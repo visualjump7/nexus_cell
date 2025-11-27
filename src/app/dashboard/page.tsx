@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import Link from 'next/link';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // POLYMORPHIC PROMPT ARMORY — ULTIMATE EDITION
@@ -64,6 +65,7 @@ const PromptArmory = () => {
   const [showPresets, setShowPresets] = useState(false);
   const [activePreset, setActivePreset] = useState<string | null>(null);
   const [platformFilter, setPlatformFilter] = useState('all');
+  const [infoModal, setInfoModal] = useState<string | null>(null);
   
   // Core prompt state object - the "DNA" of our prompt
   const [promptState, setPromptState] = useState<PromptState>({
@@ -482,6 +484,262 @@ const PromptArmory = () => {
   };
 
   // ─────────────────────────────────────────────────────────────────────────────
+  // DETAILED DESCRIPTIONS FOR ALL CATEGORIES
+  // ─────────────────────────────────────────────────────────────────────────────
+  
+  const cardInfo: Record<string, { name: string; info: string }> = {
+    // ═══ PLATFORMS ═══
+    'midjourney': {
+      name: 'Midjourney v6',
+      info: 'Known for its high-fidelity, artistic, and painterly results. Midjourney excels at creative interpretation and beautiful compositions with minimal prompting. It has a distinct "opinionated" style that tends towards aesthetically pleasing results. Best for conceptual art, illustrations, and when you want the AI to fill in the gaps with artistic flair. Less precise with complex spatial instructions than DALL-E.'
+    },
+    'dalle': {
+      name: 'DALL-E 3',
+      info: 'OpenAI\'s model, integrated with ChatGPT. Unrivaled in natural language understanding and adherence to complex prompt instructions. Can handle specific text rendering and precise spatial relationships better than most models. The aesthetic is cleaner and more "digital" than Midjourney. Great for specific scenes, diagrams, and when exact composition is critical.'
+    },
+    'ideogram': {
+      name: 'Ideogram 2.0',
+      info: 'Specialized in typography and text integration within images. If you need a sign, a logo, or a poster with correct spelling, this is the top choice. Also delivers high-quality photorealism and illustration. Balances prompt adherence with artistic quality effectively. Perfect for graphic design tasks and typographic art.'
+    },
+    'leonardo': {
+      name: 'Leonardo AI',
+      info: 'Built on Stable Diffusion but with a highly polished user interface and custom fine-tuned models. Offers extensive control features like Image Guidance, Elements, and real-time canvas editing. Great for game assets, character design, and consistent style generation. A bridge between raw Stable Diffusion power and user-friendly design.'
+    },
+    'stable': {
+      name: 'Stable Diffusion',
+      info: 'The open-source giant. Offers maximum control and flexibility if you have the technical knowledge. Known for its ability to be fine-tuned on specific concepts. The base models (SDXL, SD3) offer strong performance, but the real power lies in the ecosystem of controlnets and LoRAs. Excellent for specific stylistic mimicry and uncensored creativity.'
+    },
+    'grok': {
+      name: 'Grok (Flux.1)',
+      info: 'Powered by the Flux.1 model, known for its exceptional prompt adherence and visual quality. Strikes a balance between the realism of Midjourney and the instruction following of DALL-E 3. Particularly good at photorealistic textures and lighting. Integrated into the X (Twitter) ecosystem for rapid generation.'
+    },
+    'runway': {
+      name: 'Runway Gen-3',
+      info: 'A leader in AI video generation. Gen-3 Alpha is known for its high-fidelity motion and realistic physics simulation. Excels at creating cinematic video clips from text or image prompts. Offers advanced controls like Motion Brush and camera controls. Best for realistic stock footage, special effects, and creative video storytelling.'
+    },
+    'veo': {
+      name: 'Google Veo',
+      info: 'Google\'s high-definition video generation model. Capable of generating 1080p+ video with consistent characters and cinematic styles. Understands cinematic terms like "timelapse" or "aerial shot" very well. Focused on long-form coherence and high visual quality suitable for professional workflows.'
+    },
+    'sora': {
+      name: 'OpenAI Sora',
+      info: 'OpenAI\'s groundbreaking video model that simulates the physical world. Known for generating complex scenes with multiple characters, specific types of motion, and accurate details of subject and background. Can create shots up to a minute long with high visual fidelity. Sets the benchmark for temporal consistency.'
+    },
+    'pika': {
+      name: 'Pika Labs',
+      info: 'Video generation tool with a focus on animation and ease of use. Excellent at animating existing images (image-to-video) and adding specific movements like lip-sync. The "Lip Sync" feature is a standout. Great for turning static art into living scenes and for character animation.'
+    },
+    'kling': {
+      name: 'Kling AI',
+      info: 'A powerful video generation model from Kuaishou, often compared to Sora for its high motion quality and longer clip durations (up to 2 minutes). excels at complex movements and realistic human actions. Offers both high-quality and high-performance modes. A strong contender for realistic video generation.'
+    },
+
+    // ═══ CAMERA ANGLES ═══
+    'low': {
+      name: 'Low Angle',
+      info: 'Camera positioned below eye level, looking up at the subject. Creates a sense of power, dominance, and heroism. Makes subjects appear larger, more imposing, and authoritative. Commonly used for hero shots, villain reveals, and moments of triumph. The lower the angle, the more dramatic the effect. Often paired with wide lenses to exaggerate the perspective.'
+    },
+    'high': {
+      name: 'High Angle',
+      info: 'Camera positioned above eye level, looking down at the subject. Creates feelings of vulnerability, weakness, or insignificance. Makes subjects appear smaller and less powerful. Often used to show a character\'s emotional low point, isolation, or to establish dominance of another character. Can also provide an objective, observational perspective on a scene.'
+    },
+    'dutch': {
+      name: 'Dutch Angle',
+      info: 'Camera tilted on its axis to create a diagonal horizon line. Instantly creates tension, unease, disorientation, or psychological instability. Popular in thriller, horror, and noir genres. Suggests something is "off" or wrong in the scene. Should be used sparingly for maximum impact—overuse diminishes its effect. Often combined with other dramatic techniques.'
+    },
+    'eye': {
+      name: 'Eye Level',
+      info: 'Camera positioned at the subject\'s eye level, creating a neutral, natural perspective. The most common and "invisible" angle—viewers don\'t consciously notice it. Creates intimacy and connection with the subject. Ideal for dialogue scenes, interviews, and moments requiring emotional authenticity. Establishes equality between the viewer and subject.'
+    },
+    'birds': {
+      name: 'Bird\'s Eye View',
+      info: 'Extreme high angle shot looking directly down from above. Creates a godlike, omniscient perspective. Subjects appear small and part of a larger pattern or environment. Often used for establishing shots, chase sequences, or to show spatial relationships. Can evoke feelings of fate, destiny, or insignificance. Requires drone or elevated camera positions.'
+    },
+    'worms': {
+      name: 'Worm\'s Eye View',
+      info: 'Extreme low angle shot looking straight up from ground level. The most dramatic low angle possible, creating maximum impact and intimidation. Subjects tower over the frame, appearing almost superhuman. Buildings and environments become towering, epic structures. Often used in action films, superhero content, and architectural photography.'
+    },
+    'over': {
+      name: 'Over-the-Shoulder',
+      info: 'Camera positioned behind one character\'s shoulder, looking at another character or point of interest. Creates intimacy while maintaining spatial awareness. Essential for dialogue scenes, establishing eyelines and relationships. The shoulder in frame grounds the viewer in the scene. Alternating between characters creates the classic shot-reverse-shot pattern.'
+    },
+    'pov': {
+      name: 'POV Shot',
+      info: 'Camera shows exactly what a character sees from their perspective. Creates maximum immersion and identification with the character. Used for subjective experiences, discoveries, and moments of realization. Can be combined with camera movement to simulate walking, running, or searching. Essential for horror reveals, action sequences, and emotional moments.'
+    },
+    
+    // ═══ CAMERA MOVEMENT ═══
+    'push': {
+      name: 'Push In',
+      info: 'Camera moves toward the subject, increasing intimacy and intensity. Draws the viewer\'s attention and signifies importance. Often used for emotional revelations, dramatic moments, or to focus on a specific detail. The speed of the push affects the mood—slow for drama, fast for urgency. Also called a "dolly in" when using a dolly track.'
+    },
+    'pull': {
+      name: 'Pull Out',
+      info: 'Camera moves away from the subject, revealing more of the environment. Creates context, shows scale, or signifies emotional distance. Often used for endings, moments of isolation, or to reveal surprising information about the surroundings. Can create feelings of abandonment or provide a more objective viewpoint. Also called a "dolly out."'
+    },
+    'dolly': {
+      name: 'Dolly Shot',
+      info: 'Camera moves smoothly on a wheeled platform or track, parallel to the action. Creates elegant, stable lateral movement. Often used to follow characters, reveal information progressively, or create visual rhythm. The smoothness distinguishes it from handheld movement. Can track alongside, ahead of, or behind subjects. Named after the wheeled platform ("dolly") used.'
+    },
+    'crane': {
+      name: 'Crane Shot',
+      info: 'Camera mounted on a crane or jib, enabling sweeping vertical and horizontal movement. Creates epic, grand movements impossible with other methods. Often used for dramatic reveals, opening shots, or to transition between ground and aerial perspectives. Communicates production value and cinematic ambition. Can float over obstacles and crowds.'
+    },
+    'orbit': {
+      name: 'Orbital Shot',
+      info: 'Camera circles around the subject in a 360-degree arc. Creates dynamic visual interest and emphasizes the subject\'s importance. Often used for hero moments, romantic scenes, or dramatic revelations. The continuous movement keeps the viewer engaged. Can be combined with slow motion for extra impact. Requires careful choreography.'
+    },
+    'whip': {
+      name: 'Whip Pan',
+      info: 'Extremely fast horizontal camera movement that blurs the image. Creates energy, urgency, and dynamic transitions between scenes or subjects. Often used to connect two related moments or to convey chaotic action. The blur can mask cuts, making it a useful editing tool. Should be used sparingly to maintain impact.'
+    },
+    'handheld': {
+      name: 'Handheld',
+      info: 'Camera operated by hand without stabilization, creating organic, slightly shaky movement. Adds realism, immediacy, and raw energy. Essential for documentary-style content, action sequences, and intimate dramatic moments. The imperfection creates authenticity and puts viewers "in the moment." Varying degrees from subtle to aggressive shaking.'
+    },
+    'steadicam': {
+      name: 'Steadicam Shot',
+      info: 'Camera mounted on a stabilizing harness worn by the operator, enabling smooth movement while walking or running. Combines the mobility of handheld with the smoothness of dolly shots. Perfect for following characters through complex environments. Creates a floating, ethereal quality. Made famous by films like The Shining and Goodfellas.'
+    },
+    
+    // ═══ LENSES ═══
+    '14mm': {
+      name: '14mm Ultra Wide',
+      info: 'Extremely wide field of view with significant barrel distortion. Exaggerates depth and perspective—objects near the lens appear huge, distant objects tiny. Creates dramatic, almost surreal images. Lines near the edges curve outward. Used for epic landscapes, tight spaces, and stylized dramatic effect. Faces distort unflattering if too close.'
+    },
+    '24mm': {
+      name: '24mm Wide',
+      info: 'Wide-angle lens balancing environmental context with manageable distortion. Excellent for establishing shots, interiors, and environmental portraits. Provides depth while keeping distortion subtle enough for natural-looking images. A favorite for documentary and journalism. Good for showing subjects within their surroundings.'
+    },
+    '35mm': {
+      name: '35mm',
+      info: 'The classic cinematic focal length, offering a field of view close to human peripheral vision. Natural-looking perspective with minimal distortion. Versatile for almost any situation—dialogue, action, establishing shots. Many iconic films shot primarily on 35mm. The "workhorse" lens of professional cinematography.'
+    },
+    '50mm': {
+      name: '50mm',
+      info: 'Often called the "normal" lens as it most closely matches human central vision. Minimal distortion with natural-looking proportions. Excellent for dialogue scenes, portraits, and intimate moments. Forces the filmmaker to compose thoughtfully. The slight compression starts to separate subjects from backgrounds.'
+    },
+    '85mm': {
+      name: '85mm Portrait',
+      info: 'The portrait photographer\'s favorite, offering beautiful compression and background separation. Flatters facial features by slightly compressing them. Creates creamy, blurred backgrounds (bokeh) at wide apertures. Ideal for close-ups, beauty shots, and emotional moments. Requires more distance from subjects, creating a more intimate feel.'
+    },
+    '135mm': {
+      name: '135mm Telephoto',
+      info: 'Strong compression that flattens depth and brings backgrounds closer to subjects. Isolates subjects dramatically from their environment. Creates intimate shots from a distance—perfect for candid moments. Stacks elements in the frame for graphic compositions. Popular for portrait work, sports, and surveillance-style shots.'
+    },
+    'macro': {
+      name: 'Macro Lens',
+      info: 'Specialized lens for extreme close-up photography at 1:1 magnification or greater. Reveals details invisible to the naked eye—textures, patterns, tiny subjects. Creates abstract, otherworldly images from everyday objects. Extremely shallow depth of field at close distances. Used for product detail, nature, and artistic exploration.'
+    },
+    'anamorphic': {
+      name: 'Anamorphic Lens',
+      info: 'Special lenses that squeeze a wide image onto standard film/sensor, then stretch it back for viewing. Creates the classic widescreen cinematic look with distinctive characteristics: horizontal lens flares, oval bokeh, and subtle edge distortion. Used in countless Hollywood blockbusters. Instantly elevates production value and visual style.'
+    },
+    
+    // ═══ LIGHTING ═══
+    'golden': {
+      name: 'Golden Hour',
+      info: 'The magical time shortly after sunrise or before sunset when sunlight is warm, soft, and directional. Creates naturally flattering light with long shadows and golden tones. Beloved by photographers and cinematographers worldwide. Skin glows, landscapes transform, and everything looks romantic. Limited window requires careful planning.'
+    },
+    'blue': {
+      name: 'Blue Hour',
+      info: 'The twilight period before sunrise or after sunset when the sky turns deep blue. Creates moody, mysterious, and melancholic atmosphere. Natural light is soft and even, mixing with artificial lights for beautiful contrasts. Popular for city scenes, establishing shots, and contemplative moments. Even shorter window than golden hour.'
+    },
+    'neon': {
+      name: 'Neon Noir',
+      info: 'Stylized lighting using neon colors—typically cyan, magenta, and purple—creating a futuristic, cyberpunk aesthetic. References blade Runner, Drive, and modern neo-noir. Creates strong color contrasts and moody atmosphere. Often uses practicals (neon signs, LED strips) as light sources. Popular in music videos and stylized narratives.'
+    },
+    'rim': {
+      name: 'Dramatic Rim Light',
+      info: 'Strong backlight that creates a bright outline around the subject\'s edges, separating them from the background. Creates depth, drama, and visual interest. Often called "edge light" or "hair light" in portrait setups. Can be subtle or intense depending on mood. Essential technique for three-dimensional lighting.'
+    },
+    'chiaroscuro': {
+      name: 'Chiaroscuro',
+      info: 'Renaissance painting technique using strong contrasts between light and dark. Creates dramatic, moody, artistic images with deep shadows. Light sources are often singular and directional. Made famous by Caravaggio and used extensively in film noir. Emphasizes form, drama, and emotional intensity. Hides as much as it reveals.'
+    },
+    'volumetric': {
+      name: 'Volumetric God Rays',
+      info: 'Visible beams of light cutting through atmosphere—dust, fog, or haze. Creates ethereal, spiritual, almost supernatural atmosphere. Named "god rays" for their heavenly appearance. Often seen through windows, trees, or other occluding objects. Adds depth and dimension to scenes. Can be natural or created with atmospheric effects.'
+    },
+    'practical': {
+      name: 'Practical Lighting',
+      info: 'Using light sources visible in the scene—lamps, candles, screens, windows—as the actual lighting for the shot. Creates naturalistic, motivated lighting that feels authentic. Each light source has a reason to exist in the story. Popular in modern filmmaking for its realism. Requires careful balancing and often augmentation.'
+    },
+    'silhouette': {
+      name: 'Silhouette Backlight',
+      info: 'Strong backlight with no fill, rendering the subject as a dark shape against a bright background. Creates mystery, anonymity, and graphic visual impact. The viewer\'s imagination fills in unseen details. Powerful for reveals, mystery, and artistic compositions. Shape and outline become the primary visual elements.'
+    },
+    
+    // ═══ VISUAL STYLES ═══
+    'cinematic': {
+      name: 'Cinematic',
+      info: 'The polished, professional look of theatrical films. Characterized by shallow depth of field, careful composition, motivated lighting, and color grading. Wide aspect ratios (2.39:1 or 1.85:1) enhance the effect. Movements are smooth and purposeful. Every frame could be a photograph. The gold standard of visual production.'
+    },
+    'hyperreal': {
+      name: 'Hyperrealistic',
+      info: 'Extreme detail and clarity that surpasses what the human eye naturally sees. Sharp focus throughout, rich textures, and vivid colors. Often associated with 8K resolution and modern digital capture. Can feel almost too perfect, creating an otherworldly precision. Popular for product visualization and high-end commercial work.'
+    },
+    'noir': {
+      name: 'Film Noir',
+      info: 'The moody, shadowy style of 1940s-50s crime dramas. High contrast black and white (or desaturated color), dramatic shadows, venetian blind patterns. Urban settings, rain-slicked streets, and morally ambiguous characters. Influenced by German Expressionism. Creates atmosphere of mystery, danger, and moral complexity.'
+    },
+    'scifi': {
+      name: 'Epic Sci-Fi',
+      info: 'The grand visual language of science fiction cinema. Vast scale, futuristic environments, and technological wonder. Often features cool blue color palettes, lens flares, and smooth, advanced surfaces. References Blade Runner, 2001, and modern Marvel/DC films. Combines practical effects with CGI for immersive worlds.'
+    },
+    'anime': {
+      name: 'Anime Cinematic',
+      info: 'The stylized aesthetic of Japanese animation applied to prompts. Bold outlines, vibrant colors, dramatic lighting, and expressive compositions. Large eyes, dynamic poses, and exaggerated emotions. Can range from realistic to highly stylized. References Studio Ghibli, Makoto Shinkai, and modern anime productions.'
+    },
+    'fantasy': {
+      name: 'Dark Fantasy',
+      info: 'Gothic, mysterious, and often ominous aesthetic. Rich, deep colors—blacks, deep reds, forest greens. Ancient architecture, mystical elements, and supernatural atmosphere. References Game of Thrones, Lord of the Rings, and Dark Souls. Combines beauty with danger, wonder with dread. Medieval or timeless settings.'
+    },
+    'documentary': {
+      name: 'Documentary Style',
+      info: 'Raw, authentic, observational aesthetic that prioritizes truth over beauty. Natural lighting, handheld camera work, and unpolished moments. Subjects are captured rather than directed. Creates intimacy and credibility. Often features talking heads, real locations, and available light. The invisible camera approach.'
+    },
+    'retro': {
+      name: 'Retro 70s Film',
+      info: 'The warm, grainy aesthetic of 1970s cinema. Soft focus, muted colors with warm tones, visible grain, and subtle halation. References Spielberg, Scorsese, and the New Hollywood era. Often features earth tones, wood paneling, and vintage fashion. Creates nostalgia and timeless quality. Film imperfections add character.'
+    },
+    
+    // ═══ FILM STOCKS ═══
+    'kodak5219': {
+      name: 'Kodak Vision3 500T',
+      info: 'The Hollywood industry standard for tungsten-lit scenes. This high-speed film stock delivers warm, rich shadows with exceptional latitude. Known for its ability to handle mixed lighting and low-light situations while maintaining natural skin tones. Produces a classic cinematic look with slightly warm highlights and deep, creamy blacks. Used extensively in major motion pictures for night interiors and dramatic scenes.'
+    },
+    'kodak5207': {
+      name: 'Kodak Vision3 250D',
+      info: 'The premier daylight-balanced motion picture film stock. Offers incredibly fine grain with outstanding color accuracy and natural saturation. Excels in outdoor and well-lit environments, rendering blues and greens with stunning clarity. Provides excellent skin tone reproduction and smooth gradations. The go-to choice for daytime exteriors in professional filmmaking, delivering a clean, timeless aesthetic.'
+    },
+    'fuji': {
+      name: 'Fujifilm Eterna',
+      info: 'Renowned for its soft, elegant rendering and subtle color palette. Eterna produces muted, sophisticated tones with gentle highlight roll-off. Particularly praised for its flattering skin tone reproduction and ability to create a dreamy, ethereal atmosphere. The film delivers slightly cooler shadows and pastel-like colors, making it ideal for romantic dramas, period pieces, and any scene requiring understated elegance.'
+    },
+    'portra': {
+      name: 'Kodak Portra 400',
+      info: 'The portrait photographer\'s beloved film stock, famous for its warm, flattering skin tones and pastel color palette. Portra delivers soft, creamy highlights with exceptional exposure latitude. Colors lean warm with peachy skin tones, soft greens, and golden highlights. The subtle grain structure adds organic texture without being distracting. Perfect for portraits, weddings, fashion, and lifestyle imagery with a timeless, romantic quality.'
+    },
+    'ektar': {
+      name: 'Kodak Ektar 100',
+      info: 'The world\'s finest grain color negative film, delivering ultra-sharp images with vivid, punchy colors. Ektar produces highly saturated reds, blues, and greens with exceptional clarity. Unlike the softer Portra, Ektar is bold and graphic with strong contrast. Ideal for landscapes, product photography, and any scene where you want colors to pop. The extremely fine grain allows for significant enlargement while maintaining detail.'
+    },
+    'cinestill': {
+      name: 'CineStill 800T',
+      info: 'A unique tungsten-balanced film created from Kodak motion picture stock with the remjet layer removed. Famous for its distinctive "halation" effect—a red/orange glow around bright light sources like neon signs and streetlights. This creates an instantly recognizable cinematic night-time aesthetic. Colors are warm with cyan-shifted shadows. The perfect choice for urban night photography, neon-lit scenes, and creating that nostalgic 80s/90s movie look.'
+    },
+    'ilford': {
+      name: 'Ilford HP5 Plus 400',
+      info: 'A legendary black-and-white film stock known for its versatility and forgiving nature. HP5 delivers rich midtones with smooth tonal gradation and pleasant grain structure. Extremely flexible with exposure—can be pushed to 3200 ISO while maintaining quality. Produces classic, timeless monochrome images with good shadow detail and clean highlights. A favorite among photojournalists, street photographers, and anyone seeking authentic black-and-white imagery.'
+    },
+    'trix': {
+      name: 'Kodak Tri-X 400',
+      info: 'The iconic black-and-white film that defined photojournalism and documentary photography. Tri-X is known for its distinctive, gritty grain structure and punchy contrast. Delivers deep blacks and bright whites with strong tonal separation. More contrasty than HP5, giving images an immediate, impactful quality. Used by legendary photographers for decades, it carries the visual DNA of classic street photography, war documentation, and raw, honest imagery.'
+    }
+  };
+
+  // ─────────────────────────────────────────────────────────────────────────────
   // PROMPT GENERATORS (Platform-Specific Templates)
   // ─────────────────────────────────────────────────────────────────────────────
   
@@ -739,34 +997,53 @@ const PromptArmory = () => {
   // ─────────────────────────────────────────────────────────────────────────────
   
   return (
-    <div className="min-h-screen bg-black text-white overflow-hidden relative">
+    <div className="min-h-screen bg-black text-white overflow-hidden relative selection:bg-white/20">
       {/* ═══════════════════════════════════════════════════════════════════════
-          BACKGROUND EFFECTS (Original v1 Style)
+          BACKGROUND EFFECTS (Updated v2 Cinematic Style)
       ═══════════════════════════════════════════════════════════════════════ */}
-      <div className="fixed inset-0 pointer-events-none">
-        {/* Grid overlay */}
+      <div className="fixed inset-0 pointer-events-none z-0">
+        {/* Pure Black Base */}
+        <div className="absolute inset-0 bg-black" />
+        
+        {/* Clean Grid Pattern */}
         <div 
-          className="absolute inset-0 opacity-[0.03]"
+          className="absolute inset-0 opacity-[0.15]"
           style={{
             backgroundImage: `
-              linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px),
-              linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)
+              linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px),
+              linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px)
             `,
-            backgroundSize: '50px 50px'
+            backgroundSize: '40px 40px'
           }}
         />
-        {/* Radial glow */}
-        <div 
-          className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[600px] opacity-30 transition-all duration-700"
-          style={{
-            background: `radial-gradient(ellipse at center, ${currentPlatform.color}15 0%, transparent 70%)`
-          }}
-        />
-        {/* Corner accents */}
-        <div className="absolute top-0 left-0 w-32 h-32 border-l border-t border-white/10" />
-        <div className="absolute top-0 right-0 w-32 h-32 border-r border-t border-white/10" />
-        <div className="absolute bottom-0 left-0 w-32 h-32 border-l border-b border-white/10" />
-        <div className="absolute bottom-0 right-0 w-32 h-32 border-r border-b border-white/10" />
+
+        {/* Animated Bokeh Orbs */}
+        <div className="absolute inset-0 overflow-hidden">
+          <div 
+            className="absolute top-1/4 left-1/4 w-96 h-96 rounded-full opacity-20 blur-[100px] animate-pulse"
+            style={{ 
+              backgroundColor: currentPlatform.color,
+              animationDuration: '8s' 
+            }}
+          />
+          <div 
+            className="absolute bottom-1/3 right-1/4 w-[500px] h-[500px] rounded-full opacity-10 blur-[120px]"
+            style={{ 
+              backgroundColor: '#ffffff',
+              animation: 'float 20s infinite ease-in-out alternate'
+            }}
+          />
+          <div 
+            className="absolute -top-20 right-1/3 w-64 h-64 rounded-full opacity-15 blur-[80px]"
+            style={{ 
+              backgroundColor: currentPlatform.color,
+              animation: 'float 15s infinite ease-in-out alternate-reverse'
+            }}
+          />
+        </div>
+
+        {/* Vignette */}
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,rgba(0,0,0,0.8)_100%)]" />
       </div>
 
       {/* ═══════════════════════════════════════════════════════════════════════
@@ -777,34 +1054,51 @@ const PromptArmory = () => {
         {/* ─────────────────────────────────────────────────────────────────────
             HEADER
         ───────────────────────────────────────────────────────────────────── */}
-        <header className="mb-8">
-          <div className="flex items-center justify-between">
+        <header className="mb-12 relative">
+          <div className="flex items-end justify-between border-b border-white/10 pb-6">
             <div>
-              <div className="flex items-center gap-4 mb-2">
-                <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: currentPlatform.color }} />
-                <span className="text-xs tracking-[0.3em] text-white/40 uppercase">System Online</span>
+              <div className="flex items-center gap-3 mb-3">
+                <div className="flex gap-1">
+                  <div className="w-1 h-1 bg-white/20" />
+                  <div className="w-1 h-1 bg-white/20" />
+                  <div className="w-1 h-1 bg-white/20" />
+                </div>
+                <div className="h-px w-12 bg-white/20" />
+                <span className="text-[10px] font-mono tracking-[0.3em] text-white/40 uppercase">System Online</span>
               </div>
-              <h1 className="text-4xl font-extralight tracking-tight mb-1">
-                PROMPT <span className="font-bold">ARMORY</span>
+              <h1 className="text-5xl font-light tracking-tighter mb-2 text-white">
+                PROMPT <span className="font-bold text-transparent bg-clip-text bg-gradient-to-r from-white to-white/50">ARMORY</span>
               </h1>
-              <p className="text-white/40 text-sm tracking-wide">
-                Polymorphic Generation System • {getActiveSelectionsCount()} Parameters Active
+              <p className="text-white/40 text-xs font-mono tracking-widest uppercase">
+                v3.0 • Polymorphic Generation System • {getActiveSelectionsCount()} Active
               </p>
             </div>
             
-            {/* Preset Toggle Button */}
-            <button
-              onClick={() => setShowPresets(!showPresets)}
-              className={`flex items-center gap-3 px-5 py-3 rounded-lg border transition-all duration-300 ${
-                showPresets 
-                  ? 'border-white/30 bg-white/10 text-white' 
-                  : 'border-white/10 bg-white/[0.02] text-white/60 hover:border-white/20 hover:bg-white/[0.04]'
-              }`}
-            >
-              <span className="text-lg">◈</span>
-              <span className="text-sm font-medium">Cinematic Presets</span>
-              <span className={`text-xs transition-transform duration-300 ${showPresets ? 'rotate-180' : ''}`}>▼</span>
-            </button>
+            {/* Header Buttons */}
+            <div className="flex items-center gap-3">
+              {/* Project Whitepaper Button */}
+              <Link
+                href="/dashboard/whitepaper"
+                className="flex items-center gap-3 px-6 py-3 border border-white/10 bg-black text-white/60 hover:border-white/30 hover:text-white transition-all duration-300 group"
+              >
+                <span className="text-lg opacity-50 group-hover:opacity-100 transition-opacity">▤</span>
+                <span className="text-xs font-mono uppercase tracking-wider">Project Whitepaper</span>
+              </Link>
+
+              {/* Preset Toggle Button */}
+              <button
+                onClick={() => setShowPresets(!showPresets)}
+                className={`flex items-center gap-3 px-6 py-3 border transition-all duration-300 group ${
+                  showPresets 
+                    ? 'border-white/40 bg-white/10 text-white' 
+                    : 'border-white/10 bg-black text-white/60 hover:border-white/30'
+                }`}
+              >
+                <span className="text-lg opacity-50 group-hover:opacity-100 transition-opacity">◈</span>
+                <span className="text-xs font-mono uppercase tracking-wider">Cinematic Presets</span>
+                <span className={`text-[10px] transition-transform duration-300 ${showPresets ? 'rotate-180' : ''}`}>▼</span>
+              </button>
+            </div>
           </div>
         </header>
 
@@ -865,7 +1159,7 @@ const PromptArmory = () => {
         ───────────────────────────────────────────────────────────────────── */}
         <section className="mb-8">
           <div className="flex items-center gap-3 mb-4">
-            <span className="text-xs tracking-[0.2em] text-white/50 uppercase">Target Output</span>
+            <span className="text-xs font-bold tracking-[0.2em] text-white/70 uppercase">Target Output</span>
             <div className="flex-1 h-px bg-gradient-to-r from-white/20 to-transparent" />
             
             {/* Type Filter */}
@@ -874,7 +1168,7 @@ const PromptArmory = () => {
                 <button
                   key={filter}
                   onClick={() => setPlatformFilter(filter)}
-                  className={`px-3 py-1.5 text-xs rounded-md transition-all duration-200 ${
+                  className={`px-3 py-1.5 text-xs font-bold tracking-wider rounded-md transition-all duration-200 ${
                     platformFilter === filter 
                       ? 'bg-white/10 text-white' 
                       : 'text-white/40 hover:text-white/60'
@@ -886,7 +1180,7 @@ const PromptArmory = () => {
             </div>
           </div>
           
-          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-11 gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-px bg-white/5 border border-white/10 p-px">
             {getFilteredPlatforms().map((platform) => {
               const isActive = targetMode === platform.id;
               return (
@@ -894,49 +1188,51 @@ const PromptArmory = () => {
                   key={platform.id}
                   onClick={() => handlePlatformChange(platform.id)}
                   className={`
-                    relative group p-3 rounded-lg border transition-all duration-300 overflow-hidden
+                    relative group p-4 transition-all duration-300 overflow-hidden
                     ${isActive 
-                      ? 'border-white/30 bg-white/5' 
-                      : 'border-white/10 bg-white/[0.02] hover:border-white/20 hover:bg-white/[0.04]'
+                      ? 'bg-white/10' 
+                      : 'bg-black/40 hover:bg-white/5'
                     }
                   `}
                 >
                   {isActive && (
                     <div 
-                      className="absolute inset-0 opacity-20"
+                      className="absolute inset-0 opacity-10"
                       style={{
-                        background: `radial-gradient(ellipse at center, ${platform.color} 0%, transparent 70%)`
+                        background: `radial-gradient(circle at center, ${platform.color} 0%, transparent 100%)`
                       }}
                     />
                   )}
                   
-                  <div className="relative z-10">
-                    <div className="flex items-center justify-between mb-1">
-                      <span 
-                        className="text-xl"
-                        style={{ color: isActive ? platform.color : 'rgba(255,255,255,0.5)' }}
-                      >
-                        {platform.icon}
-                      </span>
-                      {isActive && (
-                        <div 
-                          className="w-1.5 h-1.5 rounded-full animate-pulse"
-                          style={{ backgroundColor: platform.color }}
-                        />
-                      )}
-                    </div>
-                    <div className={`text-xs font-medium ${isActive ? 'text-white' : 'text-white/60'}`}>
-                      {platform.shortName}
-                    </div>
-                    <div className={`text-[9px] uppercase tracking-wide mt-0.5 ${platform.type === 'video' ? 'text-purple-400/60' : 'text-blue-400/60'}`}>
-                      {platform.type}
-                    </div>
-                  </div>
-                  
+                  {/* Active Indicator Bar */}
                   <div 
-                    className={`absolute bottom-0 left-0 right-0 h-0.5 transition-all duration-300 ${isActive ? 'opacity-100' : 'opacity-0'}`}
+                    className={`absolute top-0 left-0 w-full h-[2px] transition-all duration-300 ${isActive ? 'opacity-100 shadow-[0_0_10px_currentColor]' : 'opacity-0'}`}
                     style={{ backgroundColor: platform.color }}
                   />
+
+                  <div className="relative z-10 flex flex-col items-center gap-2 text-center">
+                    {/* Info Icon for Platform */}
+                    <div 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setInfoModal(platform.id);
+                      }}
+                      className="absolute top-2 right-2 text-[10px] text-white/20 hover:text-amber-400 cursor-pointer transition-colors duration-200"
+                      title="Learn more about this model"
+                    >
+                      ⓘ
+                    </div>
+
+                    <span 
+                      className="text-2xl transition-transform duration-300 group-hover:scale-110"
+                      style={{ color: isActive ? platform.color : 'rgba(255,255,255,0.3)' }}
+                    >
+                      {platform.icon}
+                    </span>
+                    <div className={`text-[10px] font-mono font-bold tracking-widest uppercase leading-tight ${isActive ? 'text-white' : 'text-white/40'}`}>
+                      {platform.name}
+                    </div>
+                  </div>
                 </button>
               );
             })}
@@ -948,7 +1244,7 @@ const PromptArmory = () => {
         ───────────────────────────────────────────────────────────────────── */}
         <section className="mb-8">
           <div className="flex items-center gap-3 mb-4">
-            <span className="text-xs tracking-[0.2em] text-white/50 uppercase">Subject</span>
+            <span className="text-xs font-bold tracking-[0.2em] text-white/70 uppercase">Subject</span>
             <div className="flex-1 h-px bg-gradient-to-r from-white/20 to-transparent" />
           </div>
           
@@ -958,11 +1254,15 @@ const PromptArmory = () => {
               value={promptState.subject}
               onChange={(e) => setPromptState(prev => ({ ...prev, subject: e.target.value }))}
               placeholder="Describe your subject... (e.g., 'a lone samurai standing in rainfall')"
-              className="w-full bg-white/[0.03] border border-white/10 rounded-lg px-5 py-4 text-white placeholder-white/30 focus:outline-none focus:border-white/30 focus:bg-white/[0.05] transition-all duration-300"
+              className="w-full bg-black border border-white/10 px-6 py-5 text-lg font-light text-white placeholder-white/20 focus:outline-none focus:border-white/40 focus:bg-white/[0.9] focus:text-black transition-all duration-300"
             />
-            <div className="absolute right-4 top-1/2 -translate-y-1/2 text-white/20 text-xs">
-              {promptState.subject.length > 0 && `${promptState.subject.length} chars`}
+            <div className={`absolute right-4 top-1/2 -translate-y-1/2 text-xs font-mono transition-colors duration-300 ${promptState.subject.length > 0 ? 'text-current' : 'text-white/20'}`}>
+              {promptState.subject.length > 0 && `${promptState.subject.length} CHARS`}
             </div>
+            
+            {/* Input Corner Accents */}
+            <div className="absolute bottom-0 left-0 w-4 h-4 border-l border-b border-white/10 pointer-events-none group-hover:border-white/30 transition-colors" />
+            <div className="absolute top-0 right-0 w-4 h-4 border-r border-t border-white/10 pointer-events-none group-hover:border-white/30 transition-colors" />
           </div>
         </section>
 
@@ -971,12 +1271,12 @@ const PromptArmory = () => {
         ───────────────────────────────────────────────────────────────────── */}
         <section className="mb-8">
           <div className="flex items-center gap-3 mb-4">
-            <span className="text-xs tracking-[0.2em] text-white/50 uppercase">Construction Bay</span>
+            <span className="text-xs font-bold tracking-[0.2em] text-white/70 uppercase">Construction Bay</span>
             <div className="flex-1 h-px bg-gradient-to-r from-white/20 to-transparent" />
           </div>
           
           {/* Category Tabs */}
-          <div className="flex gap-1 mb-6 p-1 bg-white/[0.02] rounded-lg border border-white/5">
+          <div className="flex flex-wrap gap-px bg-white/5 border border-white/10 p-px mb-6">
             {Object.entries(arsenal).map(([key, category]) => {
               const isActive = activeCategory === key;
               const hasSelection = promptState[category.stateKey] !== null;
@@ -986,10 +1286,10 @@ const PromptArmory = () => {
                   key={key}
                   onClick={() => setActiveCategory(key)}
                   className={`
-                    flex items-center gap-2 px-4 py-2.5 rounded-md text-sm transition-all duration-200
+                    flex-1 flex items-center justify-center gap-2 px-4 py-3 text-xs uppercase tracking-wider font-mono transition-all duration-200
                     ${isActive 
-                      ? 'bg-white/10 text-white' 
-                      : 'text-white/50 hover:text-white/70 hover:bg-white/5'
+                      ? 'bg-white/10 text-white shadow-[inset_0_0_20px_rgba(255,255,255,0.05)]' 
+                      : 'bg-black/40 text-white/40 hover:text-white/70 hover:bg-white/5'
                     }
                   `}
                 >
@@ -997,7 +1297,7 @@ const PromptArmory = () => {
                   <span>{category.label}</span>
                   {hasSelection && (
                     <div 
-                      className="w-1.5 h-1.5 rounded-full"
+                      className="w-1 h-1 rounded-full shadow-[0_0_5px_currentColor]"
                       style={{ backgroundColor: currentPlatform.color }}
                     />
                   )}
@@ -1016,45 +1316,57 @@ const PromptArmory = () => {
                   key={card.id}
                   onClick={() => handleCardSelect(activeCategory, card)}
                   className={`
-                    group relative p-4 rounded-lg border text-left transition-all duration-300 overflow-hidden
+                    group relative p-4 rounded-none border text-left transition-all duration-300 overflow-hidden
                     ${isSelected 
-                      ? 'border-white/40 bg-white/10 scale-[1.02]' 
-                      : 'border-white/10 bg-white/[0.02] hover:border-white/20 hover:bg-white/[0.05]'
+                      ? 'border-white/60 bg-white/5 backdrop-blur-sm' 
+                      : 'border-white/10 bg-black/40 hover:border-white/30 hover:bg-white/5'
                     }
                   `}
                 >
+                  {/* Tech corners */}
+                  <div className={`absolute top-0 left-0 w-2 h-2 border-l border-t transition-colors duration-300 ${isSelected ? 'border-white' : 'border-white/20'}`} />
+                  <div className={`absolute top-0 right-0 w-2 h-2 border-r border-t transition-colors duration-300 ${isSelected ? 'border-white' : 'border-white/20'}`} />
+                  <div className={`absolute bottom-0 left-0 w-2 h-2 border-l border-b transition-colors duration-300 ${isSelected ? 'border-white' : 'border-white/20'}`} />
+                  <div className={`absolute bottom-0 right-0 w-2 h-2 border-r border-b transition-colors duration-300 ${isSelected ? 'border-white' : 'border-white/20'}`} />
+
                   {isSelected && (
                     <div 
-                      className="absolute inset-0 opacity-20"
+                      className="absolute inset-0 opacity-10"
                       style={{
-                        background: `radial-gradient(ellipse at top left, ${currentPlatform.color} 0%, transparent 60%)`
+                        background: `radial-gradient(circle at center, ${currentPlatform.color} 0%, transparent 100%)`
                       }}
                     />
                   )}
                   
                   <div className="relative z-10">
                     <div className="flex items-start justify-between mb-2">
-                      <span className={`text-sm font-medium ${isSelected ? 'text-white' : 'text-white/80'}`}>
-                        {card.label}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className={`text-sm font-mono uppercase tracking-wider ${isSelected ? 'text-white' : 'text-white/60 group-hover:text-white/90'}`}>
+                          {card.label}
+                        </span>
+                        {/* Info Icon - for all cards */}
+                        {cardInfo[card.id] && (
+                          <span
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setInfoModal(card.id);
+                            }}
+                            className="text-[10px] text-white/30 hover:text-amber-400 cursor-pointer transition-colors duration-200"
+                            title="Learn more"
+                          >
+                            ⓘ
+                          </span>
+                        )}
+                      </div>
                       {isSelected && (
                         <div 
-                          className="w-5 h-5 rounded-full flex items-center justify-center"
+                          className="w-1.5 h-1.5 rounded-full animate-pulse shadow-[0_0_10px_currentColor]"
                           style={{ backgroundColor: currentPlatform.color }}
-                        >
-                          <svg className="w-3 h-3 text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                          </svg>
-                        </div>
+                        />
                       )}
                     </div>
-                    <p className="text-xs text-white/40">{card.desc}</p>
+                    <p className="text-[10px] text-white/30 uppercase tracking-wide font-mono">{card.desc}</p>
                   </div>
-                  
-                  <div 
-                    className={`absolute bottom-0 left-0 h-0.5 transition-all duration-300 ${isSelected ? 'w-full' : 'w-0 group-hover:w-full'}`}
-                    style={{ backgroundColor: currentPlatform.color }}
-                  />
                 </button>
               );
             })}
@@ -1066,7 +1378,7 @@ const PromptArmory = () => {
         ───────────────────────────────────────────────────────────────────── */}
         <section className="mb-8">
           <div className="flex items-center gap-3 mb-4">
-            <span className="text-xs tracking-[0.2em] text-white/50 uppercase">Aspect Ratio</span>
+            <span className="text-xs font-bold tracking-[0.2em] text-white/70 uppercase">Aspect Ratio</span>
             <div className="flex-1 h-px bg-gradient-to-r from-white/20 to-transparent" />
           </div>
           
@@ -1124,46 +1436,49 @@ const PromptArmory = () => {
           
           {/* Output Box */}
           <div 
-            className="relative rounded-xl border overflow-hidden"
+            className="relative border overflow-hidden group"
             style={{ 
-              borderColor: `${currentPlatform.color}30`,
-              backgroundColor: 'rgba(0,0,0,0.5)'
+              borderColor: `${currentPlatform.color}40`,
+              backgroundColor: 'rgba(0,0,0,0.8)'
             }}
           >
             {/* Header bar */}
             <div 
-              className="flex items-center justify-between px-4 py-3 border-b"
+              className="flex items-center justify-between px-4 py-2 border-b"
               style={{ 
                 borderColor: `${currentPlatform.color}20`,
                 background: `linear-gradient(90deg, ${currentPlatform.color}10 0%, transparent 100%)`
               }}
             >
               <div className="flex items-center gap-3">
-                <span style={{ color: currentPlatform.color }}>{currentPlatform.icon}</span>
-                <span className="text-sm text-white/60">{currentPlatform.name} Format</span>
+                <span className="font-mono" style={{ color: currentPlatform.color }}>{currentPlatform.icon}</span>
+                <span className="text-xs font-mono uppercase tracking-wider text-white/60">{currentPlatform.name} TERMINAL</span>
               </div>
-              <div className="flex items-center gap-1">
-                <div className="w-2 h-2 rounded-full bg-red-500/50" />
-                <div className="w-2 h-2 rounded-full bg-yellow-500/50" />
-                <div className="w-2 h-2 rounded-full bg-green-500/50" />
+              <div className="flex items-center gap-1 opacity-50">
+                <div className="w-1.5 h-1.5 bg-white/20" />
+                <div className="w-1.5 h-1.5 bg-white/20" />
+                <div className="w-1.5 h-1.5 bg-white/20" />
               </div>
             </div>
             
             {/* Text content */}
-            <div className="p-5 min-h-[120px]">
+            <div className="p-6 min-h-[120px] relative">
+              {/* Scanline effect */}
+              <div className="absolute inset-0 opacity-[0.02] pointer-events-none bg-[linear-gradient(transparent_50%,rgba(255,255,255,0.1)_50%)] bg-[length:100%_4px]" />
+              
               <p 
                 className={`font-mono text-sm leading-relaxed transition-opacity duration-200 ${isTransitioning ? 'text-white/50' : 'text-white/90'}`}
                 style={{ wordBreak: 'break-word' }}
               >
-                {displayText || 'Select parameters to generate your prompt...'}
+                {displayText || '> AWAITING PARAMETERS...'}
               </p>
             </div>
             
             {/* Bottom accent */}
             <div 
-              className="h-1"
+              className="h-0.5 w-full"
               style={{ 
-                background: `linear-gradient(90deg, ${currentPlatform.color}50 0%, ${currentPlatform.color}20 50%, transparent 100%)`
+                background: `linear-gradient(90deg, ${currentPlatform.color} 0%, transparent 100%)`
               }}
             />
           </div>
@@ -1237,6 +1552,68 @@ const PromptArmory = () => {
           </div>
         </footer>
       </div>
+
+      {/* ═══════════════════════════════════════════════════════════════════════
+          INFO MODAL
+      ═══════════════════════════════════════════════════════════════════════ */}
+      {infoModal && cardInfo[infoModal] && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          onClick={() => setInfoModal(null)}
+        >
+          {/* Backdrop */}
+          <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" />
+          
+          {/* Modal */}
+          <div 
+            className="relative max-w-lg w-full bg-black border border-white/20 p-6 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Tech corners */}
+            <div className="absolute top-0 left-0 w-4 h-4 border-l-2 border-t-2 border-amber-400" />
+            <div className="absolute top-0 right-0 w-4 h-4 border-r-2 border-t-2 border-amber-400" />
+            <div className="absolute bottom-0 left-0 w-4 h-4 border-l-2 border-b-2 border-amber-400" />
+            <div className="absolute bottom-0 right-0 w-4 h-4 border-r-2 border-b-2 border-amber-400" />
+            
+            {/* Close button */}
+            <button
+              onClick={() => setInfoModal(null)}
+              className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center text-white/40 hover:text-white hover:bg-white/10 transition-all"
+            >
+              ✕
+            </button>
+            
+            {/* Header */}
+            <div className="flex items-center gap-3 mb-4">
+              <span className="text-2xl text-amber-400">ⓘ</span>
+              <div>
+                <h3 className="text-lg font-mono uppercase tracking-wider text-white">
+                  {cardInfo[infoModal].name}
+                </h3>
+                <p className="text-[10px] font-mono text-white/40 uppercase tracking-widest">Selection Profile</p>
+              </div>
+            </div>
+            
+            {/* Divider */}
+            <div className="h-px bg-gradient-to-r from-amber-400/50 via-white/10 to-transparent mb-4" />
+            
+            {/* Description */}
+            <p className="text-white/70 text-sm leading-relaxed">
+              {cardInfo[infoModal].info}
+            </p>
+            
+            {/* Footer */}
+            <div className="mt-6 pt-4 border-t border-white/10 flex justify-end">
+              <button
+                onClick={() => setInfoModal(null)}
+                className="px-4 py-2 text-xs font-mono uppercase tracking-wider border border-white/20 text-white/60 hover:bg-white/10 hover:text-white transition-all"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
