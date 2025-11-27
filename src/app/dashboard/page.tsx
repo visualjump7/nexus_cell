@@ -1108,7 +1108,7 @@ const PromptArmory = () => {
         <div className={`overflow-hidden transition-all duration-500 ease-out ${showPresets ? 'max-h-[500px] opacity-100 mb-8' : 'max-h-0 opacity-0'}`}>
           <div className="p-6 rounded-xl border border-white/10 bg-white/[0.02]">
             <div className="flex items-center gap-3 mb-5">
-              <span className="text-xs tracking-[0.2em] text-white/50 uppercase">Select a Preset</span>
+              <span className="text-xs font-bold tracking-[0.2em] text-white/70 uppercase">Select a Preset</span>
               <div className="flex-1 h-px bg-gradient-to-r from-white/20 to-transparent" />
             </div>
             
