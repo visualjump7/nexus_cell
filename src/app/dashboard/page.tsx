@@ -1416,7 +1416,7 @@ const PromptArmory = () => {
         <section className="mb-8">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
-              <span className="text-xs tracking-[0.2em] text-white/50 uppercase">Generated Output</span>
+              <span className="text-xs font-bold tracking-[0.2em] text-white/70 uppercase">Generated Output</span>
               <div 
                 className="px-2 py-0.5 rounded text-xs transition-colors duration-300"
                 style={{ 
