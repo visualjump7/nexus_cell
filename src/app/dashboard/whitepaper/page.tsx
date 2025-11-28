@@ -153,6 +153,23 @@ export default function WhitepaperPage() {
             </div>
           </article>
 
+          {/* Entry 6 */}
+          <article className="p-6 border border-white/10 bg-white/[0.02]">
+            <div className="flex items-center gap-3 mb-4">
+              <span className="text-cyan-400 text-xl">✎</span>
+              <h2 className="text-lg font-mono uppercase tracking-wider text-white">Content Writing & Email Support</h2>
+              <span className="text-[10px] px-2 py-1 bg-white/10 text-white/50 font-mono uppercase">Upcoming</span>
+            </div>
+            <p className="text-white/60 text-sm leading-relaxed mb-4">
+              Expand beyond visual prompts to support text generation. We will add specialized prompt templates 
+              and modules for content writing, copywriting, and professional email composition. This will include 
+              tone modifiers, structure templates, and platform-specific formatting (LinkedIn, Twitter, Email).
+            </p>
+            <div className="text-[10px] font-mono text-white/30 uppercase">
+              Priority: Medium • Complexity: Medium
+            </div>
+          </article>
+
         </section>
 
         {/* ─────────────────────────────────────────────────────────────────────
