@@ -462,6 +462,62 @@ class LeonardoAdapter extends BaseAdapter {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
+// LUMA DREAM MACHINE ADAPTER
+// Cinematic video generation
+// ═══════════════════════════════════════════════════════════════════════════════
+
+class LumaAdapter extends BaseAdapter {
+  platformId: PlatformId = 'luma';
+  platformName = 'Luma Dream Machine';
+  platformType: 'image' | 'video' = 'video';
+  
+  constraints: AdapterConstraints = {
+    supportsMovement: true,
+    supportsFilmStock: true,
+    supportsLens: false,
+    maxPromptLength: 2000,
+    requiresBrackets: false,
+    supportsAspectRatio: true,
+    supportedAspectRatios: ['16:9', '9:16', '1:1'],
+  };
+  
+  translate(state: MasterState): string {
+    const parts: string[] = [];
+    
+    // Subject
+    const subject = this.buildSubject(state);
+    parts.push(subject || '[your subject]');
+    
+    // Movement
+    if (state.camera.movement) {
+      parts.push(`camera ${state.camera.movement.toLowerCase()}`);
+    }
+    
+    // Angle
+    if (state.camera.angle) {
+      parts.push(state.camera.angle.toLowerCase());
+    }
+    
+    // Lighting
+    if (state.environment.lighting) {
+      parts.push(state.environment.lighting.toLowerCase());
+    }
+    
+    // Style
+    if (state.aesthetics.style) {
+      parts.push(state.aesthetics.style.toLowerCase());
+    }
+    
+    // Film stock
+    if (state.aesthetics.filmStock) {
+      parts.push(state.aesthetics.filmStock);
+    }
+    
+    return parts.join(', ');
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
 // SORA ADAPTER
 // Cinematic scene descriptions
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -640,6 +696,7 @@ const adapters: AdapterRegistry = {
   dalle: new DalleAdapter(),
   runway: new RunwayAdapter(),
   veo: new VeoAdapter(),
+  luma: new LumaAdapter(),
   grok: new FluxAdapter(),
   stable: new StableDiffusionAdapter(),
   ideogram: new IdeogramAdapter(),
