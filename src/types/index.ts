@@ -15,6 +15,7 @@ export type PlatformId =
   | 'grok'
   | 'runway'
   | 'veo'
+  | 'luma'
   | 'sora'
   | 'pika'
   | 'kling';
