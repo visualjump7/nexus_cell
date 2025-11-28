@@ -45,6 +45,13 @@ export async function POST(request: NextRequest) {
       style: 'vivid',
     });
 
+    if (!response.data || !response.data[0]) {
+      return NextResponse.json(
+        { success: false, error: 'No image data returned' },
+        { status: 500 }
+      );
+    }
+
     return NextResponse.json({
       success: true,
       mediaUrl: response.data[0].url,
