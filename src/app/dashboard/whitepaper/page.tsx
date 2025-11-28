@@ -158,7 +158,7 @@ export default function WhitepaperPage() {
             <div className="flex items-center gap-3 mb-4">
               <span className="text-cyan-400 text-xl">✎</span>
               <h2 className="text-lg font-mono uppercase tracking-wider text-white">Content Writing & Email Support</h2>
-              <span className="text-[10px] px-2 py-1 bg-white/10 text-white/50 font-mono uppercase">Upcoming</span>
+              <span className="text-[10px] px-2 py-1 bg-cyan-500/20 text-cyan-400 font-mono uppercase">In Progress</span>
             </div>
             <p className="text-white/60 text-sm leading-relaxed mb-4">
               Expand beyond visual prompts to support text generation. We will add specialized prompt templates 
