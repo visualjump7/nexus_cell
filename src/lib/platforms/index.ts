@@ -73,6 +73,15 @@ export const platforms: Record<PlatformId, Platform> = {
     type: 'video',
     description: 'Structured cinematography',
   },
+  luma: {
+    id: 'luma',
+    name: 'Luma Dream Machine',
+    shortName: 'LUM',
+    icon: '◈',
+    color: '#a78bfa',
+    type: 'video',
+    description: 'Cinematic video generation',
+  },
   sora: {
     id: 'sora',
     name: 'OpenAI Sora',
