@@ -117,7 +117,7 @@ const EmailArmory = () => {
   const [displayText, setDisplayText] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [activeTheme, setActiveTheme] = useState('#06b6d4');
+  const [activeTheme, setActiveTheme] = useState('#9ca3af'); // Default to Grammar Police gray
   
   // Master State Object
   const [emailState, setEmailState] = useState<EmailState>({
@@ -130,9 +130,9 @@ const EmailArmory = () => {
       constraints: []
     },
     voice: {
-      preset: 'articulator',
+      preset: 'grammar_police',
       warmth: 0.5,
-      professionalism: 0.5,
+      professionalism: 0.8,
       length: 'Medium',
       bioSample: ''
     },
@@ -146,43 +146,43 @@ const EmailArmory = () => {
 
   const voicePresets: VoicePreset[] = [
     {
-      id: 'articulator',
-      name: 'The Articulator',
+      id: 'grammar_police',
+      name: 'Grammar Police',
+      label: '(Strict)',
+      icon: <ShieldCheck size={20} />,
+      description: 'Strict proofreading. Fixes errors without changing your voice.',
+      color: 'text-gray-400',
+      accentHex: '#9ca3af',
+      glow: 'shadow-gray-500/50',
+      defaultWarmth: 0.5,
+      defaultProf: 0.8,
+      instruction: 'Your ONLY task is to fix grammar, spelling, and punctuation errors. Do NOT change the tone, vocabulary, sentence structure, or length. Maintain the exact user intent.'
+    },
+    {
+      id: 'authentic',
+      name: 'Authentic',
       label: '(Me)',
       icon: <Feather size={20} />,
-      description: 'Syntactic Elevation. Sounds like you, but on your best day.',
+      description: 'Your thoughts, just clearer. Enhances flow while sounding like YOU.',
       color: 'text-cyan-400',
       accentHex: '#06b6d4',
       glow: 'shadow-cyan-500/50',
       defaultWarmth: 0.6,
       defaultProf: 0.7,
-      instruction: 'Elevate the syntax while preserving the user’s original voice and flow.'
+      instruction: 'Refine the flow and clarity of the text. Remove sentence fragments and awkward phrasing, but strictly preserve the user\'s original attitude, vocabulary choices, and personality.'
     },
     {
-      id: 'ghost',
-      name: 'The Ghost',
-      label: '(Clone)',
-      icon: <Ghost size={20} />,
-      description: 'Bio-mimicry. Uses your sample text to replicate your exact cadence.',
-      color: 'text-pink-500',
-      accentHex: '#ec4899',
-      glow: 'shadow-pink-500/50',
-      defaultWarmth: 0.5,
-      defaultProf: 0.5,
-      instruction: 'Match the rhythm, sentence length, and punctuation of the provided bio sample exactly.'
-    },
-    {
-      id: 'slack',
-      name: 'The Slack',
-      label: '(Internal)',
+      id: 'articulator',
+      name: 'The Articulator',
+      label: '(Team)',
       icon: <Zap size={20} />,
-      description: 'Lowercase. Fast. No fluff. "Sent from my iPhone" energy.',
+      description: 'Internal comms. Fast, efficient, and human.',
       color: 'text-purple-400',
       accentHex: '#8b5cf6',
       glow: 'shadow-purple-500/50',
       defaultWarmth: 0.7,
       defaultProf: 0.2,
-      instruction: 'Keep it punchy, lowercase allowed, feel like an internal Slack reply with zero preamble.'
+      instruction: 'Optimize for internal team communication. Use casual language, standard abbreviations, and minimize fluff. Lowercase typing is acceptable. Focus on speed and clarity.'
     },
     {
       id: 'engineer',
