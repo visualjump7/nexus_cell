@@ -63,6 +63,7 @@ interface VoicePreset {
   color: string; // Tailwind color class for accents
   defaultWarmth: number;
   defaultProf: number;
+  instruction: string; // The meta-prompt instruction
 }
 
 interface FidelityLevel {
@@ -80,6 +81,21 @@ const ANTI_ROBOT_PHRASES = [
   "Game-changer",
   "Please do not hesitate to reach out"
 ];
+
+// Helper functions for slider conversion
+const getWarmthLabel = (value: number): string => {
+  const percentage = value * 100;
+  if (percentage <= 20) return "Direct, cold, abrupt.";
+  if (percentage <= 60) return "Neutral, professional.";
+  return "Warm, friendly, empathetic.";
+};
+
+const getProfessionalismLabel = (value: number): string => {
+  const percentage = value * 100;
+  if (percentage <= 20) return "Casual, use slang, lowercase allowed.";
+  if (percentage <= 80) return "Standard Business Professional.";
+  return "Formal, academic, legalistic.";
+};
 
 const EmailArmory = () => {
   // ─── State Management ────────────────────────────────────────────────────────
@@ -123,7 +139,8 @@ const EmailArmory = () => {
       description: 'Syntactic Elevation. Sounds like you, but on your best day.',
       color: 'text-amber-400',
       defaultWarmth: 0.6,
-      defaultProf: 0.7
+      defaultProf: 0.7,
+      instruction: "Elevate the syntax while maintaining the original voice. Improve flow and clarity without losing the personal touch."
     },
     {
       id: 'ghost',
@@ -133,7 +150,8 @@ const EmailArmory = () => {
       description: 'Bio-mimicry. Uses your sample text to replicate your exact cadence.',
       color: 'text-purple-400',
       defaultWarmth: 0.5,
-      defaultProf: 0.5
+      defaultProf: 0.5,
+      instruction: "Analyze the sentence length, vocabulary complexity, and punctuation of the Bio-Metric Sample. Rewrite the input to strictly mimic these metrics."
     },
     {
       id: 'slack',
@@ -143,7 +161,8 @@ const EmailArmory = () => {
       description: 'Lowercase. Fast. No fluff. "Sent from my iPhone" energy.',
       color: 'text-emerald-400',
       defaultWarmth: 0.7,
-      defaultProf: 0.2
+      defaultProf: 0.2,
+      instruction: "Lowercase allowed. No salutations. Use abbreviations (implied). Sound like a quick human typist, not a generated letter."
     },
     {
       id: 'engineer',
@@ -153,7 +172,8 @@ const EmailArmory = () => {
       description: 'Facts only. Structured. Zero emotion. Pure data transmission.',
       color: 'text-blue-400',
       defaultWarmth: 0.1,
-      defaultProf: 0.9
+      defaultProf: 0.9,
+      instruction: "Focus on facts and data. Remove emotional language. Use structured formatting (lists/bolding). No marketing speak."
     },
     {
       id: 'diplomat',
@@ -163,7 +183,8 @@ const EmailArmory = () => {
       description: 'Softens blows. Validates feelings. Professional warmth.',
       color: 'text-rose-400',
       defaultWarmth: 0.9,
-      defaultProf: 0.8
+      defaultProf: 0.8,
+      instruction: "Use passive voice where necessary to soften blows. Validate the recipient's feelings. Maintain professional warmth, but avoid cliché AI phrases."
     },
     {
       id: 'executive',
@@ -173,7 +194,8 @@ const EmailArmory = () => {
       description: 'Fewer than 50 words. Brute efficiency. No opening/closing.',
       color: 'text-white',
       defaultWarmth: 0.2,
-      defaultProf: 1.0
+      defaultProf: 1.0,
+      instruction: "Use fewer than 50 words. No opening greeting. No closing fluff. Brute efficiency."
     }
   ];
 
@@ -252,10 +274,30 @@ const EmailArmory = () => {
 
   // Mock Generation
   const handleGenerate = () => {
-    // In a real app, this would call an API with emailState
-    const mockResponse = `Subject: Regarding our recent discussion\n\nThis is a generated response based on the "${emailState.voice.preset}" persona with ${Math.round(emailState.voice.warmth * 100)}% warmth and ${Math.round(emailState.voice.professionalism * 100)}% professionalism.\n\nThe system has successfully avoided ${ANTI_ROBOT_PHRASES.length} clichés to ensure authenticity.\n\nBest regards,\n[Your Name]`;
+    const preset = voicePresets.find(p => p.id === emailState.voice.preset);
+    const fidelity = fidelityLevels.find(f => f.id === emailState.fidelity.mode);
     
-    animateCipherDecode(mockResponse);
+    if (!preset || !fidelity) return;
+
+    const promptTemplate = `[ROLE DEFINITION]
+You are a professional editor using the "${preset.name}" framework.
+Your Goal: Rewrite the draft text below.
+
+[PARAMETERS]
+- Tone: ${getWarmthLabel(emailState.voice.warmth)}
+- Formality: ${getProfessionalismLabel(emailState.voice.professionalism)}
+- Length: ${emailState.voice.length}
+- Fidelity: ${fidelity.name} (${fidelity.description})
+
+[INSTRUCTIONS]
+1. ${preset.instruction}
+2. Do NOT add information not found in the draft.
+3. Strictly avoid AI clichés like "delve" or "tapestry".
+${emailState.voice.preset === 'ghost' && emailState.voice.bioSample ? `\n[BIO-METRIC SAMPLE]\n"${emailState.voice.bioSample}"` : ''}
+[INPUT DRAFT]
+"${emailState.intent.rawInput}"`;
+    
+    animateCipherDecode(promptTemplate);
   };
 
   const handleCopy = async () => {
@@ -572,12 +614,12 @@ const EmailArmory = () => {
         <section className="mt-8">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
-              <span className="text-xs font-bold tracking-[0.2em] text-white/70 uppercase">Generated Output</span>
-              <div className="px-2 py-0.5 rounded text-xs bg-amber-500/20 text-amber-500 font-mono">
-                {emailState.outputFormat.platform.toUpperCase()}
+              <span className="text-xs font-bold tracking-[0.2em] text-white/70 uppercase">Generated Prompt</span>
+              <div className="px-2 py-0.5 rounded text-xs bg-amber-500/20 text-amber-500 font-mono border border-amber-500/30">
+                COPY PASTE INTO CHATGPT / CLAUDE
               </div>
             </div>
-            {isGenerating && <span className="text-xs text-amber-500 animate-pulse font-mono">TRANSMUTING...</span>}
+            {isGenerating && <span className="text-xs text-amber-500 animate-pulse font-mono">COMPILING...</span>}
           </div>
 
           {/* Terminal Output */}
@@ -604,7 +646,7 @@ const EmailArmory = () => {
               }`}
             >
               {isGenerating ? <RefreshCw className="animate-spin" /> : <Zap />}
-              {isGenerating ? 'Processing...' : 'Generate Output'}
+              {isGenerating ? 'Processing...' : 'Compile Prompt'}
             </button>
 
             <button
