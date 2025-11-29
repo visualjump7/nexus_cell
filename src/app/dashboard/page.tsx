@@ -2,6 +2,11 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
+import { SystemStateToggle } from '@/components/SystemStateToggle';
+import { DashboardHeaderControls } from '@/components/DashboardHeaderControls';
+import { CollapsibleSection } from '@/components/CollapsibleSection';
+import { useViewMode } from '@/hooks/useViewMode';
+import { motion } from 'framer-motion';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // POLYMORPHIC PROMPT ARMORY — ULTIMATE EDITION
@@ -57,15 +62,15 @@ const PromptArmory = () => {
   // STATE MANAGEMENT
   // ─────────────────────────────────────────────────────────────────────────────
   
-  const [targetMode, setTargetMode] = useState('midjourney');
+  const [targetMode, setTargetMode] = useState('universal');
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [displayText, setDisplayText] = useState('');
   const [copied, setCopied] = useState(false);
   const [activeCategory, setActiveCategory] = useState('camera');
-  const [showPresets, setShowPresets] = useState(false);
   const [activePreset, setActivePreset] = useState<string | null>(null);
   const [platformFilter, setPlatformFilter] = useState('all');
   const [infoModal, setInfoModal] = useState<string | null>(null);
+  const { viewMode, setViewMode } = useViewMode();
   
   // Core prompt state object - the "DNA" of our prompt
   const [promptState, setPromptState] = useState<PromptState>({
@@ -84,6 +89,16 @@ const PromptArmory = () => {
   // ─────────────────────────────────────────────────────────────────────────────
   
   const platforms: Record<string, Platform> = {
+    // UNIVERSAL
+    universal: {
+      id: 'universal',
+      name: 'Universal Standard',
+      shortName: 'UNI',
+      icon: '✦',
+      color: '#ffffff',
+      type: 'all',
+      description: 'Neutral default. Works with any model.'
+    },
     // IMAGE GENERATORS
     midjourney: {
       id: 'midjourney',
@@ -489,6 +504,10 @@ const PromptArmory = () => {
   
   const cardInfo: Record<string, { name: string; info: string }> = {
     // ═══ PLATFORMS ═══
+    'universal': {
+      name: 'Universal Standard',
+      info: 'A neutral, high-quality default setting designed to work with any AI model. It produces clean, descriptive prompts without model-specific parameters or syntax. Perfect for general use or when switching between different platforms.'
+    },
     'midjourney': {
       name: 'Midjourney v6',
       info: 'Known for its high-fidelity, artistic, and painterly results. Midjourney excels at creative interpretation and beautiful compositions with minimal prompting. It has a distinct "opinionated" style that tends towards aesthetically pleasing results. Best for conceptual art, illustrations, and when you want the AI to fill in the gaps with artistic flair. Less precise with complex spatial instructions than DALL-E.'
@@ -748,6 +767,20 @@ const PromptArmory = () => {
     const subjectText = subject || '[Your Subject]';
     
     switch (platform) {
+      case 'universal': {
+        let prompt = subjectText;
+        if (style) prompt += ` in a ${style} style`;
+        
+        const attributes = [lighting, angle, lens, movement, filmStock ? `shot on ${filmStock}` : null]
+          .filter(Boolean)
+          .join(', ');
+          
+        if (attributes) prompt += `. ${attributes}`;
+        prompt += '.';
+        
+        return prompt;
+      }
+
       case 'midjourney': {
         const parts = [subjectText];
         if (angle) parts.push(angle);
@@ -999,13 +1032,10 @@ const PromptArmory = () => {
   return (
     <div className="min-h-screen bg-black text-white overflow-hidden relative selection:bg-white/20">
       {/* ═══════════════════════════════════════════════════════════════════════
-          BACKGROUND EFFECTS (Updated v2 Cinematic Style)
+          BACKGROUND EFFECTS
       ═══════════════════════════════════════════════════════════════════════ */}
       <div className="fixed inset-0 pointer-events-none z-0">
-        {/* Pure Black Base */}
         <div className="absolute inset-0 bg-black" />
-        
-        {/* Clean Grid Pattern */}
         <div 
           className="absolute inset-0 opacity-[0.15]"
           style={{
@@ -1016,33 +1046,16 @@ const PromptArmory = () => {
             backgroundSize: '40px 40px'
           }}
         />
-
-        {/* Animated Bokeh Orbs */}
         <div className="absolute inset-0 overflow-hidden">
           <div 
             className="absolute top-1/4 left-1/4 w-96 h-96 rounded-full opacity-20 blur-[100px] animate-pulse"
-            style={{ 
-              backgroundColor: currentPlatform.color,
-              animationDuration: '8s' 
-            }}
+            style={{ backgroundColor: currentPlatform.color, animationDuration: '8s' }}
           />
           <div 
             className="absolute bottom-1/3 right-1/4 w-[500px] h-[500px] rounded-full opacity-10 blur-[120px]"
-            style={{ 
-              backgroundColor: '#ffffff',
-              animation: 'float 20s infinite ease-in-out alternate'
-            }}
-          />
-          <div 
-            className="absolute -top-20 right-1/3 w-64 h-64 rounded-full opacity-15 blur-[80px]"
-            style={{ 
-              backgroundColor: currentPlatform.color,
-              animation: 'float 15s infinite ease-in-out alternate-reverse'
-            }}
+            style={{ backgroundColor: '#ffffff', animation: 'float 20s infinite ease-in-out alternate' }}
           />
         </div>
-
-        {/* Vignette */}
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,rgba(0,0,0,0.8)_100%)]" />
       </div>
 
@@ -1055,72 +1068,50 @@ const PromptArmory = () => {
             HEADER
         ───────────────────────────────────────────────────────────────────── */}
         <header className="mb-12 relative">
-          <div className="flex items-end justify-between border-b border-white/10 pb-6">
-            <div>
-              <div className="flex items-center gap-3 mb-3">
-                <div className="flex gap-1">
-                  <div className="w-1 h-1 bg-white/20" />
-                  <div className="w-1 h-1 bg-white/20" />
-                  <div className="w-1 h-1 bg-white/20" />
+          <div className="flex items-center justify-between border-b border-white/10 pb-6">
+            {/* LEFT SIDE: Identity & System State */}
+            <div className="flex items-center gap-6">
+              {/* App Logo */}
+              <div className="flex items-center gap-2">
+                <div className="w-10 h-10 border border-white/20 flex items-center justify-center bg-white/5">
+                  <span className="text-xl font-bold text-white">◇</span>
                 </div>
-                <div className="h-px w-12 bg-white/20" />
-                <span className="text-[10px] font-mono tracking-[0.3em] text-white/40 uppercase">System Online</span>
               </div>
-              <h1 className="text-5xl font-light tracking-tighter mb-2 text-white">
-                PROMPT <span className="font-bold text-transparent bg-clip-text bg-gradient-to-r from-white to-white/50">ARMORY</span>
-              </h1>
-              <p className="text-white/40 text-xs font-mono tracking-widest uppercase">
-                v3.0 • Polymorphic Generation System • {getActiveSelectionsCount()} Active
-              </p>
+              
+              {/* Title & Version */}
+              <div>
+                <h1 className="text-3xl font-light tracking-tight text-white">
+                  PROMPT <span className="font-bold">ARMORY</span>
+                </h1>
+                <p className="text-white/40 text-[10px] font-mono tracking-widest uppercase">
+                  V3.0 • {getActiveSelectionsCount()} Active Selections
+                </p>
+              </div>
+              
+              {/* Focus/Advanced Toggle */}
+              <div className="ml-4">
+                <SystemStateToggle viewMode={viewMode} setViewMode={setViewMode} />
+              </div>
             </div>
             
-            {/* Header Buttons */}
+            {/* RIGHT SIDE: Navigation Stack */}
+            <DashboardHeaderControls currentApp="visual" />
+          </div>
+          
+          {/* Secondary Controls Row */}
+          <div className="flex items-center justify-between mt-4">
             <div className="flex items-center gap-3">
-              {/* Project Whitepaper Button */}
-              <Link
-                href="/dashboard/whitepaper"
-                className="flex items-center gap-3 px-6 py-3 border border-white/10 bg-black text-white/60 hover:border-white/30 hover:text-white transition-all duration-300 group"
-              >
-                <span className="text-lg opacity-50 group-hover:opacity-100 transition-opacity">▤</span>
-                <span className="text-xs font-mono uppercase tracking-wider">Project Whitepaper</span>
-              </Link>
-
-              {/* Email Armory Button */}
-              <Link
-                href="/dashboard/email"
-                className="flex items-center gap-3 px-6 py-3 border border-amber-500/20 bg-black text-amber-400/60 hover:border-amber-500/40 hover:text-amber-400 transition-all duration-300 group"
-              >
-                <span className="text-lg opacity-50 group-hover:opacity-100 transition-opacity">✉</span>
-                <span className="text-xs font-mono uppercase tracking-wider">Email Armory</span>
-              </Link>
-
-              {/* Preset Toggle Button */}
-              <button
-                onClick={() => setShowPresets(!showPresets)}
-                className={`flex items-center gap-3 px-6 py-3 border transition-all duration-300 group ${
-                  showPresets 
-                    ? 'border-white/40 bg-white/10 text-white' 
-                    : 'border-white/10 bg-black text-white/60 hover:border-white/30'
-                }`}
-              >
-                <span className="text-lg opacity-50 group-hover:opacity-100 transition-opacity">◈</span>
-                <span className="text-xs font-mono uppercase tracking-wider">Cinematic Presets</span>
-                <span className={`text-[10px] transition-transform duration-300 ${showPresets ? 'rotate-180' : ''}`}>▼</span>
-              </button>
+              <span className="text-[10px] font-mono tracking-[0.3em] text-white/40 uppercase">System Online</span>
+              <div className="h-px w-12 bg-white/20" />
             </div>
           </div>
         </header>
 
         {/* ─────────────────────────────────────────────────────────────────────
-            PRESETS PANEL (Collapsible)
+            1. SELECT A PRESET (Optional) - Top
         ───────────────────────────────────────────────────────────────────── */}
-        <div className={`overflow-hidden transition-all duration-500 ease-out ${showPresets ? 'max-h-[500px] opacity-100 mb-8' : 'max-h-0 opacity-0'}`}>
+        <CollapsibleSection title="Select a Preset" optional defaultOpen={true}>
           <div className="p-6 rounded-xl border border-white/10 bg-white/[0.02]">
-            <div className="flex items-center gap-3 mb-5">
-              <span className="text-xs font-bold tracking-[0.2em] text-white/70 uppercase">Select a Preset</span>
-              <div className="flex-1 h-px bg-gradient-to-r from-white/20 to-transparent" />
-            </div>
-            
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
               {presets.map((preset) => (
                 <button
@@ -1137,7 +1128,6 @@ const PromptArmory = () => {
                       background: `radial-gradient(ellipse at top left, ${preset.color} 0%, transparent 60%)`
                     }}/>
                   )}
-                  
                   <div className="relative z-10">
                     <div className="flex items-center gap-2 mb-2">
                       <span 
@@ -1152,7 +1142,6 @@ const PromptArmory = () => {
                     </div>
                     <p className="text-[10px] text-white/40 leading-tight line-clamp-2">{preset.description}</p>
                   </div>
-                  
                   <div 
                     className={`absolute bottom-0 left-0 h-0.5 transition-all duration-300 ${activePreset === preset.id ? 'w-full' : 'w-0 group-hover:w-full'}`}
                     style={{ backgroundColor: preset.color }}
@@ -1161,18 +1150,37 @@ const PromptArmory = () => {
               ))}
             </div>
           </div>
-        </div>
+        </CollapsibleSection>
 
         {/* ─────────────────────────────────────────────────────────────────────
-            TARGET OUTPUT MODE SELECTOR
+            2. YOUR SUBJECT (Static) - Middle
         ───────────────────────────────────────────────────────────────────── */}
         <section className="mb-8">
           <div className="flex items-center gap-3 mb-4">
-            <span className="text-xs font-bold tracking-[0.2em] text-white/70 uppercase">Target Output</span>
+            <span className="text-xs font-bold tracking-[0.2em] text-white/70 uppercase">Your Subject</span>
             <div className="flex-1 h-px bg-gradient-to-r from-white/20 to-transparent" />
-            
+          </div>
+          <div className="relative group">
+            <input
+              type="text"
+              value={promptState.subject}
+              onChange={(e) => setPromptState(prev => ({ ...prev, subject: e.target.value }))}
+              placeholder="Describe your subject... (e.g., 'a lone samurai standing in rainfall')"
+              className="w-full bg-white border border-white/10 px-6 py-5 text-lg font-light text-black placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-white/50 transition-all duration-300 shadow-lg"
+            />
+            <div className={`absolute right-4 top-1/2 -translate-y-1/2 text-xs font-mono transition-colors duration-300 ${promptState.subject.length > 0 ? 'text-black/70' : 'text-black/30'}`}>
+              {promptState.subject.length > 0 && `${promptState.subject.length} CHARS`}
+            </div>
+          </div>
+        </section>
+
+        {/* ─────────────────────────────────────────────────────────────────────
+            3. TARGET OUTPUT (Collapsible) - Bottom Middle
+        ───────────────────────────────────────────────────────────────────── */}
+        <CollapsibleSection title="Target Output" defaultOpen={true}>
+          <div className="mb-4">
             {/* Type Filter */}
-            <div className="flex items-center gap-1 bg-white/[0.02] rounded-lg p-1 border border-white/5">
+            <div className="flex items-center gap-1 bg-white/[0.02] rounded-lg p-1 border border-white/5 w-fit">
               {['all', 'image', 'video'].map((filter) => (
                 <button
                   key={filter}
@@ -1238,7 +1246,7 @@ const PromptArmory = () => {
                     >
                       {platform.icon}
                     </span>
-                    <div className={`text-[10px] font-mono font-bold tracking-widest uppercase leading-tight ${isActive ? 'text-white' : 'text-white/40'}`}>
+                    <div className={`text-sm font-mono font-bold tracking-widest uppercase leading-tight ${isActive ? 'text-white' : 'text-white/40'}`}>
                       {platform.name}
                     </div>
                   </div>
@@ -1246,44 +1254,46 @@ const PromptArmory = () => {
               );
             })}
           </div>
-        </section>
+        </CollapsibleSection>
 
         {/* ─────────────────────────────────────────────────────────────────────
-            SUBJECT INPUT
+            4. CONSTRUCTION BAY (Collapsible) - Bottom Footer
         ───────────────────────────────────────────────────────────────────── */}
-        <section className="mb-8">
-          <div className="flex items-center gap-3 mb-4">
-            <span className="text-xs font-bold tracking-[0.2em] text-white/70 uppercase">Subject</span>
-            <div className="flex-1 h-px bg-gradient-to-r from-white/20 to-transparent" />
-          </div>
-          
-          <div className="relative group">
-            <input
-              type="text"
-              value={promptState.subject}
-              onChange={(e) => setPromptState(prev => ({ ...prev, subject: e.target.value }))}
-              placeholder="Describe your subject... (e.g., 'a lone samurai standing in rainfall')"
-              className="w-full bg-black border border-white/10 px-6 py-5 text-lg font-light text-white placeholder-white/20 focus:outline-none focus:border-white/40 focus:bg-white/[0.9] focus:text-black transition-all duration-300"
-            />
-            <div className={`absolute right-4 top-1/2 -translate-y-1/2 text-xs font-mono transition-colors duration-300 ${promptState.subject.length > 0 ? 'text-current' : 'text-white/20'}`}>
-              {promptState.subject.length > 0 && `${promptState.subject.length} CHARS`}
+        <CollapsibleSection title="Construction Bay" defaultOpen={true}>
+          {/* Aspect Ratio Selector */}
+          <div className="mb-8">
+            <div className="flex items-center gap-3 mb-4">
+              <span className="text-[10px] font-mono tracking-widest text-white/40 uppercase">Aspect Ratio</span>
+              <div className="flex-1 h-px bg-white/5" />
             </div>
-            
-            {/* Input Corner Accents */}
-            <div className="absolute bottom-0 left-0 w-4 h-4 border-l border-b border-white/10 pointer-events-none group-hover:border-white/30 transition-colors" />
-            <div className="absolute top-0 right-0 w-4 h-4 border-r border-t border-white/10 pointer-events-none group-hover:border-white/30 transition-colors" />
+            <div className="flex gap-3">
+              {[
+                { value: '16:9', label: '16:9', icon: '▬' },
+                { value: '9:16', label: '9:16', icon: '▮' },
+                { value: '1:1', label: '1:1', icon: '■' },
+                { value: '21:9', label: '21:9', icon: '━' }
+              ].map((ratio) => {
+                const isActive = promptState.aspectRatio === ratio.value;
+                return (
+                  <button
+                    key={ratio.value}
+                    onClick={() => setPromptState(prev => ({ ...prev, aspectRatio: ratio.value }))}
+                    className={`
+                      flex items-center gap-2 px-4 py-2 rounded-lg border transition-all duration-200
+                      ${isActive 
+                        ? 'border-white/30 bg-white/10 text-white' 
+                        : 'border-white/10 bg-white/[0.02] text-white/50 hover:border-white/20'
+                      }
+                    `}
+                  >
+                    <span className="text-xs">{ratio.icon}</span>
+                    <span className="text-sm">{ratio.label}</span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
-        </section>
 
-        {/* ─────────────────────────────────────────────────────────────────────
-            ARSENAL CATEGORIES & CARDS
-        ───────────────────────────────────────────────────────────────────── */}
-        <section className="mb-8">
-          <div className="flex items-center gap-3 mb-4">
-            <span className="text-xs font-bold tracking-[0.2em] text-white/70 uppercase">Construction Bay</span>
-            <div className="flex-1 h-px bg-gradient-to-r from-white/20 to-transparent" />
-          </div>
-          
           {/* Category Tabs */}
           <div className="flex flex-wrap gap-px bg-white/5 border border-white/10 p-px mb-6">
             {Object.entries(arsenal).map(([key, category]) => {
@@ -1380,49 +1390,12 @@ const PromptArmory = () => {
               );
             })}
           </div>
-        </section>
-
-        {/* ─────────────────────────────────────────────────────────────────────
-            ASPECT RATIO SELECTOR
-        ───────────────────────────────────────────────────────────────────── */}
-        <section className="mb-8">
-          <div className="flex items-center gap-3 mb-4">
-            <span className="text-xs font-bold tracking-[0.2em] text-white/70 uppercase">Aspect Ratio</span>
-            <div className="flex-1 h-px bg-gradient-to-r from-white/20 to-transparent" />
-          </div>
-          
-          <div className="flex gap-3">
-            {[
-              { value: '16:9', label: '16:9', icon: '▬' },
-              { value: '9:16', label: '9:16', icon: '▮' },
-              { value: '1:1', label: '1:1', icon: '■' },
-              { value: '21:9', label: '21:9', icon: '━' }
-            ].map((ratio) => {
-              const isActive = promptState.aspectRatio === ratio.value;
-              return (
-                <button
-                  key={ratio.value}
-                  onClick={() => setPromptState(prev => ({ ...prev, aspectRatio: ratio.value }))}
-                  className={`
-                    flex items-center gap-2 px-4 py-2 rounded-lg border transition-all duration-200
-                    ${isActive 
-                      ? 'border-white/30 bg-white/10 text-white' 
-                      : 'border-white/10 bg-white/[0.02] text-white/50 hover:border-white/20'
-                    }
-                  `}
-                >
-                  <span className="text-xs">{ratio.icon}</span>
-                  <span className="text-sm">{ratio.label}</span>
-                </button>
-              );
-            })}
-          </div>
-        </section>
-
+        </CollapsibleSection>
+        {/* ... (Output Display, Action Buttons, Footer, Info Modal sections remain the same or similar) ... */}
         {/* ─────────────────────────────────────────────────────────────────────
             OUTPUT DISPLAY
         ───────────────────────────────────────────────────────────────────── */}
-        <section className="mb-8">
+        <section className="mb-8 mt-8">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
               <span className="text-xs font-bold tracking-[0.2em] text-white/70 uppercase">Generated Output</span>

@@ -1,49 +1,56 @@
 <!-- 987b331e-3b89-49bf-a30e-ca32533407a9 7a76a4aa-2047-4e1b-968a-fea5422be61b -->
-# Restore Previous Build State
+# Fix Missing Component Files
 
-## Current Situation
+The dashboard (`src/app/dashboard/page.tsx`) imports 3 files that don't exist, causing the build to fail. We need to create them.
 
-- Last git commit: `0a78cfe` from Nov 28, 2025 at 2:38 AM (before 7 AM today)
-- All changes made today are uncommitted in the working directory
-- No commits exist from today (Nov 29)
+## Files to Create
 
-## Files to Restore/Remove
+### 1. `src/components/SystemStateToggle.tsx`
 
-### 1. Restore Modified Files
+The "Focus / Advanced" toggle switch with animated icons.
 
-Revert these files to their last committed state:
+- Uses `framer-motion` for animations
+- Focus mode: Green breathing target icon
+- Advanced mode: Red spinning CPU/Settings icon
+- Sliding background indicator
 
-- `src/app/dashboard/page.tsx`
-- `package.json`
-- `package-lock.json`
+Key implementation:
 
-Command: `git restore src/app/dashboard/page.tsx package.json package-lock.json`
-
-### 2. Remove New Untracked Files
-
-Delete the files/directories we created in this session:
-
-- `src/components/SystemStateToggle.tsx`
-- `src/components/DashboardHeaderControls.tsx`
-- `src/hooks/useViewMode.ts`
-- `src/app/dashboard/email/` (directory)
-- `src/app/prompt-library/` (directory)
-- `assets/` (directory, if unwanted)
-
-Commands:
-
-```
-rm src/components/SystemStateToggle.tsx
-rm src/components/DashboardHeaderControls.tsx
-rm src/hooks/useViewMode.ts
-rm -rf src/app/dashboard/email
-rm -rf src/app/prompt-library
-rm -rf assets
+```tsx
+// Pill-shaped toggle with sliding background
+// Focus = emerald (green), Advanced = red
+// Target icon pulses, Cpu icon rotates
 ```
 
-## Result
+### 2. `src/hooks/useViewMode.ts`
 
-After execution, the codebase will be identical to commit `0a78cfe` from Nov 28, 2:38 AM - the state before any work was done today.
+Custom hook for managing and persisting the global view mode state.
+
+- Stores `'focus' | 'advanced'` in localStorage
+- Key: `'prompt-armory-view-mode'`
+- Includes `isHydrated` flag for SSR safety
+
+### 3. `src/components/DashboardHeaderControls.tsx`
+
+The right-side navigation stack component.
+
+- Row 1 (Meta-Nav): Library + Whitepaper links
+- Row 2: App Switcher button (Email Armory / Prompt Armory)
+- Glowing colored icons: Amber for Email, Cyan for Visual
+
+Key implementation:
+
+```tsx
+// currentApp prop determines which link to show
+// 'visual' -> shows "Email Armory" button with amber glow
+// 'text' -> shows "Prompt Armory" button with cyan glow
+```
+
+## Implementation Order
+
+1. Create `useViewMode.ts` (dependency for other components)
+2. Create `SystemStateToggle.tsx`
+3. Create `DashboardHeaderControls.tsx`
 
 ### To-dos
 
