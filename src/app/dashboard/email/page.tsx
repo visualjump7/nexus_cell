@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { SystemStateToggle } from '@/components/SystemStateToggle';
 import { DashboardHeaderControls } from '@/components/DashboardHeaderControls';
 import { CollapsibleSection } from '@/components/CollapsibleSection';
+import { GlobalAmbientLight } from '@/components/GlobalAmbientLight';
 import { useViewMode } from '@/hooks/useViewMode';
 import { 
   MessageSquare, 
@@ -15,6 +16,7 @@ import {
   Coffee, 
   Ghost, 
   Shield,
+  ShieldCheck,
   Check,
   Copy,
   RefreshCw,
@@ -28,7 +30,7 @@ import {
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
-type VoicePresetId = 'articulator' | 'ghost' | 'slack' | 'engineer' | 'diplomat' | 'executive';
+type VoicePresetId = 'grammar_police' | 'authentic' | 'articulator' | 'engineer' | 'diplomat' | 'executive';
 type FidelityId = 'polisher' | 'expander' | 'reducer' | 'transmuter';
 type PlatformId = 'email' | 'slack' | 'linkedin' | 'tweet';
 
@@ -61,8 +63,11 @@ interface VoicePreset {
   icon: React.ReactNode;
   description: string;
   color: string; // Tailwind color class for accents
+  accentHex: string;
+  glow: string;
   defaultWarmth: number;
   defaultProf: number;
+  instruction: string;
 }
 
 interface FidelityLevel {
@@ -81,6 +86,30 @@ const ANTI_ROBOT_PHRASES = [
   "Please do not hesitate to reach out"
 ];
 
+const getWarmthLabel = (value: number) => {
+  const percentage = Math.round(value * 100);
+  if (percentage <= 20) return 'Tone must be blunt, cold, and strictly business. Remove pleasantries.';
+  if (percentage <= 40) return 'Tone should stay straightforward with minimal empathy.';
+  if (percentage <= 60) return 'Tone should remain neutral-professional with polite acknowledgement.';
+  if (percentage <= 80) return 'Tone should add polite warmth and conversational phrasing while staying concise.';
+  return 'Tone should be warm, friendly, and supportive while remaining professional.';
+};
+
+const getProfessionalismLabel = (value: number) => {
+  const percentage = Math.round(value * 100);
+  if (percentage <= 20) return 'Casual register allowed: contractions, lowercase, quick Slack-style phrasing.';
+  if (percentage <= 50) return 'Business casual: contractions ok, keep the language modern and clear.';
+  if (percentage <= 80) return 'Formal business tone: complete sentences, avoid slang.';
+  return 'Highly formal/legalistic phrasing. No contractions. Reference policy or procedure language if relevant.';
+};
+
+const FIDELITY_INSTRUCTIONS: Record<FidelityId, string> = {
+  polisher: 'Do not change intent. Only fix grammar, clarity, and flow.',
+  expander: 'Convert fragments into cohesive prose while staying concise.',
+  reducer: 'Summarize to essentials. Remove filler and pleasantries.',
+  transmuter: 'Rewrite entirely to match the target persona while keeping factual intent.'
+};
+
 const EmailArmory = () => {
   // ─── State Management ────────────────────────────────────────────────────────
 
@@ -88,6 +117,7 @@ const EmailArmory = () => {
   const [displayText, setDisplayText] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [activeTheme, setActiveTheme] = useState('#06b6d4');
   
   // Master State Object
   const [emailState, setEmailState] = useState<EmailState>({
@@ -121,9 +151,12 @@ const EmailArmory = () => {
       label: '(Me)',
       icon: <Feather size={20} />,
       description: 'Syntactic Elevation. Sounds like you, but on your best day.',
-      color: 'text-amber-400',
+      color: 'text-cyan-400',
+      accentHex: '#06b6d4',
+      glow: 'shadow-cyan-500/50',
       defaultWarmth: 0.6,
-      defaultProf: 0.7
+      defaultProf: 0.7,
+      instruction: 'Elevate the syntax while preserving the user’s original voice and flow.'
     },
     {
       id: 'ghost',
@@ -131,9 +164,12 @@ const EmailArmory = () => {
       label: '(Clone)',
       icon: <Ghost size={20} />,
       description: 'Bio-mimicry. Uses your sample text to replicate your exact cadence.',
-      color: 'text-purple-400',
+      color: 'text-pink-500',
+      accentHex: '#ec4899',
+      glow: 'shadow-pink-500/50',
       defaultWarmth: 0.5,
-      defaultProf: 0.5
+      defaultProf: 0.5,
+      instruction: 'Match the rhythm, sentence length, and punctuation of the provided bio sample exactly.'
     },
     {
       id: 'slack',
@@ -141,9 +177,12 @@ const EmailArmory = () => {
       label: '(Internal)',
       icon: <Zap size={20} />,
       description: 'Lowercase. Fast. No fluff. "Sent from my iPhone" energy.',
-      color: 'text-emerald-400',
+      color: 'text-purple-400',
+      accentHex: '#8b5cf6',
+      glow: 'shadow-purple-500/50',
       defaultWarmth: 0.7,
-      defaultProf: 0.2
+      defaultProf: 0.2,
+      instruction: 'Keep it punchy, lowercase allowed, feel like an internal Slack reply with zero preamble.'
     },
     {
       id: 'engineer',
@@ -151,9 +190,12 @@ const EmailArmory = () => {
       label: '(Tech)',
       icon: <Briefcase size={20} />,
       description: 'Facts only. Structured. Zero emotion. Pure data transmission.',
-      color: 'text-blue-400',
+      color: 'text-amber-400',
+      accentHex: '#f59e0b',
+      glow: 'shadow-amber-500/50',
       defaultWarmth: 0.1,
-      defaultProf: 0.9
+      defaultProf: 0.9,
+      instruction: 'Focus on facts, metrics, and action items; remove emotional language.'
     },
     {
       id: 'diplomat',
@@ -161,9 +203,12 @@ const EmailArmory = () => {
       label: '(HR)',
       icon: <Shield size={20} />,
       description: 'Softens blows. Validates feelings. Professional warmth.',
-      color: 'text-rose-400',
+      color: 'text-teal-400',
+      accentHex: '#14b8a6',
+      glow: 'shadow-teal-500/50',
       defaultWarmth: 0.9,
-      defaultProf: 0.8
+      defaultProf: 0.8,
+      instruction: 'Use softening language, acknowledge recipient perspective, remain professional but empathetic.'
     },
     {
       id: 'executive',
@@ -171,9 +216,12 @@ const EmailArmory = () => {
       label: '(CEO)',
       icon: <Briefcase size={20} />,
       description: 'Fewer than 50 words. Brute efficiency. No opening/closing.',
-      color: 'text-white',
+      color: 'text-blue-500',
+      accentHex: '#3b82f6',
+      glow: 'shadow-blue-500/50',
       defaultWarmth: 0.2,
-      defaultProf: 1.0
+      defaultProf: 1.0,
+      instruction: 'Use fewer than 50 words, no greetings or sign-offs, deliver the decision immediately.'
     }
   ];
 
@@ -196,6 +244,7 @@ const EmailArmory = () => {
   const handlePresetSelect = (presetId: VoicePresetId) => {
     const preset = voicePresets.find(p => p.id === presetId);
     if (preset) {
+      setActiveTheme(preset.accentHex);
       setEmailState(prev => ({
         ...prev,
         voice: {
@@ -250,12 +299,55 @@ const EmailArmory = () => {
     animationRef.current = requestAnimationFrame(animate);
   };
 
-  // Mock Generation
+  // Meta-prompt Compilation
   const handleGenerate = () => {
-    // In a real app, this would call an API with emailState
-    const mockResponse = `Subject: Regarding our recent discussion\n\nThis is a generated response based on the "${emailState.voice.preset}" persona with ${Math.round(emailState.voice.warmth * 100)}% warmth and ${Math.round(emailState.voice.professionalism * 100)}% professionalism.\n\nThe system has successfully avoided ${ANTI_ROBOT_PHRASES.length} clichés to ensure authenticity.\n\nBest regards,\n[Your Name]`;
-    
-    animateCipherDecode(mockResponse);
+    if (!emailState.intent.rawInput.trim()) return;
+    const preset = voicePresets.find(p => p.id === emailState.voice.preset);
+    if (!preset) return;
+
+    const warmthInstruction = getWarmthLabel(emailState.voice.warmth);
+    const professionalismInstruction = getProfessionalismLabel(emailState.voice.professionalism);
+    const fidelityInstruction = FIDELITY_INSTRUCTIONS[emailState.fidelity.mode];
+    const constraints =
+      emailState.fidelity.constraints.length > 0
+        ? emailState.fidelity.constraints.join(', ')
+        : 'None provided.';
+
+    const negativeList = ANTI_ROBOT_PHRASES.map((phrase) => `- ${phrase}`).join('\n');
+    const goalSection = emailState.intent.goal
+      ? `\n[GOAL]\n${emailState.intent.goal}`
+      : '';
+    const bioSection =
+      emailState.voice.preset === 'ghost' && emailState.voice.bioSample?.trim()
+        ? `\n[BIO SAMPLE]\n"${emailState.voice.bioSample.trim()}"`
+        : '';
+
+    const promptTemplate = `[ROLE]
+You are a professional communication specialist operating in the "${preset.name}" persona.
+Your mission: compile the user’s rough draft into a finalized message strictly following the instructions below.
+
+[PARAMETERS]
+- Warmth: ${warmthInstruction}
+- Professionalism: ${professionalismInstruction}
+- Fidelity Mode: ${fidelityInstruction}
+- Length Preference: ${emailState.voice.length}
+- Constraints: ${constraints}
+
+[VOICE GUIDANCE]
+Persona directives: ${preset.instruction}
+Negative phrases to avoid:
+${negativeList}
+
+[INPUT DRAFT]
+"${emailState.intent.rawInput.trim()}"${goalSection}${bioSection}
+
+[OUTPUT REQUIREMENTS]
+1. Preserve factual intent from the input.
+2. Apply the slider instructions literally.
+3. Do not add information not found in the draft.
+4. Reply with the final email only. No commentary about these rules.`;
+
+    animateCipherDecode(promptTemplate);
   };
 
   const handleCopy = async () => {
@@ -269,6 +361,7 @@ const EmailArmory = () => {
 
   return (
     <div className="min-h-screen bg-black text-white overflow-hidden relative selection:bg-amber-500/20">
+      <GlobalAmbientLight color={activeTheme} />
       {/* ═══════════════════════════════════════════════════════════════════════
           BACKGROUND EFFECTS
       ═══════════════════════════════════════════════════════════════════════ */}
@@ -348,15 +441,18 @@ const EmailArmory = () => {
                   onClick={() => handlePresetSelect(preset.id)}
                   className={`group relative p-4 rounded-lg border text-left transition-all duration-300 overflow-hidden ${
                     isActive
-                      ? 'border-amber-500/50 bg-amber-500/10 scale-[1.02]'
-                      : 'border-white/10 bg-white/[0.02] hover:border-amber-500/30 hover:bg-amber-500/5'
+                      ? `border-white/20 bg-white/5 scale-[1.02] ${preset.glow}`
+                      : 'border-white/10 bg-white/[0.02] hover:border-white/20 hover:bg-white/5'
                   }`}
                 >
                   {isActive && (
-                    <div className="absolute inset-0 opacity-10 bg-amber-500" />
+                    <div
+                      className="absolute inset-0 opacity-10"
+                      style={{ backgroundColor: preset.accentHex }}
+                    />
                   )}
                   <div className="relative z-10">
-                    <div className={`text-lg mb-2 transition-colors ${isActive ? 'text-amber-400' : 'text-white/40 group-hover:text-amber-400/70'}`}>
+                    <div className={`text-lg mb-2 transition-colors ${isActive ? preset.color : 'text-white/40 group-hover:text-white/70'}`}>
                       {preset.icon}
                     </div>
                     <div className={`text-sm font-medium mb-1 ${isActive ? 'text-white' : 'text-white/70'}`}>
@@ -364,7 +460,10 @@ const EmailArmory = () => {
                     </div>
                   </div>
                   {isActive && (
-                    <div className="absolute bottom-0 left-0 w-full h-0.5 bg-amber-500" />
+                    <div
+                      className="absolute bottom-0 left-0 w-full h-0.5"
+                      style={{ backgroundColor: preset.accentHex }}
+                    />
                   )}
                 </button>
               );
@@ -572,9 +671,9 @@ const EmailArmory = () => {
         <section className="mt-8">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
-              <span className="text-xs font-bold tracking-[0.2em] text-white/70 uppercase">Generated Output</span>
-              <div className="px-2 py-0.5 rounded text-xs bg-amber-500/20 text-amber-500 font-mono">
-                {emailState.outputFormat.platform.toUpperCase()}
+              <span className="text-xs font-bold tracking-[0.2em] text-white/70 uppercase">Generated Prompt</span>
+              <div className="px-2 py-0.5 rounded text-xs bg-amber-500/20 text-amber-500 font-mono border border-amber-500/30">
+                COPY PASTE INTO CHATGPT / CLAUDE
               </div>
             </div>
             {isGenerating && <span className="text-xs text-amber-500 animate-pulse font-mono">TRANSMUTING...</span>}
@@ -604,17 +703,34 @@ const EmailArmory = () => {
               }`}
             >
               {isGenerating ? <RefreshCw className="animate-spin" /> : <Zap />}
-              {isGenerating ? 'Processing...' : 'Generate Output'}
+              {isGenerating ? 'Processing...' : 'Compile Prompt'}
             </button>
 
-            <button
+            <motion.button
               onClick={handleCopy}
               disabled={!displayText}
+              animate={
+                displayText && !isGenerating
+                  ? {
+                      boxShadow: [
+                        '0 0 0px rgba(245,158,11,0)',
+                        '0 0 20px rgba(245,158,11,0.6)',
+                        '0 0 0px rgba(245,158,11,0)'
+                      ],
+                      borderColor: [
+                        'rgba(255,255,255,0.1)',
+                        'rgba(245,158,11,0.8)',
+                        'rgba(255,255,255,0.1)'
+                      ]
+                    }
+                  : {}
+              }
+              transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
               className="px-8 py-4 rounded-lg border border-white/10 hover:bg-white/5 transition-all text-white/60 hover:text-white flex items-center gap-2 disabled:opacity-50"
             >
               {copied ? <Check className="text-green-500" /> : <Copy />}
               {copied ? 'Copied' : 'Copy'}
-            </button>
+            </motion.button>
           </div>
         </section>
 
