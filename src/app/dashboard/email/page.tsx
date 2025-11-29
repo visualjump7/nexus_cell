@@ -5,22 +5,15 @@ import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SystemStateToggle } from '@/components/SystemStateToggle';
 import { DashboardHeaderControls } from '@/components/DashboardHeaderControls';
-import { CollapsibleSection } from '@/components/CollapsibleSection';
 import { GlobalAmbientLight } from '@/components/GlobalAmbientLight';
+import { CollapsibleSection } from '@/components/CollapsibleSection';
 import { useViewMode } from '@/hooks/useViewMode';
+import { buildEmailPrompt } from '@/lib/builders/email';
 import { 
-  MessageSquare, 
-  Zap, 
-  Feather, 
-  Briefcase, 
-  Coffee, 
-  Ghost, 
-  Shield,
-  ShieldCheck,
-  Check,
-  Copy,
-  RefreshCw,
-  Maximize2
+  Globe, CheckCircle, Fingerprint, Zap, 
+  Briefcase, Users, Cpu, HeartHandshake, 
+  Target, GraduationCap, Shield, Feather,
+  Check, Copy, RefreshCw 
 } from 'lucide-react';
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -30,7 +23,20 @@ import {
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
-type VoicePresetId = 'grammar_police' | 'authentic' | 'articulator' | 'engineer' | 'diplomat' | 'executive';
+type VoicePresetId = 
+  | 'universal' 
+  | 'grammar_police' 
+  | 'authentic' 
+  | 'articulator' 
+  | 'executive' 
+  | 'diplomat' 
+  | 'engineer' 
+  | 'caretaker' 
+  | 'closer' 
+  | 'academic' 
+  | 'shield' 
+  | 'storyteller';
+
 type FidelityId = 'polisher' | 'expander' | 'reducer' | 'transmuter';
 type PlatformId = 'email' | 'slack' | 'linkedin' | 'tweet';
 
@@ -58,16 +64,12 @@ interface EmailState {
 
 interface VoicePreset {
   id: VoicePresetId;
-  name: string;
-  label: string; // e.g. "Me" or "CEO"
-  icon: React.ReactNode;
+  title: string;
   description: string;
-  color: string; // Tailwind color class for accents
-  accentHex: string;
-  glow: string;
-  defaultWarmth: number;
-  defaultProf: number;
-  instruction: string;
+  color: string; // Hex color for accents and ambient light
+  glow: string; // Tailwind shadow class
+  icon: any; // Lucide icon component
+  instruction?: string; // Optional, merged from logic map later if needed, or defined here
 }
 
 interface FidelityLevel {
@@ -117,7 +119,7 @@ const EmailArmory = () => {
   const [displayText, setDisplayText] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [activeTheme, setActiveTheme] = useState('#9ca3af'); // Default to Grammar Police gray
+  const [activeTheme, setActiveTheme] = useState('#94a3b8'); // Default to Universal slate
   
   // Master State Object
   const [emailState, setEmailState] = useState<EmailState>({
@@ -130,9 +132,9 @@ const EmailArmory = () => {
       constraints: []
     },
     voice: {
-      preset: 'grammar_police',
+      preset: 'universal',
       warmth: 0.5,
-      professionalism: 0.8,
+      professionalism: 0.5,
       length: 'Medium',
       bioSample: ''
     },
@@ -144,84 +146,127 @@ const EmailArmory = () => {
 
   // ─── Configuration Data ──────────────────────────────────────────────────────
 
+  const presetInstructions: Record<string, string> = {
+    // Essentials
+    universal: "Write in a standard, clear professional tone. No slang, no complex jargon. Just plain English.",
+    grammar_police: "Your ONLY task is to fix grammar, spelling, and punctuation errors. Do NOT change the tone, vocabulary, sentence structure, or length.",
+    authentic: "Refine the flow and clarity of the text. Remove sentence fragments and awkward phrasing, but strictly preserve the user's original attitude and vocabulary.",
+    articulator: "Optimize for internal team communication. Use casual language, standard abbreviations, and minimize fluff. Lowercase typing is acceptable.",
+    
+    // Professionals
+    executive: "Prioritize brevity. Remove adjectives. Focus on action items. No pleasantries.",
+    diplomat: "Focus on de-escalation and validation. Use passive voice to soften blows. Validate feelings.",
+    engineer: "Focus on facts and data. Use bullet points. Remove emotional language. Be precise.",
+    caretaker: "Adopt a patient, empathetic customer service tone. Apologize for issues, validate frustration, and pivot to solutions.",
+    
+    // Specialists
+    closer: "Use persuasive sales copywriting techniques. Focus on benefits over features. Create urgency. End with a strong Call to Action.",
+    academic: "Elevate vocabulary to a collegiate/PhD level. Use complex sentence structures. Avoid contractions. Be authoritative.",
+    shield: "Write defensively from a legal perspective. Be precise but non-committal. Avoid admitting absolute fault.",
+    storyteller: "Use a narrative structure. Start with a hook. Use sensory language to paint a picture. Focus on the emotional journey."
+  };
+
   const voicePresets: VoicePreset[] = [
+    // ROW 1: Essentials (Daily Drivers)
+    {
+      id: 'universal',
+      title: 'Universal',
+      description: 'Neutral, clear, and balanced. The gold standard for daily communication.',
+      color: '#94a3b8', // Slate-400
+      glow: 'shadow-slate-500/50',
+      icon: Globe
+    },
     {
       id: 'grammar_police',
-      name: 'Grammar Police',
-      label: '(Strict)',
-      icon: <ShieldCheck size={20} />,
+      title: 'Grammar Police',
       description: 'Strict proofreading. Fixes errors without changing your voice.',
-      color: 'text-gray-400',
-      accentHex: '#9ca3af',
-      glow: 'shadow-gray-500/50',
-      defaultWarmth: 0.5,
-      defaultProf: 0.8,
-      instruction: 'Your ONLY task is to fix grammar, spelling, and punctuation errors. Do NOT change the tone, vocabulary, sentence structure, or length. Maintain the exact user intent.'
+      color: '#ea580c', // Orange-600
+      glow: 'shadow-orange-500/50',
+      icon: CheckCircle
     },
     {
       id: 'authentic',
-      name: 'Authentic',
-      label: '(Me)',
-      icon: <Feather size={20} />,
+      title: 'Authentic',
       description: 'Your thoughts, just clearer. Enhances flow while sounding like YOU.',
-      color: 'text-cyan-400',
-      accentHex: '#06b6d4',
+      color: '#06b6d4', // Cyan-500
       glow: 'shadow-cyan-500/50',
-      defaultWarmth: 0.6,
-      defaultProf: 0.7,
-      instruction: 'Refine the flow and clarity of the text. Remove sentence fragments and awkward phrasing, but strictly preserve the user\'s original attitude, vocabulary choices, and personality.'
+      icon: Fingerprint
     },
     {
       id: 'articulator',
-      name: 'The Articulator',
-      label: '(Team)',
-      icon: <Zap size={20} />,
-      description: 'Internal comms. Fast, efficient, and human.',
-      color: 'text-purple-400',
-      accentHex: '#8b5cf6',
-      glow: 'shadow-purple-500/50',
-      defaultWarmth: 0.7,
-      defaultProf: 0.2,
-      instruction: 'Optimize for internal team communication. Use casual language, standard abbreviations, and minimize fluff. Lowercase typing is acceptable. Focus on speed and clarity.'
+      title: 'The Articulator',
+      description: 'Internal comms. Fast, efficient, and human. Great for Slack.',
+      color: '#8b5cf6', // Violet-500
+      glow: 'shadow-violet-500/50',
+      icon: Zap
     },
+
+    // ROW 2: Professionals (Role-Based)
     {
-      id: 'engineer',
-      name: 'The Engineer',
-      label: '(Tech)',
-      icon: <Briefcase size={20} />,
-      description: 'Facts only. Structured. Zero emotion. Pure data transmission.',
-      color: 'text-amber-400',
-      accentHex: '#f59e0b',
-      glow: 'shadow-amber-500/50',
-      defaultWarmth: 0.1,
-      defaultProf: 0.9,
-      instruction: 'Focus on facts, metrics, and action items; remove emotional language.'
+      id: 'executive',
+      title: 'The Executive',
+      description: 'Brute efficiency. No fluff, no pleasantries. Pure action.',
+      color: '#3b82f6', // Blue-500
+      glow: 'shadow-blue-500/50',
+      icon: Briefcase
     },
     {
       id: 'diplomat',
-      name: 'The Diplomat',
-      label: '(HR)',
-      icon: <Shield size={20} />,
-      description: 'Softens blows. Validates feelings. Professional warmth.',
-      color: 'text-teal-400',
-      accentHex: '#14b8a6',
+      title: 'The Diplomat',
+      description: 'Soft power. De-escalate conflict and validate feelings.',
+      color: '#14b8a6', // Teal-500
       glow: 'shadow-teal-500/50',
-      defaultWarmth: 0.9,
-      defaultProf: 0.8,
-      instruction: 'Use softening language, acknowledge recipient perspective, remain professional but empathetic.'
+      icon: Users
     },
     {
-      id: 'executive',
-      name: 'The Executive',
-      label: '(CEO)',
-      icon: <Briefcase size={20} />,
-      description: 'Fewer than 50 words. Brute efficiency. No opening/closing.',
-      color: 'text-blue-500',
-      accentHex: '#3b82f6',
-      glow: 'shadow-blue-500/50',
-      defaultWarmth: 0.2,
-      defaultProf: 1.0,
-      instruction: 'Use fewer than 50 words, no greetings or sign-offs, deliver the decision immediately.'
+      id: 'engineer',
+      title: 'The Engineer',
+      description: 'Facts and data. Structured, precise, and emotionless.',
+      color: '#f59e0b', // Amber-500
+      glow: 'shadow-amber-500/50',
+      icon: Cpu
+    },
+    {
+      id: 'caretaker',
+      title: 'The Caretaker',
+      description: 'Customer support. High empathy, patient, and solution-focused.',
+      color: '#ec4899', // Pink-500
+      glow: 'shadow-pink-500/50',
+      icon: HeartHandshake
+    },
+
+    // ROW 3: Specialists (High-Level Weapons)
+    {
+      id: 'closer',
+      title: 'The Closer',
+      description: 'Sales mode. Persuasive, benefit-driven, and high-urgency.',
+      color: '#22c55e', // Green-500
+      glow: 'shadow-green-500/50',
+      icon: Target
+    },
+    {
+      id: 'academic',
+      title: 'The Academic',
+      description: 'PhD level. Sophisticated vocabulary and complex sentence structures.',
+      color: '#6366f1', // Indigo-500
+      glow: 'shadow-indigo-500/50',
+      icon: GraduationCap
+    },
+    {
+      id: 'shield',
+      title: 'The Shield',
+      description: 'Legal defensive. Precise, non-committal, and protective.',
+      color: '#64748b', // Slate-500
+      glow: 'shadow-slate-500/50',
+      icon: Shield
+    },
+    {
+      id: 'storyteller',
+      title: 'The Storyteller',
+      description: 'Marketing narrative. Engaging, emotional, and hook-driven.',
+      color: '#f43f5e', // Rose-500
+      glow: 'shadow-rose-500/50',
+      icon: Feather
     }
   ];
 
@@ -302,50 +347,19 @@ const EmailArmory = () => {
   // Meta-prompt Compilation
   const handleGenerate = () => {
     if (!emailState.intent.rawInput.trim()) return;
-    const preset = voicePresets.find(p => p.id === emailState.voice.preset);
-    if (!preset) return;
-
-    const warmthInstruction = getWarmthLabel(emailState.voice.warmth);
-    const professionalismInstruction = getProfessionalismLabel(emailState.voice.professionalism);
-    const fidelityInstruction = FIDELITY_INSTRUCTIONS[emailState.fidelity.mode];
-    const constraints =
-      emailState.fidelity.constraints.length > 0
-        ? emailState.fidelity.constraints.join(', ')
-        : 'None provided.';
-
-    const negativeList = ANTI_ROBOT_PHRASES.map((phrase) => `- ${phrase}`).join('\n');
-    const goalSection = emailState.intent.goal
-      ? `\n[GOAL]\n${emailState.intent.goal}`
-      : '';
-    const bioSection =
-      emailState.voice.preset === 'ghost' && emailState.voice.bioSample?.trim()
-        ? `\n[BIO SAMPLE]\n"${emailState.voice.bioSample.trim()}"`
-        : '';
-
-    const promptTemplate = `[ROLE]
-You are a professional communication specialist operating in the "${preset.name}" persona.
-Your mission: compile the user’s rough draft into a finalized message strictly following the instructions below.
-
-[PARAMETERS]
-- Warmth: ${warmthInstruction}
-- Professionalism: ${professionalismInstruction}
-- Fidelity Mode: ${fidelityInstruction}
-- Length Preference: ${emailState.voice.length}
-- Constraints: ${constraints}
-
-[VOICE GUIDANCE]
-Persona directives: ${preset.instruction}
-Negative phrases to avoid:
-${negativeList}
-
-[INPUT DRAFT]
-"${emailState.intent.rawInput.trim()}"${goalSection}${bioSection}
-
-[OUTPUT REQUIREMENTS]
-1. Preserve factual intent from the input.
-2. Apply the slider instructions literally.
-3. Do not add information not found in the draft.
-4. Reply with the final email only. No commentary about these rules.`;
+    
+    const promptTemplate = buildEmailPrompt({
+      rawInput: emailState.intent.rawInput,
+      goal: emailState.intent.goal,
+      preset: emailState.voice.preset,
+      warmth: emailState.voice.warmth,
+      professionalism: emailState.voice.professionalism,
+      fidelity: emailState.fidelity.mode,
+      length: emailState.voice.length,
+      bioSample: emailState.voice.bioSample,
+      platform: emailState.outputFormat.platform,
+      structure: emailState.outputFormat.structure,
+    });
 
     animateCipherDecode(promptTemplate);
   };
@@ -432,7 +446,7 @@ ${negativeList}
             1. VOICE SIGNATURE PRESETS (Always Visible)
         ───────────────────────────────────────────────────────────────────── */}
         <section className="mb-12">
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
             {voicePresets.map((preset) => {
               const isActive = emailState.voice.preset === preset.id;
               return (
@@ -448,23 +462,25 @@ ${negativeList}
                   {isActive && (
                     <div
                       className="absolute inset-0 opacity-10"
-                      style={{ backgroundColor: preset.accentHex }}
+                      style={{ backgroundColor: preset.color }}
                     />
                   )}
                   <div className="relative z-10">
-                    <div className={`text-lg mb-2 transition-colors ${isActive ? preset.color : 'text-white/40 group-hover:text-white/70'}`}>
-                      {preset.icon}
+                    <div 
+                      className="text-lg mb-2 transition-colors"
+                      style={{ color: isActive ? preset.color : 'rgba(255,255,255,0.4)' }}
+                    >
+                      <preset.icon size={20} />
                     </div>
                     <div className={`text-sm font-medium mb-1 ${isActive ? 'text-white' : 'text-white/70'}`}>
-                      {preset.name} <span className="opacity-50 font-mono text-xs">{preset.label}</span>
+                      {preset.title}
                     </div>
+                    <p className="text-[10px] text-white/40 leading-tight line-clamp-2">{preset.description}</p>
                   </div>
-                  {isActive && (
-                    <div
-                      className="absolute bottom-0 left-0 w-full h-0.5"
-                      style={{ backgroundColor: preset.accentHex }}
-                    />
-                  )}
+                  <div
+                    className={`absolute bottom-0 left-0 h-0.5 transition-all duration-300 ${isActive ? 'w-full' : 'w-0 group-hover:w-full'}`}
+                    style={{ backgroundColor: preset.color }}
+                  />
                 </button>
               );
             })}
@@ -489,9 +505,9 @@ ${negativeList}
               }))}
               placeholder="Paste your messy draft, bullet points, or rough notes here..."
               rows={6}
-              className="w-full bg-white border border-white/10 px-6 py-5 text-lg font-light text-black placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition-all duration-300 shadow-lg resize-none font-mono"
+              className="w-full bg-black/80 border border-white/10 px-6 py-5 text-lg font-light text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition-all duration-300 shadow-lg resize-none font-mono"
             />
-            <div className={`absolute right-4 top-4 text-xs font-mono transition-colors duration-300 ${emailState.intent.rawInput.length > 0 ? 'text-black/70' : 'text-black/30'}`}>
+            <div className={`absolute right-4 top-4 text-xs font-mono transition-colors duration-300 ${emailState.intent.rawInput.length > 0 ? 'text-white/70' : 'text-white/30'}`}>
               {emailState.intent.rawInput.length > 0 && `${emailState.intent.rawInput.length} CHARS`}
             </div>
             
@@ -505,7 +521,7 @@ ${negativeList}
                   intent: { ...prev.intent, goal: e.target.value } 
                 }))}
                 placeholder="Goal (optional): e.g., 'Decline the meeting politely'"
-                className="w-full bg-black/5 backdrop-blur-sm border border-black/10 px-4 py-2 text-sm text-black placeholder-black/40 focus:outline-none focus:border-amber-500/50 transition-all duration-300 rounded"
+                className="w-full bg-white/10 backdrop-blur-sm border border-white/10 px-4 py-2 text-sm text-white placeholder-white/40 focus:outline-none focus:border-amber-500/50 transition-all duration-300 rounded"
               />
             </div>
           </div>
@@ -673,7 +689,7 @@ ${negativeList}
             <div className="flex items-center gap-3">
               <span className="text-xs font-bold tracking-[0.2em] text-white/70 uppercase">Generated Prompt</span>
               <div className="px-2 py-0.5 rounded text-xs bg-amber-500/20 text-amber-500 font-mono border border-amber-500/30">
-                COPY PASTE INTO CHATGPT / CLAUDE
+                COPY PASTE INTO CHATGPT / GROK or any other AI
               </div>
             </div>
             {isGenerating && <span className="text-xs text-amber-500 animate-pulse font-mono">TRANSMUTING...</span>}

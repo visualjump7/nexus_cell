@@ -766,77 +766,62 @@ const PromptArmory = () => {
     const { subject, angle, movement, lens, lighting, style, filmStock, aspectRatio } = state;
     const subjectText = subject || '[Your Subject]';
     
+    // Common Input Object
+    const visualInput: VisualPromptInput = {
+      subject: subjectText,
+      action: null, // Not currently captured in state
+      environment: null, // Not currently captured in state
+      lighting,
+      filmStock,
+      style,
+      camera: {
+        angle,
+        movement,
+        lens
+      },
+      aspectRatio: aspectRatio as any,
+    };
+
+    const videoInput: VideoPromptInput = {
+      ...visualInput,
+      subjectAction: null,
+      cameraMovement: movement,
+    };
+
     switch (platform) {
+      case 'midjourney':
+        return buildMidjourneyPrompt(visualInput);
+      
+      case 'dalle':
+        return buildDallePrompt(visualInput);
+      
+      case 'grok': // Using Flux builder for Grok
+        return buildFluxPrompt(visualInput);
+      
+      case 'runway':
+        return buildRunwayPrompt(videoInput);
+      
+      case 'kling':
+        return buildKlingPrompt(videoInput);
+        
+      // Legacy/Default handling for others (keeping original logic structure for now)
       case 'universal': {
         let prompt = subjectText;
         if (style) prompt += ` in a ${style} style`;
-        
         const attributes = [lighting, angle, lens, movement, filmStock ? `shot on ${filmStock}` : null]
           .filter(Boolean)
           .join(', ');
-          
         if (attributes) prompt += `. ${attributes}`;
         prompt += '.';
-        
         return prompt;
       }
 
-      case 'midjourney': {
-        const parts = [subjectText];
-        if (angle) parts.push(angle);
-        if (movement) parts.push(movement);
-        if (lens) parts.push(lens);
-        if (lighting) parts.push(lighting);
-        if (style) parts.push(style);
-        if (filmStock) parts.push(`shot on ${filmStock}`);
-        
-        const arParam = aspectRatio === '21:9' ? '--ar 21:9' :
-                        aspectRatio === '9:16' ? '--ar 9:16' : 
-                        aspectRatio === '1:1' ? '--ar 1:1' : '--ar 16:9';
-        
-        return `${parts.join(', ')} ${arParam} --v 6.0 --style raw`;
-      }
-      
-      case 'dalle': {
-        let prompt = `Create a ${style || 'cinematic'} image of ${subjectText}.`;
-        if (angle) prompt += ` The shot is captured from a ${angle} to create dramatic tension.`;
-        if (lens) prompt += ` Emulate the aesthetic of a ${lens} with its characteristic depth and perspective.`;
-        if (lighting) prompt += ` The scene is illuminated with ${lighting}.`;
-        if (filmStock) prompt += ` The color grading mimics ${filmStock} film stock.`;
-        if (movement) prompt += ` Convey the sense of a ${movement} in progress.`;
-        prompt += ` Ultra high quality, photorealistic, 8K resolution.`;
-        return prompt;
-      }
-      
-      case 'runway': {
-        const move = movement || 'Static';
-        let prompt = `[${move}]: `;
-        if (angle) prompt += `${angle} shot of `;
-        prompt += `${subjectText}. `;
-        if (lighting) prompt += `${lighting}. `;
-        if (style) prompt += `${style} aesthetic. `;
-        if (lens) prompt += `Shot with ${lens}. `;
-        if (filmStock) prompt += `${filmStock} color grade.`;
-        return prompt.trim();
-      }
-      
       case 'veo': {
         const cinematography = [angle, movement].filter(Boolean).join(', ') || 'Standard composition';
         const context = [lighting, style, filmStock ? `${filmStock} look` : null].filter(Boolean).join(', ') || 'Natural environment';
         let prompt = `Cinematography: ${cinematography}. Subject: ${subjectText}. Context: ${context}.`;
         if (lens) prompt += ` Technical: ${lens}.`;
         return prompt;
-      }
-      
-      case 'grok': {
-        let prompt = `${subjectText}. `;
-        if (angle) prompt += `Captured from a ${angle}. `;
-        if (filmStock) prompt += `Style of ${filmStock}. `;
-        else if (style) prompt += `${style} visual style. `;
-        if (lighting) prompt += `Emphasis on ${lighting}. `;
-        if (lens) prompt += `${lens} characteristics. `;
-        if (movement) prompt += `${movement} dynamics.`;
-        return prompt.trim();
       }
       
       case 'ideogram': {
@@ -892,17 +877,6 @@ const PromptArmory = () => {
         if (style) prompt += `, ${style} style`;
         if (lens) prompt += `, ${lens} look`;
         return prompt;
-      }
-      
-      case 'kling': {
-        let prompt = `Scene: ${subjectText}. `;
-        if (movement) prompt += `Motion: ${movement}. `;
-        if (angle) prompt += `Angle: ${angle}. `;
-        if (lighting) prompt += `Light: ${lighting}. `;
-        if (style) prompt += `Aesthetic: ${style}. `;
-        if (lens) prompt += `Lens: ${lens}. `;
-        if (filmStock) prompt += `Color: ${filmStock}.`;
-        return prompt.trim();
       }
       
       default:
@@ -1166,9 +1140,9 @@ const PromptArmory = () => {
               value={promptState.subject}
               onChange={(e) => setPromptState(prev => ({ ...prev, subject: e.target.value }))}
               placeholder="Describe your subject... (e.g., 'a lone samurai standing in rainfall')"
-              className="w-full bg-white border border-white/10 px-6 py-5 text-lg font-light text-black placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-white/50 transition-all duration-300 shadow-lg"
+              className="w-full bg-black/80 border border-white/10 px-6 py-5 text-lg font-light text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-white/50 transition-all duration-300 shadow-lg"
             />
-            <div className={`absolute right-4 top-1/2 -translate-y-1/2 text-xs font-mono transition-colors duration-300 ${promptState.subject.length > 0 ? 'text-black/70' : 'text-black/30'}`}>
+            <div className={`absolute right-4 top-1/2 -translate-y-1/2 text-xs font-mono transition-colors duration-300 ${promptState.subject.length > 0 ? 'text-white/70' : 'text-white/30'}`}>
               {promptState.subject.length > 0 && `${promptState.subject.length} CHARS`}
             </div>
           </div>
