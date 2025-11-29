@@ -405,7 +405,7 @@ ${negativeList}
                   EMAIL <span className="font-bold text-amber-500">ARMORY</span>
                 </h1>
                 <p className="text-amber-500/40 text-[10px] font-mono tracking-widest uppercase">
-                  v1.0 • Anti-LLM Drift System • {emailState.voice.preset.toUpperCase()} ACTIVE
+                  v1.0 • Anti-LLM Drift System
                 </p>
               </div>
               
