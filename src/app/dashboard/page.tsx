@@ -1085,6 +1085,15 @@ const PromptArmory = () => {
                 <span className="text-xs font-mono uppercase tracking-wider">Project Whitepaper</span>
               </Link>
 
+              {/* Email Armory Button */}
+              <Link
+                href="/dashboard/email"
+                className="flex items-center gap-3 px-6 py-3 border border-amber-500/20 bg-black text-amber-400/60 hover:border-amber-500/40 hover:text-amber-400 transition-all duration-300 group"
+              >
+                <span className="text-lg opacity-50 group-hover:opacity-100 transition-opacity">✉</span>
+                <span className="text-xs font-mono uppercase tracking-wider">Email Armory</span>
+              </Link>
+
               {/* Preset Toggle Button */}
               <button
                 onClick={() => setShowPresets(!showPresets)}
