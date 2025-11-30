@@ -13,7 +13,7 @@ import {
   Globe, CheckCircle, Fingerprint, Zap, 
   Briefcase, Users, Cpu, HeartHandshake, 
   Target, GraduationCap, Shield, Feather,
-  Check, Copy, RefreshCw 
+  Check, Copy, RefreshCw, ChevronDown
 } from 'lucide-react';
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -120,6 +120,7 @@ const EmailArmory = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [copied, setCopied] = useState(false);
   const [activeTheme, setActiveTheme] = useState('#94a3b8'); // Default to Universal slate
+  const [commControlsOpen, setCommControlsOpen] = useState(true); // Communication Controls toggle
   
   // Master State Object
   const [emailState, setEmailState] = useState<EmailState>({
@@ -526,84 +527,112 @@ const EmailArmory = () => {
         </section>
 
         {/* ─────────────────────────────────────────────────────────────────────
-            3. COMMUNICATION CONTROLS (Collapsible via View Mode)
+            3. COMMUNICATION CONTROLS (Always Visible)
         ───────────────────────────────────────────────────────────────────── */}
-        {/* Note: We use CollapsibleSection but defaultOpen depends on viewMode. 
-            Actually, based on plan, we want it Collapsed in Focus Mode. */}
-        <CollapsibleSection 
-          title="Communication Controls" 
-          defaultOpen={viewMode === 'advanced'}
-          // We want to allow manual override, so we just initialize based on viewMode 
-          // but let the component handle internal state. 
-          // However, to truly sync with global toggle, we can pass `isOpen` prop controlled by a local effect
-          // or just let the user open it if they need to.
-          // For this implementation, we'll just set defaultOpen.
-        >
-          <div className="p-6 border border-white/10 bg-white/[0.02] rounded-lg space-y-8">
-            
-            {/* SLIDERS ROW */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              {/* Warmth Slider */}
-              <div className="space-y-4">
-                <div className="flex justify-between text-xs items-end">
-                  <span className="text-white/70 font-bold uppercase tracking-widest">Warmth</span>
-                  <span className="text-amber-400 font-mono text-sm">{Math.round(emailState.voice.warmth * 100)}%</span>
-                </div>
-                <div className="relative h-6 flex items-center">
-                  <input
-                    type="range"
-                    min="0"
-                    max="1"
-                    step="0.05"
-                    value={emailState.voice.warmth}
-                    onChange={(e) => setEmailState(prev => ({ 
-                      ...prev, 
-                      voice: { ...prev.voice, warmth: parseFloat(e.target.value) } 
-                    }))}
-                    className="w-full h-2 rounded-lg appearance-none cursor-pointer bg-gray-800"
-                    style={{
-                      backgroundImage: `linear-gradient(to right, #3b82f6 0%, #f59e0b 100%)`
-                    }}
-                  />
-                </div>
-                <div className="flex justify-between text-sm font-medium text-white">
-                  <span>❄ Cold / Direct</span>
-                  <span>🔥 Warm / Friendly</span>
-                </div>
-              </div>
-              
-              {/* Professionalism Slider */}
-              <div className="space-y-4">
-                <div className="flex justify-between text-xs items-end">
-                  <span className="text-white/70 font-bold uppercase tracking-widest">Professionalism</span>
-                  <span className="text-indigo-400 font-mono text-sm">{Math.round(emailState.voice.professionalism * 100)}%</span>
-                </div>
-                <div className="relative h-6 flex items-center">
-                  <input
-                    type="range"
-                    min="0"
-                    max="1"
-                    step="0.05"
-                    value={emailState.voice.professionalism}
-                    onChange={(e) => setEmailState(prev => ({ 
-                      ...prev, 
-                      voice: { ...prev.voice, professionalism: parseFloat(e.target.value) } 
-                    }))}
-                    className="w-full h-2 rounded-lg appearance-none cursor-pointer bg-gray-800"
-                    style={{
-                      backgroundImage: `linear-gradient(to right, #9ca3af 0%, #4f46e5 100%)`
-                    }}
-                  />
-                </div>
-                <div className="flex justify-between text-sm font-medium text-white">
-                  <span>👋 Casual</span>
-                  <span>💼 Formal</span>
-                </div>
-              </div>
+        <section className="mb-8">
+          {/* Section Header with Manual Toggle */}
+          <button
+            onClick={() => setCommControlsOpen(!commControlsOpen)}
+            className="w-full flex items-center justify-between mb-4 group"
+          >
+            <div className="flex items-center gap-3">
+              <span className="text-xs font-bold tracking-[0.2em] text-white/70 uppercase">Communication Controls</span>
+              <div className="flex-1 h-px bg-gradient-to-r from-amber-500/30 to-transparent" />
             </div>
+            <motion.div
+              animate={{ rotate: commControlsOpen ? 0 : -90 }}
+              transition={{ duration: 0.2 }}
+            >
+              <ChevronDown className="w-4 h-4 text-white/40 group-hover:text-white/60 transition-colors" />
+            </motion.div>
+          </button>
 
-            {/* FINE TUNING ROW (Fidelity & Format) - Only in Advanced Mode visually or just below sliders */}
-            <div className="pt-6 border-t border-white/5 grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Collapsible Content */}
+          <AnimatePresence>
+            {commControlsOpen && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.3 }}
+                className="overflow-hidden"
+              >
+                <div className="p-6 border border-white/10 bg-white/[0.02] rounded-lg">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    {/* Warmth Slider */}
+                    <div className="space-y-4">
+                      <div className="flex justify-between text-xs items-end">
+                        <span className="text-white/70 font-bold uppercase tracking-widest">Warmth</span>
+                        <span className="text-amber-400 font-mono text-sm">{Math.round(emailState.voice.warmth * 100)}%</span>
+                      </div>
+                      <div className="relative h-6 flex items-center">
+                        <input
+                          type="range"
+                          min="0"
+                          max="1"
+                          step="0.05"
+                          value={emailState.voice.warmth}
+                          onChange={(e) => setEmailState(prev => ({ 
+                            ...prev, 
+                            voice: { ...prev.voice, warmth: parseFloat(e.target.value) } 
+                          }))}
+                          className="w-full h-2 rounded-lg appearance-none cursor-pointer bg-gray-800"
+                          style={{
+                            backgroundImage: `linear-gradient(to right, #3b82f6 0%, #f59e0b 100%)`
+                          }}
+                        />
+                      </div>
+                      <div className="flex justify-between text-sm font-medium text-white">
+                        <span>❄ Cold / Direct</span>
+                        <span>🔥 Warm / Friendly</span>
+                      </div>
+                    </div>
+                    
+                    {/* Professionalism Slider */}
+                    <div className="space-y-4">
+                      <div className="flex justify-between text-xs items-end">
+                        <span className="text-white/70 font-bold uppercase tracking-widest">Professionalism</span>
+                        <span className="text-indigo-400 font-mono text-sm">{Math.round(emailState.voice.professionalism * 100)}%</span>
+                      </div>
+                      <div className="relative h-6 flex items-center">
+                        <input
+                          type="range"
+                          min="0"
+                          max="1"
+                          step="0.05"
+                          value={emailState.voice.professionalism}
+                          onChange={(e) => setEmailState(prev => ({ 
+                            ...prev, 
+                            voice: { ...prev.voice, professionalism: parseFloat(e.target.value) } 
+                          }))}
+                          className="w-full h-2 rounded-lg appearance-none cursor-pointer bg-gray-800"
+                          style={{
+                            backgroundImage: `linear-gradient(to right, #9ca3af 0%, #4f46e5 100%)`
+                          }}
+                        />
+                      </div>
+                      <div className="flex justify-between text-sm font-medium text-white">
+                        <span>👋 Casual</span>
+                        <span>💼 Formal</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </section>
+
+        {/* ─────────────────────────────────────────────────────────────────────
+            4. OUTPUT CONTROLS (Optional - Respects View Mode)
+        ───────────────────────────────────────────────────────────────────── */}
+        <CollapsibleSection 
+          title="Output Controls" 
+          optional
+          defaultOpen={viewMode === 'advanced'}
+        >
+          <div className="p-6 border border-white/10 bg-white/[0.02] rounded-lg">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {/* Fidelity Mode */}
               <div>
                 <label className="block text-xs font-bold tracking-widest text-white/50 uppercase mb-3">Fidelity (Intervention)</label>
