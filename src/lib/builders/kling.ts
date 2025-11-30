@@ -46,3 +46,4 @@ export function buildKlingPrompt(input: VideoPromptInput): string {
 
   return parts.join(', ');
 }
+

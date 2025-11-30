@@ -62,3 +62,4 @@ export function buildMidjourneyPrompt(input: VisualPromptInput): string {
 
   return `${parts.join(', ')} ${params}`;
 }
+

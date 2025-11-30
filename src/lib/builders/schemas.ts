@@ -47,3 +47,4 @@ export const EmailPromptInputSchema = z.object({
   structure: z.enum(['Paragraphs', 'Bulleted List']).optional(),
 });
 export type EmailPromptInput = z.infer<typeof EmailPromptInputSchema>;
+

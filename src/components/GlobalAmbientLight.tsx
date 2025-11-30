@@ -36,3 +36,4 @@ export function GlobalAmbientLight({ color }: GlobalAmbientLightProps) {
     </div>
   );
 }
+

@@ -36,3 +36,4 @@ export function buildFluxPrompt(input: VisualPromptInput): string {
   
   return `${sentence} ${tagString}`.trim();
 }
+

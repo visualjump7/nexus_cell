@@ -44,3 +44,4 @@ export function buildRunwayPrompt(input: VideoPromptInput): string {
   // Final Assembly
   return `[${movement}]: ${action}${aestheticString}.`;
 }
+
