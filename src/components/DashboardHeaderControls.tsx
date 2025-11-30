@@ -46,7 +46,7 @@ export const DashboardHeaderControls: React.FC<DashboardHeaderControlsProps> = (
             <span className="text-xs font-mono uppercase tracking-wider">Email Armory</span>
           </Link>
         ) : (
-          /* On Email Page: Link to Prompt Armory - Cyan icon glow */
+          /* On Email Page: Link to Visual Armory - Cyan icon glow */
           <Link
             href="/dashboard"
             className="flex items-center gap-3 px-6 py-3 border border-cyan-400 text-white/60 hover:bg-cyan-400/10 hover:text-white transition-all duration-300 group rounded-lg h-[50px]"
@@ -54,7 +54,7 @@ export const DashboardHeaderControls: React.FC<DashboardHeaderControlsProps> = (
             <span className="text-cyan-400 drop-shadow-[0_0_8px_rgba(34,211,238,0.5)]">
               <LayoutDashboard size={20} />
             </span>
-            <span className="text-xs font-mono uppercase tracking-wider">Prompt Armory</span>
+            <span className="text-xs font-mono uppercase tracking-wider">Visual Armory</span>
           </Link>
         )}
       </div>

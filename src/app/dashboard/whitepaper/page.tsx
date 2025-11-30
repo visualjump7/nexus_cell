@@ -177,7 +177,7 @@ export default function WhitepaperPage() {
         ───────────────────────────────────────────────────────────────────── */}
         <footer className="mt-16 pt-6 border-t border-white/5">
           <div className="flex items-center justify-between text-xs text-white/30">
-            <span>PROMPT ARMORY — Project Whitepaper</span>
+            <span>VISUAL ARMORY — Project Whitepaper</span>
             <span>Last updated: {new Date().toLocaleDateString()}</span>
           </div>
         </footer>

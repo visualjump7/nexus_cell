@@ -1554,7 +1554,7 @@ const PromptArmory = () => {
         ───────────────────────────────────────────────────────────────────── */}
         <footer className="mt-12 pt-6 border-t border-white/5">
           <div className="flex items-center justify-between text-xs text-white/30">
-            <span>PROMPT ARMORY v3.0 — Polymorphic Generation System</span>
+            <span>VISUAL ARMORY v3.0 — Polymorphic Generation System</span>
             <span>11 Platforms • 12 Presets • Press cards to toggle • Switch platforms to transform</span>
           </div>
         </footer>

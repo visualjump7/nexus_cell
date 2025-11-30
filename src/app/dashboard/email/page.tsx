@@ -835,7 +835,7 @@ const EmailArmory = () => {
         <footer className="mt-20 pt-8 border-t border-white/5">
           <div className="flex justify-between text-[10px] text-white/30 font-mono uppercase tracking-widest">
             <span>SECURE CHANNEL ESTABLISHED</span>
-            <span>PROMPT ARMORY v3.0</span>
+            <span>VISUAL ARMORY v3.0</span>
           </div>
         </footer>
 

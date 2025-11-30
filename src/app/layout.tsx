@@ -14,7 +14,7 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'Prompt Armory | Cinematic AI Prompt Generator',
+  title: 'Visual Armory | Cinematic AI Prompt Generator',
   description: 'Professional-grade prompt engineering for AI image and video generation. Build cinematic prompts for Midjourney, DALL-E, Runway, and more.',
   keywords: ['AI prompts', 'Midjourney', 'DALL-E', 'Stable Diffusion', 'prompt engineering', 'AI art'],
 };

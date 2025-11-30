@@ -144,7 +144,7 @@ export default function PromptLibraryPage() {
           className="text-center mt-6"
         >
           <span className="text-white/20 font-mono text-xs tracking-widest">
-            PROMPT ARMORY v3.0 • MODULE OFFLINE
+            VISUAL ARMORY v3.0 • MODULE OFFLINE
           </span>
         </motion.div>
       </motion.div>
