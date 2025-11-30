@@ -660,21 +660,6 @@ const EmailArmory = () => {
                   ))}
                 </div>
               </div>
-
-              {/* Ghost Mode Bio Sample (Conditional) */}
-              {emailState.voice.preset === 'ghost' && (
-                <div className="animate-in fade-in slide-in-from-right duration-300">
-                  <label className="block text-xs font-bold tracking-widest text-purple-400 uppercase mb-3 flex items-center gap-2">
-                    <Ghost size={12} /> Bio-Metric Sample
-                  </label>
-                  <textarea
-                    value={emailState.voice.bioSample}
-                    onChange={(e) => setEmailState(prev => ({ ...prev, voice: { ...prev.voice, bioSample: e.target.value } }))}
-                    placeholder="Paste 3 sentences of your writing..."
-                    className="w-full h-32 bg-purple-900/10 border border-purple-500/30 rounded p-3 text-xs text-purple-100 placeholder-purple-400/30 focus:outline-none focus:border-purple-500/60 resize-none"
-                  />
-                </div>
-              )}
             </div>
           </div>
         </CollapsibleSection>
