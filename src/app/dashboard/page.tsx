@@ -7,6 +7,15 @@ import { DashboardHeaderControls } from '@/components/DashboardHeaderControls';
 import { CollapsibleSection } from '@/components/CollapsibleSection';
 import { useViewMode } from '@/hooks/useViewMode';
 import { motion } from 'framer-motion';
+import { 
+  buildMidjourneyPrompt, 
+  buildDallePrompt, 
+  buildFluxPrompt, 
+  buildRunwayPrompt, 
+  buildKlingPrompt, 
+  VisualPromptInput, 
+  VideoPromptInput 
+} from '@/lib/builders';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // POLYMORPHIC PROMPT ARMORY — ULTIMATE EDITION
@@ -71,6 +80,26 @@ const PromptArmory = () => {
   const [platformFilter, setPlatformFilter] = useState('all');
   const [infoModal, setInfoModal] = useState<string | null>(null);
   const { viewMode, setViewMode } = useViewMode();
+  
+  // Collapsible section states - controlled by viewMode
+  const [presetsOpen, setPresetsOpen] = useState(true);
+  const [constructionBayOpen, setConstructionBayOpen] = useState(true);
+  const [targetOutputOpen, setTargetOutputOpen] = useState(true);
+  
+  // Reset collapsible states when viewMode changes
+  useEffect(() => {
+    if (viewMode === 'focus') {
+      // Focus mode: collapse Construction Bay and Target Output
+      setConstructionBayOpen(false);
+      setTargetOutputOpen(false);
+      setPresetsOpen(true); // Presets stay open
+    } else {
+      // Advanced mode: expand all sections
+      setPresetsOpen(true);
+      setConstructionBayOpen(true);
+      setTargetOutputOpen(true);
+    }
+  }, [viewMode]);
   
   // Core prompt state object - the "DNA" of our prompt
   const [promptState, setPromptState] = useState<PromptState>({
@@ -998,6 +1027,11 @@ const PromptArmory = () => {
   };
 
   const currentPlatform = platforms[targetMode];
+
+  // Get the active preset's color for ambient background
+  const activePresetColor = activePreset 
+    ? presets.find(p => p.id === activePreset)?.color ?? '#ffffff'
+    : '#ffffff'; // Default to white when no preset selected
   
   // ─────────────────────────────────────────────────────────────────────────────
   // RENDER
@@ -1023,7 +1057,7 @@ const PromptArmory = () => {
         <div className="absolute inset-0 overflow-hidden">
           <div 
             className="absolute top-1/4 left-1/4 w-96 h-96 rounded-full opacity-20 blur-[100px] animate-pulse"
-            style={{ backgroundColor: currentPlatform.color, animationDuration: '8s' }}
+            style={{ backgroundColor: activePresetColor, animationDuration: '8s' }}
           />
           <div 
             className="absolute bottom-1/3 right-1/4 w-[500px] h-[500px] rounded-full opacity-10 blur-[120px]"
@@ -1084,7 +1118,12 @@ const PromptArmory = () => {
         {/* ─────────────────────────────────────────────────────────────────────
             1. SELECT A PRESET (Optional) - Top
         ───────────────────────────────────────────────────────────────────── */}
-        <CollapsibleSection title="Select a Preset" optional defaultOpen={true}>
+        <CollapsibleSection 
+          title="Select a Preset" 
+          optional 
+          isOpen={presetsOpen}
+          onToggle={() => setPresetsOpen(!presetsOpen)}
+        >
           <div className="p-6 rounded-xl border border-white/10 bg-white/[0.02]">
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
               {presets.map((preset) => (
@@ -1149,125 +1188,14 @@ const PromptArmory = () => {
         </section>
 
         {/* ─────────────────────────────────────────────────────────────────────
-            3. TARGET OUTPUT (Collapsible) - Bottom Middle
+            3. CONSTRUCTION BAY (Collapsible) - moved ABOVE Target Output
         ───────────────────────────────────────────────────────────────────── */}
-        <CollapsibleSection title="Target Output" defaultOpen={true}>
-          <div className="mb-4">
-            {/* Type Filter */}
-            <div className="flex items-center gap-1 bg-white/[0.02] rounded-lg p-1 border border-white/5 w-fit">
-              {['all', 'image', 'video'].map((filter) => (
-                <button
-                  key={filter}
-                  onClick={() => setPlatformFilter(filter)}
-                  className={`px-3 py-1.5 text-xs font-bold tracking-wider rounded-md transition-all duration-200 ${
-                    platformFilter === filter 
-                      ? 'bg-white/10 text-white' 
-                      : 'text-white/40 hover:text-white/60'
-                  }`}
-                >
-                  {filter.toUpperCase()}
-                </button>
-              ))}
-            </div>
-          </div>
-          
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-px bg-white/5 border border-white/10 p-px">
-            {getFilteredPlatforms().map((platform) => {
-              const isActive = targetMode === platform.id;
-              return (
-                <button
-                  key={platform.id}
-                  onClick={() => handlePlatformChange(platform.id)}
-                  className={`
-                    relative group p-4 transition-all duration-300 overflow-hidden
-                    ${isActive 
-                      ? 'bg-white/10' 
-                      : 'bg-black/40 hover:bg-white/5'
-                    }
-                  `}
-                >
-                  {isActive && (
-                    <div 
-                      className="absolute inset-0 opacity-10"
-                      style={{
-                        background: `radial-gradient(circle at center, ${platform.color} 0%, transparent 100%)`
-                      }}
-                    />
-                  )}
-                  
-                  {/* Active Indicator Bar */}
-                  <div 
-                    className={`absolute top-0 left-0 w-full h-[2px] transition-all duration-300 ${isActive ? 'opacity-100 shadow-[0_0_10px_currentColor]' : 'opacity-0'}`}
-                    style={{ backgroundColor: platform.color }}
-                  />
-
-                  <div className="relative z-10 flex flex-col items-center gap-2 text-center">
-                    {/* Info Icon for Platform */}
-                    <div 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setInfoModal(platform.id);
-                      }}
-                      className="absolute top-2 right-2 text-xs text-white/50 hover:text-amber-400 cursor-pointer transition-colors duration-200"
-                      title="Learn more about this model"
-                    >
-                      ⓘ
-                    </div>
-
-                    <span 
-                      className="text-2xl transition-transform duration-300 group-hover:scale-110"
-                      style={{ color: isActive ? platform.color : 'rgba(255,255,255,0.3)' }}
-                    >
-                      {platform.icon}
-                    </span>
-                    <div className={`text-sm font-mono font-bold tracking-widest uppercase leading-tight ${isActive ? 'text-white' : 'text-white/40'}`}>
-                      {platform.name}
-                    </div>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        </CollapsibleSection>
-
-        {/* ─────────────────────────────────────────────────────────────────────
-            4. CONSTRUCTION BAY (Collapsible) - Bottom Footer
-        ───────────────────────────────────────────────────────────────────── */}
-        <CollapsibleSection title="Construction Bay" defaultOpen={true}>
-          {/* Aspect Ratio Selector */}
-          <div className="mb-8">
-            <div className="flex items-center gap-3 mb-4">
-              <span className="text-[10px] font-mono tracking-widest text-white/40 uppercase">Aspect Ratio</span>
-              <div className="flex-1 h-px bg-white/5" />
-            </div>
-            <div className="flex gap-3">
-              {[
-                { value: '16:9', label: '16:9', icon: '▬' },
-                { value: '9:16', label: '9:16', icon: '▮' },
-                { value: '1:1', label: '1:1', icon: '■' },
-                { value: '21:9', label: '21:9', icon: '━' }
-              ].map((ratio) => {
-                const isActive = promptState.aspectRatio === ratio.value;
-                return (
-                  <button
-                    key={ratio.value}
-                    onClick={() => setPromptState(prev => ({ ...prev, aspectRatio: ratio.value }))}
-                    className={`
-                      flex items-center gap-2 px-4 py-2 rounded-lg border transition-all duration-200
-                      ${isActive 
-                        ? 'border-white/30 bg-white/10 text-white' 
-                        : 'border-white/10 bg-white/[0.02] text-white/50 hover:border-white/20'
-                      }
-                    `}
-                  >
-                    <span className="text-xs">{ratio.icon}</span>
-                    <span className="text-sm">{ratio.label}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
+        <CollapsibleSection 
+          title="Construction Bay" 
+          optional
+          isOpen={constructionBayOpen}
+          onToggle={() => setConstructionBayOpen(!constructionBayOpen)}
+        >
           {/* Category Tabs */}
           <div className="flex flex-wrap gap-px bg-white/5 border border-white/10 p-px mb-6">
             {Object.entries(arsenal).map(([key, category]) => {
@@ -1365,6 +1293,129 @@ const PromptArmory = () => {
             })}
           </div>
         </CollapsibleSection>
+
+        {/* ─────────────────────────────────────────────────────────────────────
+            4. TARGET OUTPUT (Collapsible) - moved BELOW Construction Bay
+        ───────────────────────────────────────────────────────────────────── */}
+        <CollapsibleSection 
+          title="Target Output" 
+          optional
+          isOpen={targetOutputOpen}
+          onToggle={() => setTargetOutputOpen(!targetOutputOpen)}
+        >
+          <div className="mb-4">
+            {/* Type Filter */}
+            <div className="flex items-center gap-1 bg-white/[0.02] rounded-lg p-1 border border-white/5 w-fit">
+              {['all', 'image', 'video'].map((filter) => (
+                <button
+                  key={filter}
+                  onClick={() => setPlatformFilter(filter)}
+                  className={`px-3 py-1.5 text-xs font-bold tracking-wider rounded-md transition-all duration-200 ${
+                    platformFilter === filter 
+                      ? 'bg-white/10 text-white' 
+                      : 'text-white/40 hover:text-white/60'
+                  }`}
+                >
+                  {filter.toUpperCase()}
+                </button>
+              ))}
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-px bg-white/5 border border-white/10 p-px">
+            {getFilteredPlatforms().map((platform) => {
+              const isActive = targetMode === platform.id;
+              return (
+                <button
+                  key={platform.id}
+                  onClick={() => handlePlatformChange(platform.id)}
+                  className={`
+                    relative group p-4 transition-all duration-300 overflow-hidden
+                    ${isActive 
+                      ? 'bg-white/10' 
+                      : 'bg-black/40 hover:bg-white/5'
+                    }
+                  `}
+                >
+                  {isActive && (
+                    <div 
+                      className="absolute inset-0 opacity-10"
+                      style={{
+                        background: `radial-gradient(circle at center, ${platform.color} 0%, transparent 100%)`
+                      }}
+                    />
+                  )}
+                  
+                  {/* Active Indicator Bar */}
+                  <div 
+                    className={`absolute top-0 left-0 w-full h-[2px] transition-all duration-300 ${isActive ? 'opacity-100 shadow-[0_0_10px_currentColor]' : 'opacity-0'}`}
+                    style={{ backgroundColor: platform.color }}
+                  />
+
+                  <div className="relative z-10 flex flex-col items-center gap-2 text-center">
+                    {/* Info Icon for Platform */}
+                    <div 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setInfoModal(platform.id);
+                      }}
+                      className="absolute top-2 right-2 text-xs text-white/50 hover:text-amber-400 cursor-pointer transition-colors duration-200"
+                      title="Learn more about this model"
+                    >
+                      ⓘ
+                    </div>
+
+                    <span 
+                      className="text-2xl transition-transform duration-300 group-hover:scale-110"
+                      style={{ color: isActive ? platform.color : 'rgba(255,255,255,0.3)' }}
+                    >
+                      {platform.icon}
+                    </span>
+                    <div className={`text-sm font-mono font-bold tracking-widest uppercase leading-tight ${isActive ? 'text-white' : 'text-white/40'}`}>
+                      {platform.name}
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </CollapsibleSection>
+
+        {/* ─────────────────────────────────────────────────────────────────────
+            5. ASPECT RATIO (Static) - moved BELOW Target Output
+        ───────────────────────────────────────────────────────────────────── */}
+        <section className="mb-8 mt-8">
+          <div className="flex items-center gap-3 mb-4">
+            <span className="text-xs font-bold tracking-[0.2em] text-white/70 uppercase">Aspect Ratio</span>
+            <div className="flex-1 h-px bg-gradient-to-r from-white/20 to-transparent" />
+          </div>
+          <div className="flex gap-3">
+            {[
+              { value: '16:9', label: '16:9', icon: '▬' },
+              { value: '9:16', label: '9:16', icon: '▮' },
+              { value: '1:1', label: '1:1', icon: '■' },
+              { value: '21:9', label: '21:9', icon: '━' }
+            ].map((ratio) => {
+              const isActive = promptState.aspectRatio === ratio.value;
+              return (
+                <button
+                  key={ratio.value}
+                  onClick={() => setPromptState(prev => ({ ...prev, aspectRatio: ratio.value }))}
+                  className={`
+                    flex items-center gap-2 px-4 py-2 rounded-lg border transition-all duration-200
+                    ${isActive 
+                      ? 'border-white/30 bg-white/10 text-white' 
+                      : 'border-white/10 bg-white/[0.02] text-white/50 hover:border-white/20'
+                    }
+                  `}
+                >
+                  <span className="text-xs">{ratio.icon}</span>
+                  <span className="text-sm">{ratio.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </section>
         {/* ... (Output Display, Action Buttons, Footer, Info Modal sections remain the same or similar) ... */}
         {/* ─────────────────────────────────────────────────────────────────────
             OUTPUT DISPLAY
