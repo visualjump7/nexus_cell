@@ -444,7 +444,11 @@ const EmailArmory = () => {
         {/* ─────────────────────────────────────────────────────────────────────
             1. VOICE SIGNATURE PRESETS (Always Visible)
         ───────────────────────────────────────────────────────────────────── */}
-        <section className="mb-12">
+        <CollapsibleSection 
+          title="Select a Preset" 
+          optional
+          forceOpen
+        >
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
             {voicePresets.map((preset) => {
               const isActive = emailState.voice.preset === preset.id;
@@ -484,7 +488,7 @@ const EmailArmory = () => {
               );
             })}
           </div>
-        </section>
+        </CollapsibleSection>
 
         {/* ─────────────────────────────────────────────────────────────────────
             2. YOUR CONTENT (Input) - Always Visible
