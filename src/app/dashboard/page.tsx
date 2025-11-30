@@ -79,6 +79,8 @@ const PromptArmory = () => {
   const [activePreset, setActivePreset] = useState<string | null>(null);
   const [platformFilter, setPlatformFilter] = useState('all');
   const [infoModal, setInfoModal] = useState<string | null>(null);
+  const [isSubjectEmpty, setIsSubjectEmpty] = useState(true);
+  const [presetBorderColor, setPresetBorderColor] = useState('#ffffff'); // Default white for border glow
   const { viewMode, setViewMode } = useViewMode();
   
   // Collapsible section states - controlled by viewMode
@@ -981,6 +983,7 @@ const PromptArmory = () => {
   
   const handlePresetSelect = (preset: Preset) => {
     setActivePreset(preset.id);
+    setPresetBorderColor(preset.color); // Update border glow color
     setPromptState(prev => ({
       ...prev,
       ...preset.config
@@ -1102,6 +1105,11 @@ const PromptArmory = () => {
             <DashboardHeaderControls currentApp="visual" />
           </div>
           
+          {/* FOCUS/ADVANCED Mode Toggle */}
+          <div className="flex justify-center mt-6 mb-4">
+            <SystemStateToggle viewMode={viewMode} setViewMode={setViewMode} />
+          </div>
+          
           {/* Secondary Controls Row */}
           <div className="flex items-center justify-between mt-4">
             <div className="flex items-center gap-3">
@@ -1110,11 +1118,6 @@ const PromptArmory = () => {
             </div>
           </div>
         </header>
-
-        {/* FOCUS/ADVANCED Mode Toggle */}
-        <div className="mb-8 flex justify-center">
-          <SystemStateToggle viewMode={viewMode} setViewMode={setViewMode} />
-        </div>
 
         {/* ─────────────────────────────────────────────────────────────────────
             1. SELECT A PRESET (Optional) - Top
@@ -1174,15 +1177,74 @@ const PromptArmory = () => {
             <span className="text-xs font-bold tracking-[0.2em] text-white/70 uppercase">Your Subject</span>
             <div className="flex-1 h-px bg-gradient-to-r from-white/20 to-transparent" />
           </div>
+          
           <div className="relative group">
+            {/* Animated Border Sweep Layer */}
+            <div className="absolute inset-0 rounded overflow-hidden pointer-events-none">
+              <motion.div
+                className="absolute inset-[-2px]"
+                style={{
+                  background: `conic-gradient(
+                    from 0deg,
+                    transparent 0%,
+                    transparent 70%,
+                    ${presetBorderColor}66 85%,
+                    transparent 100%
+                  )`,
+                  maskImage: `linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)`,
+                  maskComposite: 'exclude',
+                  padding: '2px'
+                }}
+                animate={{ rotate: 360 }}
+                transition={{
+                  duration: 5,
+                  repeat: Infinity,
+                  ease: "linear"
+                }}
+              />
+            </div>
+
+            {/* Pulsing Glow Effect - BORDER ONLY, NOT INTERIOR */}
+            {isSubjectEmpty && (
+              <motion.div
+                className="absolute inset-0 rounded pointer-events-none"
+                style={{
+                  background: 'transparent',
+                  boxShadow: `0 0 20px ${presetBorderColor}80, 0 0 40px ${presetBorderColor}40`
+                }}
+                animate={{
+                  boxShadow: [
+                    `0 0 15px ${presetBorderColor}60, 0 0 30px ${presetBorderColor}30`,
+                    `0 0 25px ${presetBorderColor}90, 0 0 50px ${presetBorderColor}50`,
+                    `0 0 15px ${presetBorderColor}60, 0 0 30px ${presetBorderColor}30`
+                  ]
+                }}
+                transition={{
+                  duration: 2.5,
+                  repeat: Infinity,
+                  ease: "easeInOut"
+                }}
+              />
+            )}
+
+            {/* Main Input with Dynamic Border */}
             <input
               type="text"
               value={promptState.subject}
-              onChange={(e) => setPromptState(prev => ({ ...prev, subject: e.target.value }))}
+              onChange={(e) => {
+                const newValue = e.target.value;
+                setIsSubjectEmpty(newValue.length === 0);
+                setPromptState(prev => ({ ...prev, subject: newValue }));
+              }}
               placeholder="Describe your subject... (e.g., 'a lone samurai standing in rainfall')"
-              className="w-full bg-black/80 border border-white/10 px-6 py-5 text-lg font-light text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-white/50 transition-all duration-300 shadow-lg"
+              className="relative z-10 w-full bg-black/80 border-2 transition-all duration-500 ease-out px-6 py-5 text-lg font-light text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-white/50 shadow-lg"
+              style={{ 
+                borderColor: isSubjectEmpty 
+                  ? `${presetBorderColor}80`  // Bright when empty (50% opacity)
+                  : `${presetBorderColor}40`  // Dim when has content (25% opacity)
+              }}
             />
-            <div className={`absolute right-4 top-1/2 -translate-y-1/2 text-xs font-mono transition-colors duration-300 ${promptState.subject.length > 0 ? 'text-white/70' : 'text-white/30'}`}>
+            <div className={`absolute right-4 top-1/2 -translate-y-1/2 text-xs font-mono transition-colors duration-300 z-20 ${promptState.subject.length > 0 ? 'text-white/70' : 'text-white/30'}`}>
               {promptState.subject.length > 0 && `${promptState.subject.length} CHARS`}
             </div>
           </div>

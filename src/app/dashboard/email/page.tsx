@@ -418,10 +418,10 @@ const EmailArmory = () => {
               {/* Title & Version */}
               <div>
                 <h1 className="text-3xl font-light tracking-tight text-white">
-                  EMAIL <span className="font-bold text-amber-500">ARMORY</span>
+                  PROMPT <span className="font-bold text-amber-500">ARMORY</span>
                 </h1>
                 <p className="text-amber-500/40 text-[10px] font-mono tracking-widest uppercase">
-                  v1.0 • Anti-LLM Drift System
+                  Email Module • V1.0
                 </p>
               </div>
               
@@ -429,6 +429,11 @@ const EmailArmory = () => {
             
             {/* RIGHT SIDE: Navigation Stack */}
             <DashboardHeaderControls currentApp="text" />
+          </div>
+          
+          {/* FOCUS/ADVANCED Mode Toggle */}
+          <div className="flex justify-center mt-6 mb-4">
+            <SystemStateToggle viewMode={viewMode} setViewMode={setViewMode} />
           </div>
           
           {/* Secondary Status Row */}
@@ -439,11 +444,6 @@ const EmailArmory = () => {
             </div>
           </div>
         </header>
-
-        {/* FOCUS/ADVANCED Mode Toggle */}
-        <div className="mb-8 flex justify-center">
-          <SystemStateToggle viewMode={viewMode} setViewMode={setViewMode} />
-        </div>
 
         {/* ─────────────────────────────────────────────────────────────────────
             1. VOICE SIGNATURE PRESETS (Always Visible)
