@@ -289,14 +289,12 @@ const EmailArmory = () => {
   const handlePresetSelect = (presetId: VoicePresetId) => {
     const preset = voicePresets.find(p => p.id === presetId);
     if (preset) {
-      setActiveTheme(preset.accentHex);
+      setActiveTheme(preset.color);
       setEmailState(prev => ({
         ...prev,
         voice: {
           ...prev.voice,
-          preset: presetId,
-          warmth: preset.defaultWarmth,
-          professionalism: preset.defaultProf
+          preset: presetId
         }
       }));
     }
