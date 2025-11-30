@@ -121,6 +121,8 @@ const EmailArmory = () => {
   const [copied, setCopied] = useState(false);
   const [activeTheme, setActiveTheme] = useState('#94a3b8'); // Default to Universal slate
   const [commControlsOpen, setCommControlsOpen] = useState(true); // Communication Controls toggle
+  const [presetBorderColor, setPresetBorderColor] = useState('#f59e0b'); // Default amber for textarea border
+  const [isContentEmpty, setIsContentEmpty] = useState(true);
   
   // Master State Object
   const [emailState, setEmailState] = useState<EmailState>({
@@ -291,6 +293,7 @@ const EmailArmory = () => {
     const preset = voicePresets.find(p => p.id === presetId);
     if (preset) {
       setActiveTheme(preset.color);
+      setPresetBorderColor(preset.color); // Update border color to match selected preset
       setEmailState(prev => ({
         ...prev,
         voice: {
@@ -509,9 +512,12 @@ const EmailArmory = () => {
                     from 0deg,
                     transparent 0%,
                     transparent 70%,
-                    rgba(245,158,11,0.4) 85%,
-                    rgba(245,158,11,0) 100%
-                  )`
+                    ${presetBorderColor}66 85%,  // Dynamic color for sweep
+                    transparent 100%
+                  )`,
+                  maskImage: `linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)`,
+                  maskComposite: 'exclude',
+                  padding: '2px'
                 }}
                 animate={{ rotate: 360 }}
                 transition={{
@@ -522,16 +528,50 @@ const EmailArmory = () => {
               />
             </div>
 
+            {/* Pulsing Glow Effect - BORDER ONLY, NOT INTERIOR */}
+            {isContentEmpty && (
+              <motion.div
+                className="absolute inset-0 rounded pointer-events-none"
+                style={{
+                  // Box-shadow creates glow OUTSIDE the border only
+                  // No background, no interior fill
+                  background: 'transparent',
+                  boxShadow: `0 0 20px ${presetBorderColor}80, 0 0 40px ${presetBorderColor}40`
+                }}
+                animate={{
+                  boxShadow: [
+                    `0 0 15px ${presetBorderColor}60, 0 0 30px ${presetBorderColor}30`,
+                    `0 0 25px ${presetBorderColor}90, 0 0 50px ${presetBorderColor}50`,
+                    `0 0 15px ${presetBorderColor}60, 0 0 30px ${presetBorderColor}30`
+                  ]
+                }}
+                transition={{
+                  duration: 2.5,
+                  repeat: Infinity,
+                  ease: "easeInOut"
+                }}
+              />
+            )}
+
             {/* Main Textarea with Thicker Border */}
             <textarea
               value={emailState.intent.rawInput}
-              onChange={(e) => setEmailState(prev => ({ 
-                ...prev, 
-                intent: { ...prev.intent, rawInput: e.target.value } 
-              }))}
+              onChange={(e) => {
+                const newValue = e.target.value;
+                setIsContentEmpty(newValue.length === 0);
+                setEmailState(prev => ({ 
+                  ...prev, 
+                  intent: { ...prev.intent, rawInput: newValue } 
+                }));
+              }}
               placeholder="Paste your messy draft, bullet points, or rough notes here..."
               rows={6}
-              className="relative z-10 w-full bg-black/80 border-2 border-white/10 px-6 py-5 text-lg font-light text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition-all duration-300 shadow-lg resize-none font-mono"
+              className="relative z-10 w-full bg-black/80 border-2 transition-all duration-500 ease-out px-6 py-5 text-lg font-light text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-amber-500/50 shadow-lg resize-none font-mono"
+              style={{ 
+                borderColor: isContentEmpty 
+                  ? `${presetBorderColor}80`  // Bright when empty (50% opacity)
+                  : `${presetBorderColor}40`  // Dim when has content (25% opacity)
+              }}
             />
             <div className={`absolute right-4 top-4 text-xs font-mono transition-colors duration-300 z-20 ${emailState.intent.rawInput.length > 0 ? 'text-white/70' : 'text-white/30'}`}>
               {emailState.intent.rawInput.length > 0 && `${emailState.intent.rawInput.length} CHARS`}
