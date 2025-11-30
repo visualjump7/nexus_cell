@@ -11,7 +11,7 @@ interface SystemStateToggleProps {
 
 export function SystemStateToggle({ viewMode, setViewMode }: SystemStateToggleProps) {
   return (
-    <div className="relative flex items-center bg-black/50 backdrop-blur-md border border-white/10 rounded-full p-1 h-9 w-[200px] cursor-pointer"
+    <div className="relative flex items-center bg-black/50 backdrop-blur-md border border-white/10 rounded-full p-1 h-11 sm:h-9 w-[240px] sm:w-[200px] cursor-pointer"
          onClick={() => setViewMode(viewMode === 'focus' ? 'advanced' : 'focus')}>
       
       {/* Sliding Background */}
@@ -37,7 +37,7 @@ export function SystemStateToggle({ viewMode, setViewMode }: SystemStateTogglePr
         >
           <Target className="w-3.5 h-3.5" />
         </motion.div>
-        <span className="text-[10px] font-bold tracking-wider">FOCUS</span>
+        <span className="text-[11px] sm:text-[10px] font-bold tracking-wider">FOCUS</span>
       </div>
 
       {/* Advanced Option */}
@@ -48,7 +48,7 @@ export function SystemStateToggle({ viewMode, setViewMode }: SystemStateTogglePr
         >
           <Cpu className="w-3.5 h-3.5" />
         </motion.div>
-        <span className="text-[10px] font-bold tracking-wider">ADVANCED</span>
+        <span className="text-[11px] sm:text-[10px] font-bold tracking-wider">ADVANCED</span>
       </div>
     </div>
   );

@@ -1073,28 +1073,28 @@ const PromptArmory = () => {
       {/* ═══════════════════════════════════════════════════════════════════════
           MAIN CONTENT
       ═══════════════════════════════════════════════════════════════════════ */}
-      <div className="relative z-10 max-w-7xl mx-auto px-6 py-8">
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 md:py-8">
         
         {/* ─────────────────────────────────────────────────────────────────────
             HEADER
         ───────────────────────────────────────────────────────────────────── */}
         <header className="mb-12 relative">
-          <div className="flex items-center justify-between border-b border-white/10 pb-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b border-white/10 pb-4 sm:pb-6 gap-4">
             {/* LEFT SIDE: Identity & System State */}
-            <div className="flex items-center gap-6">
+            <div className="flex items-center gap-3 sm:gap-6">
               {/* App Logo */}
               <div className="flex items-center gap-2">
-                <div className="w-10 h-10 border border-white/20 flex items-center justify-center bg-white/5">
-                  <span className="text-xl font-bold text-white">◇</span>
+                <div className="w-8 h-8 sm:w-10 sm:h-10 border border-white/20 flex items-center justify-center bg-white/5">
+                  <span className="text-lg sm:text-xl font-bold text-white">◇</span>
                 </div>
               </div>
               
               {/* Title & Version */}
               <div>
-                <h1 className="text-3xl font-light tracking-tight text-white">
+                <h1 className="text-xl sm:text-2xl md:text-3xl font-light tracking-tight text-white">
                   PROMPT <span className="font-bold text-cyan-500">ARMORY</span>
                 </h1>
-                <p className="text-white/40 text-[10px] font-mono tracking-widest uppercase">
+                <p className="text-white/40 text-[9px] sm:text-[10px] font-mono tracking-widest uppercase">
                   V3.0 • {getActiveSelectionsCount()} Active Selections
                 </p>
               </div>
@@ -1106,15 +1106,15 @@ const PromptArmory = () => {
           </div>
           
           {/* Status and Toggle Row */}
-          <div className="flex items-center justify-between mt-6 mb-6">
+          <div className="flex flex-col sm:flex-row items-center justify-between mt-4 sm:mt-6 mb-4 sm:mb-6 gap-3 sm:gap-0">
             {/* Left: Status Indicator */}
             <div className="flex items-center gap-3">
               <span className="text-[10px] font-mono tracking-[0.3em] text-white/40 uppercase">System Online</span>
-              <div className="h-px w-12 bg-white/20" />
+              <div className="hidden sm:block h-px w-12 bg-white/20" />
             </div>
             
             {/* Right: FOCUS/ADVANCED Toggle */}
-            <div>
+            <div className="w-full sm:w-auto flex justify-center">
               <SystemStateToggle viewMode={viewMode} setViewMode={setViewMode} />
             </div>
           </div>
@@ -1130,7 +1130,7 @@ const PromptArmory = () => {
           onToggle={() => setPresetsOpen(!presetsOpen)}
         >
           <div className="p-6 rounded-xl border border-white/10 bg-white/[0.02]">
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3 sm:gap-4">
               {presets.map((preset) => (
                 <button
                   key={preset.id}
@@ -1238,13 +1238,14 @@ const PromptArmory = () => {
                 setPromptState(prev => ({ ...prev, subject: newValue }));
               }}
               placeholder="Describe your subject... (e.g., 'a lone samurai standing in rainfall')"
-              className="relative z-10 w-full bg-black/80 border-2 transition-all duration-500 ease-out px-6 py-5 text-lg font-light text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-white/50 shadow-lg resize-none overflow-y-auto"
+              className="relative z-10 w-full bg-black/80 border-2 transition-all duration-500 ease-out px-6 py-5 text-base sm:text-lg font-light text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-white/50 shadow-lg resize-none overflow-y-auto"
               style={{ 
                 borderColor: isSubjectEmpty 
                   ? `${presetBorderColor}80`  // Bright when empty (50% opacity)
                   : `${presetBorderColor}40`,  // Dim when has content (25% opacity)
                 minHeight: '120px',
-                maxHeight: '120px'
+                maxHeight: '120px',
+                fontSize: '16px' // Prevent iOS zoom
               }}
             />
             <div className={`absolute right-4 top-4 text-xs font-mono transition-colors duration-300 z-20 ${promptState.subject.length > 0 ? 'text-white/70' : 'text-white/30'}`}>
