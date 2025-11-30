@@ -500,6 +500,29 @@ const EmailArmory = () => {
           </div>
           
           <div className="relative group">
+            {/* Animated Border Sweep Layer */}
+            <div className="absolute inset-0 rounded overflow-hidden pointer-events-none">
+              <motion.div
+                className="absolute inset-[-2px]"
+                style={{
+                  background: `conic-gradient(
+                    from 0deg,
+                    transparent 0%,
+                    transparent 70%,
+                    rgba(245,158,11,0.4) 85%,
+                    rgba(245,158,11,0) 100%
+                  )`
+                }}
+                animate={{ rotate: 360 }}
+                transition={{
+                  duration: 5,
+                  repeat: Infinity,
+                  ease: "linear"
+                }}
+              />
+            </div>
+
+            {/* Main Textarea with Thicker Border */}
             <textarea
               value={emailState.intent.rawInput}
               onChange={(e) => setEmailState(prev => ({ 
@@ -508,14 +531,14 @@ const EmailArmory = () => {
               }))}
               placeholder="Paste your messy draft, bullet points, or rough notes here..."
               rows={6}
-              className="w-full bg-black/80 border border-white/10 px-6 py-5 text-lg font-light text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition-all duration-300 shadow-lg resize-none font-mono"
+              className="relative z-10 w-full bg-black/80 border-2 border-white/10 px-6 py-5 text-lg font-light text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition-all duration-300 shadow-lg resize-none font-mono"
             />
-            <div className={`absolute right-4 top-4 text-xs font-mono transition-colors duration-300 ${emailState.intent.rawInput.length > 0 ? 'text-white/70' : 'text-white/30'}`}>
+            <div className={`absolute right-4 top-4 text-xs font-mono transition-colors duration-300 z-20 ${emailState.intent.rawInput.length > 0 ? 'text-white/70' : 'text-white/30'}`}>
               {emailState.intent.rawInput.length > 0 && `${emailState.intent.rawInput.length} CHARS`}
             </div>
             
             {/* Goal Input (Optional overlay) */}
-            <div className="absolute bottom-4 left-4 right-4">
+            <div className="absolute bottom-4 left-4 right-4 z-20">
               <input
                 type="text"
                 value={emailState.intent.goal}
