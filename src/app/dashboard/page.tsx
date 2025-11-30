@@ -1096,10 +1096,6 @@ const PromptArmory = () => {
                 </p>
               </div>
               
-              {/* Focus/Advanced Toggle */}
-              <div className="ml-4">
-                <SystemStateToggle viewMode={viewMode} setViewMode={setViewMode} />
-              </div>
             </div>
             
             {/* RIGHT SIDE: Navigation Stack */}
@@ -1114,6 +1110,11 @@ const PromptArmory = () => {
             </div>
           </div>
         </header>
+
+        {/* FOCUS/ADVANCED Mode Toggle */}
+        <div className="mb-8 flex justify-center">
+          <SystemStateToggle viewMode={viewMode} setViewMode={setViewMode} />
+        </div>
 
         {/* ─────────────────────────────────────────────────────────────────────
             1. SELECT A PRESET (Optional) - Top
