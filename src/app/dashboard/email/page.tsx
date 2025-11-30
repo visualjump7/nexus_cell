@@ -431,16 +431,17 @@ const EmailArmory = () => {
             <DashboardHeaderControls currentApp="text" />
           </div>
           
-          {/* FOCUS/ADVANCED Mode Toggle */}
-          <div className="flex justify-center mt-6 mb-4">
-            <SystemStateToggle viewMode={viewMode} setViewMode={setViewMode} />
-          </div>
-          
-          {/* Secondary Status Row */}
-          <div className="flex items-center justify-between mt-4">
+          {/* Status and Toggle Row */}
+          <div className="flex items-center justify-between mt-6 mb-6">
+            {/* Left: Status Indicator */}
             <div className="flex items-center gap-3">
               <span className="text-[10px] font-mono tracking-[0.3em] text-amber-500/40 uppercase">Secure Connection</span>
               <div className="h-px w-12 bg-amber-500/20" />
+            </div>
+            
+            {/* Right: FOCUS/ADVANCED Toggle */}
+            <div>
+              <SystemStateToggle viewMode={viewMode} setViewMode={setViewMode} />
             </div>
           </div>
         </header>

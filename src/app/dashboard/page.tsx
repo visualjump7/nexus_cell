@@ -1092,7 +1092,7 @@ const PromptArmory = () => {
               {/* Title & Version */}
               <div>
                 <h1 className="text-3xl font-light tracking-tight text-white">
-                  PROMPT <span className="font-bold">ARMORY</span>
+                  PROMPT <span className="font-bold text-cyan-500">ARMORY</span>
                 </h1>
                 <p className="text-white/40 text-[10px] font-mono tracking-widest uppercase">
                   V3.0 • {getActiveSelectionsCount()} Active Selections
@@ -1105,16 +1105,17 @@ const PromptArmory = () => {
             <DashboardHeaderControls currentApp="visual" />
           </div>
           
-          {/* FOCUS/ADVANCED Mode Toggle */}
-          <div className="flex justify-center mt-6 mb-4">
-            <SystemStateToggle viewMode={viewMode} setViewMode={setViewMode} />
-          </div>
-          
-          {/* Secondary Controls Row */}
-          <div className="flex items-center justify-between mt-4">
+          {/* Status and Toggle Row */}
+          <div className="flex items-center justify-between mt-6 mb-6">
+            {/* Left: Status Indicator */}
             <div className="flex items-center gap-3">
               <span className="text-[10px] font-mono tracking-[0.3em] text-white/40 uppercase">System Online</span>
               <div className="h-px w-12 bg-white/20" />
+            </div>
+            
+            {/* Right: FOCUS/ADVANCED Toggle */}
+            <div>
+              <SystemStateToggle viewMode={viewMode} setViewMode={setViewMode} />
             </div>
           </div>
         </header>
@@ -1227,9 +1228,9 @@ const PromptArmory = () => {
               />
             )}
 
-            {/* Main Input with Dynamic Border */}
-            <input
-              type="text"
+            {/* Main Textarea with Dynamic Border */}
+            <textarea
+              rows={3}
               value={promptState.subject}
               onChange={(e) => {
                 const newValue = e.target.value;
@@ -1237,14 +1238,16 @@ const PromptArmory = () => {
                 setPromptState(prev => ({ ...prev, subject: newValue }));
               }}
               placeholder="Describe your subject... (e.g., 'a lone samurai standing in rainfall')"
-              className="relative z-10 w-full bg-black/80 border-2 transition-all duration-500 ease-out px-6 py-5 text-lg font-light text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-white/50 shadow-lg"
+              className="relative z-10 w-full bg-black/80 border-2 transition-all duration-500 ease-out px-6 py-5 text-lg font-light text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-white/50 shadow-lg resize-none overflow-y-auto"
               style={{ 
                 borderColor: isSubjectEmpty 
                   ? `${presetBorderColor}80`  // Bright when empty (50% opacity)
-                  : `${presetBorderColor}40`  // Dim when has content (25% opacity)
+                  : `${presetBorderColor}40`,  // Dim when has content (25% opacity)
+                minHeight: '120px',
+                maxHeight: '120px'
               }}
             />
-            <div className={`absolute right-4 top-1/2 -translate-y-1/2 text-xs font-mono transition-colors duration-300 z-20 ${promptState.subject.length > 0 ? 'text-white/70' : 'text-white/30'}`}>
+            <div className={`absolute right-4 top-4 text-xs font-mono transition-colors duration-300 z-20 ${promptState.subject.length > 0 ? 'text-white/70' : 'text-white/30'}`}>
               {promptState.subject.length > 0 && `${promptState.subject.length} CHARS`}
             </div>
           </div>
