@@ -22,6 +22,8 @@ export const VisualPromptInputSchema = z.object({
   style: z.string().optional().nullable(),
   camera: CameraConfigSchema.optional(),
   aspectRatio: AspectRatioSchema.optional().default('16:9'),
+  lensSettings: z.union([z.string(), z.any()]).optional().nullable(),
+  grainSettings: z.string().optional().nullable(),
   negativePrompt: z.string().optional(),
 });
 export type VisualPromptInput = z.infer<typeof VisualPromptInputSchema>;

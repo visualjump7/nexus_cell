@@ -6,6 +6,8 @@ import { SystemStateToggle } from '@/components/SystemStateToggle';
 import { DashboardHeaderControls } from '@/components/DashboardHeaderControls';
 import { CollapsibleSection } from '@/components/CollapsibleSection';
 import { useViewMode } from '@/hooks/useViewMode';
+
+
 import { motion } from 'framer-motion';
 import { 
   buildMidjourneyPrompt, 
@@ -16,6 +18,22 @@ import {
   VisualPromptInput, 
   VideoPromptInput 
 } from '@/lib/builders';
+
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// LENS & CAMERA CONSTANTS
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const STANDARD_FOCAL_LENGTHS = [
+  14, 16, 18, 20,           // Ultra-wide
+  21, 24, 28, 35,           // Wide angle
+  40, 50, 55,               // Standard
+  75, 85, 100, 105,         // Portrait
+  135, 150, 180, 200,       // Telephoto
+  300, 400, 600             // Super telephoto
+];
+
+const F_STOPS = [1.2, 1.4, 2.0, 2.8, 4.0, 5.6, 8.0, 11, 16, 22];
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // POLYMORPHIC PROMPT ARMORY — ULTIMATE EDITION
@@ -75,31 +93,59 @@ const PromptArmory = () => {
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [displayText, setDisplayText] = useState('');
   const [copied, setCopied] = useState(false);
-  const [activeCategory, setActiveCategory] = useState('camera');
   const [activePreset, setActivePreset] = useState<string | null>(null);
   const [platformFilter, setPlatformFilter] = useState('all');
   const [infoModal, setInfoModal] = useState<string | null>(null);
   const [isSubjectEmpty, setIsSubjectEmpty] = useState(true);
   const [presetBorderColor, setPresetBorderColor] = useState('#ffffff'); // Default white for border glow
+  
+  // Lens & Camera state
+  const [isLensSectionOpen, setIsLensSectionOpen] = useState(false);
+  const [focalLengthIndex, setFocalLengthIndex] = useState(10); // Default to 50mm (index 10)
+  const [specialtyLens, setSpecialtyLens] = useState<'none' | 'macro' | 'fisheye' | 'tilt-shift'>('none');
+  const [apertureIndex, setApertureIndex] = useState(5); // Default to f/5.6 (index 5)
+  const [lensEffects, setLensEffects] = useState<string[]>([]);
+  const [lensStyle, setLensStyle] = useState<string>('modern');
+  
+  // Camera Angles & Movement state
+  const [isCameraAnglesSectionOpen, setIsCameraAnglesSectionOpen] = useState(false);
+  const [selectedCameraAngle, setSelectedCameraAngle] = useState<string | null>(null);
+  const [isCameraMovementSectionOpen, setIsCameraMovementSectionOpen] = useState(false);
+  const [selectedCameraMovement, setSelectedCameraMovement] = useState<string | null>(null);
+  
+  // Film Grain & Texture state
+  const [grainAmount, setGrainAmount] = useState(0); // 0=none, 1=subtle, 2=medium, 3=heavy
+  const [grainType, setGrainType] = useState<'fine' | 'coarse' | 'digital' | null>(null);
+  
+  // Aspect Ratio category state
+  const [aspectCategory, setAspectCategory] = useState<'photo' | 'cinema'>('cinema');
+  
+  // Helper to get current values from indices
+  const currentFocalLength = STANDARD_FOCAL_LENGTHS[focalLengthIndex];
+  const currentAperture = F_STOPS[apertureIndex];
+  
   const { viewMode, setViewMode } = useViewMode();
   
   // Collapsible section states - controlled by viewMode
   const [presetsOpen, setPresetsOpen] = useState(true);
-  const [constructionBayOpen, setConstructionBayOpen] = useState(true);
   const [targetOutputOpen, setTargetOutputOpen] = useState(true);
   
   // Reset collapsible states when viewMode changes
   useEffect(() => {
     if (viewMode === 'focus') {
-      // Focus mode: collapse Construction Bay and Target Output
-      setConstructionBayOpen(false);
+      // Focus mode: collapse Target Output, Lens, and Camera sections
       setTargetOutputOpen(false);
       setPresetsOpen(true); // Presets stay open
+      setIsLensSectionOpen(false); // Lens section collapsed in focus mode
+      setIsCameraAnglesSectionOpen(false); // Camera Angles collapsed in focus mode
+      setIsCameraMovementSectionOpen(false); // Camera Movement collapsed in focus mode
     } else {
       // Advanced mode: expand all sections
       setPresetsOpen(true);
-      setConstructionBayOpen(true);
       setTargetOutputOpen(true);
+      setIsLensSectionOpen(true); // Lens section expanded in advanced mode
+      setIsCameraAnglesSectionOpen(true); // Camera Angles expanded in advanced mode
+      setIsCameraMovementSectionOpen(true); // Camera Movement expanded in advanced mode
     }
   }, [viewMode]);
   
@@ -436,7 +482,9 @@ const PromptArmory = () => {
   // ARSENAL CARDS DATA
   // ─────────────────────────────────────────────────────────────────────────────
   
-  const arsenal: Record<string, ArsenalCategory> = {
+  
+  // Camera angles and movement data (used by standalone sections above)
+  const cameraAnglesData = {
     camera: {
       label: 'Camera Angles',
       icon: '◇',
@@ -466,67 +514,29 @@ const PromptArmory = () => {
         { id: 'handheld', label: 'Handheld', value: 'Handheld', desc: 'Raw & visceral' },
         { id: 'steadicam', label: 'Steadicam', value: 'Steadicam Shot', desc: 'Floating stability' }
       ]
-    },
-    lens: {
-      label: 'Lens & Optics',
-      icon: '◉',
-      stateKey: 'lens',
-      cards: [
-        { id: '14mm', label: '14mm Ultra Wide', value: '14mm ultra-wide lens', desc: 'Extreme distortion' },
-        { id: '24mm', label: '24mm Wide', value: '24mm wide lens', desc: 'Environmental' },
-        { id: '35mm', label: '35mm', value: '35mm lens', desc: 'Cinematic standard' },
-        { id: '50mm', label: '50mm', value: '50mm lens', desc: 'Natural eye' },
-        { id: '85mm', label: '85mm Portrait', value: '85mm portrait lens', desc: 'Compression beauty' },
-        { id: '135mm', label: '135mm Telephoto', value: '135mm telephoto', desc: 'Isolated focus' },
-        { id: 'macro', label: 'Macro', value: 'Macro lens', desc: 'Extreme detail' },
-        { id: 'anamorphic', label: 'Anamorphic', value: 'Anamorphic lens', desc: 'Cinematic flares' }
-      ]
-    },
-    lighting: {
-      label: 'Lighting',
-      icon: '☀',
-      stateKey: 'lighting',
-      cards: [
-        { id: 'golden', label: 'Golden Hour', value: 'Golden hour lighting', desc: 'Warm magic' },
-        { id: 'blue', label: 'Blue Hour', value: 'Blue hour lighting', desc: 'Cool mystery' },
-        { id: 'neon', label: 'Neon Noir', value: 'Neon noir lighting', desc: 'Cyberpunk glow' },
-        { id: 'rim', label: 'Rim Light', value: 'Dramatic rim lighting', desc: 'Edge definition' },
-        { id: 'chiaroscuro', label: 'Chiaroscuro', value: 'Chiaroscuro lighting', desc: 'Renaissance drama' },
-        { id: 'volumetric', label: 'Volumetric', value: 'Volumetric god rays', desc: 'Ethereal beams' },
-        { id: 'practical', label: 'Practical', value: 'Practical lighting', desc: 'In-scene sources' },
-        { id: 'silhouette', label: 'Silhouette', value: 'Silhouette backlight', desc: 'Mystery shape' }
-      ]
-    },
-    style: {
-      label: 'Visual Style',
-      icon: '◈',
-      stateKey: 'style',
-      cards: [
-        { id: 'cinematic', label: 'Cinematic', value: 'Cinematic', desc: 'Film production' },
-        { id: 'hyperreal', label: 'Hyperrealistic', value: 'Hyperrealistic', desc: '8K photorealism' },
-        { id: 'noir', label: 'Film Noir', value: 'Film Noir style', desc: 'Shadow & mystery' },
-        { id: 'scifi', label: 'Sci-Fi Epic', value: 'Epic sci-fi', desc: 'Future worlds' },
-        { id: 'anime', label: 'Anime Cinematic', value: 'Anime cinematic', desc: 'Japanese animation' },
-        { id: 'fantasy', label: 'Dark Fantasy', value: 'Dark fantasy', desc: 'Gothic wonder' },
-        { id: 'documentary', label: 'Documentary', value: 'Documentary style', desc: 'Raw authenticity' },
-        { id: 'retro', label: 'Retro Film', value: 'Retro 70s film', desc: 'Vintage aesthetic' }
-      ]
-    },
-    filmStock: {
-      label: 'Film Stock',
-      icon: '▣',
-      stateKey: 'filmStock',
-      cards: [
-        { id: 'kodak5219', label: 'Kodak Vision3 500T', value: 'Kodak Vision3 500T', desc: 'Hollywood standard' },
-        { id: 'kodak5207', label: 'Kodak Vision3 250D', value: 'Kodak Vision3 250D', desc: 'Daylight master' },
-        { id: 'fuji', label: 'Fujifilm Eterna', value: 'Fujifilm Eterna', desc: 'Soft elegance' },
-        { id: 'portra', label: 'Kodak Portra 400', value: 'Kodak Portra 400', desc: 'Portrait beauty' },
-        { id: 'ektar', label: 'Kodak Ektar 100', value: 'Kodak Ektar 100', desc: 'Vivid saturation' },
-        { id: 'cinestill', label: 'CineStill 800T', value: 'CineStill 800T', desc: 'Neon halation' },
-        { id: 'ilford', label: 'Ilford HP5', value: 'Ilford HP5 B&W', desc: 'Classic monochrome' },
-        { id: 'trix', label: 'Kodak Tri-X', value: 'Kodak Tri-X 400', desc: 'Gritty contrast' }
-      ]
     }
+  };
+  
+  // Aspect ratio categories data
+  const aspectRatios = {
+    photo: [
+      { value: '1:1', label: 'Square', desc: 'Instagram, medium format' },
+      { value: '4:5', label: 'Portrait', desc: 'Mobile vertical, stories' },
+      { value: '3:2', label: 'Classic Photo', desc: '35mm photo standard' },
+      { value: '4:3', label: 'Standard', desc: 'Traditional photography' },
+      { value: '16:9', label: 'Panoramic', desc: 'Wide landscapes' }
+    ],
+    cinema: [
+      { value: '16:9', label: 'Widescreen', desc: 'Standard HD video' },
+      { value: '1.85:1', label: 'Academy Flat', desc: 'Standard cinema' },
+      { value: '2.39:1', label: 'Anamorphic', desc: 'Epic cinema scope' },
+      { value: '2.40:1', label: 'Scope', desc: 'Ultra widescreen' },
+      { value: '1.43:1', label: 'IMAX', desc: 'Tall immersive format' },
+      { value: '1.90:1', label: 'IMAX Digital', desc: 'Modern IMAX' },
+      { value: '1.66:1', label: 'Super 16mm', desc: 'Indie film aesthetic' },
+      { value: '2.76:1', label: 'Ultra Panavision', desc: 'Ultra-wide epic' },
+      { value: '1.37:1', label: 'Classic Academy', desc: 'Old Hollywood' }
+    ]
   };
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -798,6 +808,17 @@ const PromptArmory = () => {
     const subjectText = subject || '[Your Subject]';
     
     // Common Input Object
+    const lensPromptText = generateLensPrompt();
+    const grainPromptText = generateGrainPrompt();
+    
+    // Get selected angle and movement values
+    const selectedAngleValue = selectedCameraAngle 
+      ? cameraAnglesData.camera.cards.find(c => c.id === selectedCameraAngle)?.value 
+      : angle;
+    const selectedMovementValue = selectedCameraMovement 
+      ? cameraAnglesData.movement.cards.find(c => c.id === selectedCameraMovement)?.value 
+      : movement;
+    
     const visualInput: VisualPromptInput = {
       subject: subjectText,
       action: null, // Not currently captured in state
@@ -806,11 +827,13 @@ const PromptArmory = () => {
       filmStock,
       style,
       camera: {
-        angle,
-        movement,
+        angle: selectedAngleValue || null,
+        movement: selectedMovementValue || null,
         lens
       },
       aspectRatio: aspectRatio as any,
+      lensSettings: lensPromptText, // Generated lens prompt as string
+      grainSettings: grainPromptText, // Generated grain prompt as string
     };
 
     const videoInput: VideoPromptInput = {
@@ -972,14 +995,6 @@ const PromptArmory = () => {
   // HANDLERS
   // ─────────────────────────────────────────────────────────────────────────────
   
-  const handleCardSelect = (category: string, card: ArsenalCard) => {
-    const stateKey = arsenal[category].stateKey;
-    setPromptState(prev => ({
-      ...prev,
-      [stateKey]: prev[stateKey] === card.value ? null : card.value
-    }));
-    setActivePreset(null);
-  };
   
   const handlePresetSelect = (preset: Preset) => {
     setActivePreset(preset.id);
@@ -989,6 +1004,8 @@ const PromptArmory = () => {
       ...preset.config
     }));
   };
+
+
   
   const handlePlatformChange = (platformId: string) => {
     setTargetMode(platformId);
@@ -1015,10 +1032,6 @@ const PromptArmory = () => {
     });
   };
 
-  const isCardSelected = (category: string, cardValue: string) => {
-    const stateKey = arsenal[category].stateKey;
-    return promptState[stateKey] === cardValue;
-  };
 
   const getActiveSelectionsCount = () => {
     return Object.entries(promptState).filter(([k, v]) => v !== null && v !== '' && k !== 'aspectRatio').length;
@@ -1040,6 +1053,126 @@ const PromptArmory = () => {
   // RENDER
   // ─────────────────────────────────────────────────────────────────────────────
   
+  // ─────────────────────────────────────────────────────────────────────────────
+  // LENS & CAMERA HELPER FUNCTIONS
+  // ─────────────────────────────────────────────────────────────────────────────
+  
+  function getFocalLengthDescription(mm: number): string {
+    if (mm < 21) return "Ultra-wide perspective. Expansive, dramatic, exaggerated depth. Slight distortion at edges.";
+    if (mm < 40) return "Wide angle. Environmental context, natural perspective, subtle distortion.";
+    if (mm < 70) return "Standard focal length. Natural 'human eye' perspective. Versatile for most scenes.";
+    if (mm < 135) return "Portrait range. Flattering compression, background separation, shallow depth of field.";
+    return "Telephoto. Extreme compression, isolates subject, magnifies distant details.";
+  }
+
+  function getApertureDescription(fStop: number): string {
+    if (fStop <= 1.4) return "Ultra-shallow depth of field. Subject sharp, everything else beautifully blurred. Professional portrait look.";
+    if (fStop <= 2.8) return "Shallow depth of field. Good subject separation with soft background blur. Cinematic look.";
+    if (fStop <= 5.6) return "Moderate depth of field. Subject and some context sharp. Balanced, versatile.";
+    if (fStop <= 11) return "Deep depth of field. Most of scene in focus. Good for landscapes and group shots.";
+    return "Maximum depth of field. Everything sharp from foreground to background. Landscape/architecture.";
+  }
+
+  function toggleLensEffect(effect: string) {
+    setLensEffects(prev => 
+      prev.includes(effect) 
+        ? prev.filter(e => e !== effect)
+        : [...prev, effect]
+    );
+  }
+
+  function toggleSpecialtyLens(lens: 'macro' | 'fisheye' | 'tilt-shift') {
+    setSpecialtyLens(prev => prev === lens ? 'none' : lens);
+  }
+
+  function generateLensPrompt(): string {
+    const parts: string[] = [];
+    
+    // 1. FOCAL LENGTH OR SPECIALTY
+    if (specialtyLens !== 'none') {
+      switch (specialtyLens) {
+        case 'macro':
+          parts.push('macro photography lens, extreme close-up, magnified details');
+          break;
+        case 'fisheye':
+          parts.push('fisheye lens, 180 degree field of view, spherical distortion');
+          break;
+        case 'tilt-shift':
+          parts.push('tilt-shift lens, selective focus plane, miniature effect');
+          break;
+      }
+    } else {
+      parts.push(`${currentFocalLength}mm lens`);
+      if (currentFocalLength < 21) parts.push('ultra-wide angle, expansive perspective');
+      else if (currentFocalLength < 40) parts.push('wide angle');
+      else if (currentFocalLength < 70) parts.push('standard focal length');
+      else if (currentFocalLength < 135) parts.push('portrait lens, flattering compression');
+      else parts.push('telephoto lens, compressed perspective');
+    }
+    
+    // 2. APERTURE (DEPTH OF FIELD)
+    if (currentAperture <= 2.0) {
+      parts.push(`f/${currentAperture}, extremely shallow depth of field, beautiful bokeh`);
+    } else if (currentAperture <= 4.0) {
+      parts.push(`f/${currentAperture}, shallow depth of field, background blur`);
+    } else if (currentAperture <= 8.0) {
+      parts.push(`f/${currentAperture}, moderate depth of field`);
+    } else {
+      parts.push(`f/${currentAperture}, deep focus, everything sharp`);
+    }
+    
+    // 3. LENS EFFECTS
+    const effectMap: { [key: string]: string } = {
+      'lens-flare': 'cinematic lens flare',
+      'bokeh': 'bokeh highlights',
+      'vignette': 'natural vignette',
+      'chromatic': 'subtle chromatic aberration',
+      'light-leaks': 'film light leaks',
+      'soft-glow': 'soft glow halation',
+      'anamorphic-flare': 'anamorphic horizontal flare',
+      'distortion': 'barrel distortion'
+    };
+    
+    lensEffects.forEach(effect => {
+      if (effectMap[effect]) {
+        parts.push(effectMap[effect]);
+      }
+    });
+    
+    // 4. STYLE
+    const styleMap: { [key: string]: string } = {
+      'modern': 'sharp modern optics, high contrast, clinical precision',
+      'vintage': 'vintage cinema lens, warm tones, classic film aesthetic',
+      'soft': 'soft focus dreamy look, diffused glow, ethereal',
+      'high-contrast': 'high contrast dramatic lighting, deep blacks',
+      'film-stock': 'film grain, analog film stock look, organic color shifts'
+    };
+    
+    if (styleMap[lensStyle]) {
+      parts.push(styleMap[lensStyle]);
+    }
+    
+    return parts.join(', ');
+  }
+
+  function generateGrainPrompt(): string {
+    if (grainAmount === 0) return '';
+    
+    const grainLevels = ['', 'subtle film grain', 'medium film grain', 'heavy film grain, gritty texture'];
+    const grainTypes = {
+      fine: 'fine grain texture, 35mm film quality',
+      coarse: 'coarse grain, 16mm aesthetic, high ISO look',
+      digital: 'digital noise, high ISO sensor artifact'
+    };
+    
+    const parts = [grainLevels[grainAmount]];
+    if (grainType && grainAmount > 0) {
+      parts.push(grainTypes[grainType]);
+    }
+    
+    return parts.filter(Boolean).join(', ');
+  }
+
   return (
     <div className="min-h-screen bg-black text-white overflow-hidden relative selection:bg-white/20">
       {/* ═══════════════════════════════════════════════════════════════════════
@@ -1170,6 +1303,7 @@ const PromptArmory = () => {
           </div>
         </CollapsibleSection>
 
+
         {/* ─────────────────────────────────────────────────────────────────────
             2. YOUR SUBJECT (Static) - Middle
         ───────────────────────────────────────────────────────────────────── */}
@@ -1254,112 +1388,429 @@ const PromptArmory = () => {
           </div>
         </section>
 
+
         {/* ─────────────────────────────────────────────────────────────────────
-            3. CONSTRUCTION BAY (Collapsible) - moved ABOVE Target Output
+            LENS & CAMERA CONTROLS (OPTIONAL)
         ───────────────────────────────────────────────────────────────────── */}
-        <CollapsibleSection 
-          title="Construction Bay" 
-          optional
-          isOpen={constructionBayOpen}
-          onToggle={() => setConstructionBayOpen(!constructionBayOpen)}
-        >
-          {/* Category Tabs */}
-          <div className="flex flex-wrap gap-px bg-white/5 border border-white/10 p-px mb-6">
-            {Object.entries(arsenal).map(([key, category]) => {
-              const isActive = activeCategory === key;
-              const hasSelection = promptState[category.stateKey] !== null;
-              
-              return (
-                <button
-                  key={key}
-                  onClick={() => setActiveCategory(key)}
-                  className={`
-                    flex-1 flex items-center justify-center gap-2 px-4 py-3 text-xs uppercase tracking-wider font-mono transition-all duration-200
-                    ${isActive 
-                      ? 'bg-white/10 text-white shadow-[inset_0_0_20px_rgba(255,255,255,0.05)]' 
-                      : 'bg-black/40 text-white/40 hover:text-white/70 hover:bg-white/5'
-                    }
-                  `}
-                >
-                  <span className="opacity-60">{category.icon}</span>
-                  <span>{category.label}</span>
-                  {hasSelection && (
-                    <div 
-                      className="w-1 h-1 rounded-full shadow-[0_0_5px_currentColor]"
-                      style={{ backgroundColor: currentPlatform.color }}
-                    />
-                  )}
-                </button>
-              );
-            })}
+        <div className="mb-8">
+          <div 
+            className="flex items-center justify-between mb-4 cursor-pointer hover:opacity-80 transition-opacity"
+            onClick={() => setIsLensSectionOpen(!isLensSectionOpen)}
+          >
+            <div className="flex items-center gap-3">
+              <span className="text-xs font-bold tracking-[0.2em] text-white/70 uppercase">Lens & Camera (Optional)</span>
+              <div className="flex-1 h-px bg-gradient-to-r from-white/20 to-transparent" />
+            </div>
+            <button className="text-2xl text-white/40 hover:text-white/70 ml-4">
+              {isLensSectionOpen ? '−' : '+'}
+            </button>
           </div>
-          
-          {/* Cards Grid */}
-          <div className="grid grid-cols-4 gap-3">
-            {arsenal[activeCategory].cards.map((card) => {
-              const isSelected = isCardSelected(activeCategory, card.value);
+
+          {isLensSectionOpen && (
+            <div className="space-y-8 p-6 rounded-xl border border-white/10 bg-white/[0.02]">
               
-              return (
+              {/* 1. FOCAL LENGTH SLIDER */}
+              <div className="space-y-4">
+                <div className="flex justify-between items-center mb-2">
+                  <h3 className="text-xs font-bold tracking-[0.2em] text-white/70 uppercase">Focal Length</h3>
+                  <span className="text-2xl font-bold text-cyan-400">{currentFocalLength}mm</span>
+                </div>
+                
+                <input
+                  type="range"
+                  min="0"
+                  max={STANDARD_FOCAL_LENGTHS.length - 1}
+                  step="1"
+                  value={focalLengthIndex}
+                  onChange={(e) => setFocalLengthIndex(parseInt(e.target.value))}
+                  disabled={specialtyLens !== 'none'}
+                  className="w-full h-4 sm:h-3 bg-gray-700 rounded-lg appearance-none cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                  style={{
+                    accentColor: '#06b6d4'
+                  }}
+                />
+                
+                <div className="flex justify-between text-[10px] text-white/40 mt-2 font-mono uppercase tracking-wider">
+                  <span className="text-center">Ultra-Wide<br/>14-20mm</span>
+                  <span className="text-center">Wide<br/>21-35mm</span>
+                  <span className="text-center">Standard<br/>40-60mm</span>
+                  <span className="text-center">Portrait<br/>70-135mm</span>
+                  <span className="text-center">Telephoto<br/>135-600mm</span>
+                </div>
+                
+                <p className="text-sm text-white/60 mt-2 p-3 bg-white/[0.02] rounded border border-white/5">
+                  {getFocalLengthDescription(currentFocalLength)}
+                </p>
+              </div>
+
+              {/* 2. SPECIALTY LENSES */}
+              <div className="space-y-4">
+                <h3 className="text-xs font-bold tracking-[0.2em] text-white/70 uppercase">Specialty Lenses</h3>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <button
+                    onClick={() => toggleSpecialtyLens('macro')}
+                    className={`p-4 border-2 rounded-lg transition-all duration-200 text-left ${
+                      specialtyLens === 'macro' 
+                        ? 'border-cyan-500 bg-cyan-500/10' 
+                        : 'border-white/10 bg-white/[0.02] hover:border-white/20 hover:bg-white/[0.05]'
+                    }`}
+                  >
+                    <div className="text-3xl mb-2">🔬</div>
+                    <h4 className="font-semibold text-sm mb-1">MACRO</h4>
+                    <p className="text-xs text-white/40">
+                      Extreme close-ups<br/>
+                      Tiny details magnified
+                    </p>
+                  </button>
+                  
+                  <button
+                    onClick={() => toggleSpecialtyLens('fisheye')}
+                    className={`p-4 border-2 rounded-lg transition-all duration-200 text-left ${
+                      specialtyLens === 'fisheye' 
+                        ? 'border-cyan-500 bg-cyan-500/10' 
+                        : 'border-white/10 bg-white/[0.02] hover:border-white/20 hover:bg-white/[0.05]'
+                    }`}
+                  >
+                    <div className="text-3xl mb-2">🌐</div>
+                    <h4 className="font-semibold text-sm mb-1">FISHEYE</h4>
+                    <p className="text-xs text-white/40">
+                      Spherical distortion<br/>
+                      180° field of view
+                    </p>
+                  </button>
+                  
+                  <button
+                    onClick={() => toggleSpecialtyLens('tilt-shift')}
+                    className={`p-4 border-2 rounded-lg transition-all duration-200 text-left ${
+                      specialtyLens === 'tilt-shift' 
+                        ? 'border-cyan-500 bg-cyan-500/10' 
+                        : 'border-white/10 bg-white/[0.02] hover:border-white/20 hover:bg-white/[0.05]'
+                    }`}
+                  >
+                    <div className="text-3xl mb-2">⚡</div>
+                    <h4 className="font-semibold text-sm mb-1">TILT-SHIFT</h4>
+                    <p className="text-xs text-white/40">
+                      Selective focus plane<br/>
+                      Miniature effect
+                    </p>
+                  </button>
+                </div>
+                
+                {specialtyLens !== 'none' && (
+                  <p className="text-xs text-white/50 italic">
+                    Note: Selecting a specialty lens overrides focal length
+                  </p>
+                )}
+              </div>
+
+              {/* 3. APERTURE SLIDER */}
+              <div className="space-y-4">
+                <div className="flex justify-between items-center mb-2">
+                  <h3 className="text-xs font-bold tracking-[0.2em] text-white/70 uppercase">Aperture (Depth of Field)</h3>
+                  <span className="text-2xl font-bold text-cyan-400">f/{currentAperture}</span>
+                </div>
+                
+                <input
+                  type="range"
+                  min="0"
+                  max={F_STOPS.length - 1}
+                  step="1"
+                  value={apertureIndex}
+                  onChange={(e) => setApertureIndex(parseInt(e.target.value))}
+                  className="w-full h-4 sm:h-3 bg-gray-700 rounded-lg appearance-none cursor-pointer"
+                  style={{
+                    accentColor: '#06b6d4'
+                  }}
+                />
+                
+                <div className="flex justify-between text-[9px] text-white/40 font-mono">
+                  {F_STOPS.map((stop, idx) => (
+                    <span key={idx} className={apertureIndex === idx ? 'text-cyan-400 font-bold' : ''}>
+                      f/{stop}
+                    </span>
+                  ))}
+                </div>
+                
+                <div className="flex justify-between items-center text-xs mt-3">
+                  <span className="text-left w-1/2 text-white/50">
+                    ← Extremely Shallow<br/>
+                    <span className="text-[10px] text-white/30">Blurry background</span>
+                  </span>
+                  <span className="text-right w-1/2 text-white/50">
+                    Everything Sharp →<br/>
+                    <span className="text-[10px] text-white/30">Deep focus</span>
+                  </span>
+                </div>
+                
+                <p className="text-sm text-white/60 mt-2 p-3 bg-white/[0.02] rounded border border-white/5">
+                  {getApertureDescription(currentAperture)}
+                </p>
+              </div>
+
+              {/* 4. LENS EFFECTS */}
+              <div className="space-y-4">
+                <h3 className="text-xs font-bold tracking-[0.2em] text-white/70 uppercase">Lens Effects (Optional)</h3>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {[
+                    { id: 'lens-flare', label: 'Lens Flare', desc: 'Sun streaks and halos' },
+                    { id: 'bokeh', label: 'Bokeh Highlights', desc: 'Soft circular lights' },
+                    { id: 'vignette', label: 'Vignetting', desc: 'Darkened corners' },
+                    { id: 'chromatic', label: 'Chromatic Aberration', desc: 'Color fringing' },
+                    { id: 'light-leaks', label: 'Light Leaks', desc: 'Film-style bleeding' },
+                    { id: 'soft-glow', label: 'Soft Glow', desc: 'Dreamy halation' },
+                    { id: 'anamorphic-flare', label: 'Anamorphic Flare', desc: 'Horizontal streaks' },
+                    { id: 'distortion', label: 'Lens Distortion', desc: 'Barrel warping' }
+                  ].map(effect => (
+                    <label 
+                      key={effect.id}
+                      className="flex items-center space-x-3 p-3 border border-white/10 rounded-lg hover:border-white/20 cursor-pointer transition-all duration-200 bg-white/[0.02] hover:bg-white/[0.05]"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={lensEffects.includes(effect.id)}
+                        onChange={() => toggleLensEffect(effect.id)}
+                        className="w-5 h-5 rounded border-white/20 text-cyan-500 focus:ring-cyan-500 focus:ring-offset-0 bg-black/50"
+                      />
+                      <div className="flex-1">
+                        <div className="font-semibold text-sm">{effect.label}</div>
+                        <div className="text-xs text-white/40">{effect.desc}</div>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* 5. LENS CHARACTER / STYLE */}
+              <div className="space-y-4">
+                <h3 className="text-xs font-bold tracking-[0.2em] text-white/70 uppercase">Lens Character / Style</h3>
+                
+                <div className="space-y-3">
+                  {[
+                    { id: 'modern', label: 'Modern Sharp & Clean', desc: 'High contrast, clinical precision, neutral colors' },
+                    { id: 'vintage', label: 'Vintage Cinematic', desc: 'Warm tones, lower contrast, classic film aesthetic' },
+                    { id: 'soft', label: 'Soft & Dreamy', desc: 'Diffused glow, ethereal beauty, romantic' },
+                    { id: 'high-contrast', label: 'High Contrast', desc: 'Deep blacks, punchy highlights, dramatic' },
+                    { id: 'film-stock', label: 'Film Stock Emulation', desc: 'Film grain, color shifts, organic analog feel' }
+                  ].map(style => (
+                    <label 
+                      key={style.id}
+                      className="flex items-center space-x-3 p-3 border-2 rounded-lg cursor-pointer transition-all duration-200"
+                      style={{
+                        borderColor: lensStyle === style.id ? '#06b6d4' : 'rgba(255, 255, 255, 0.1)',
+                        backgroundColor: lensStyle === style.id ? 'rgba(6, 182, 212, 0.1)' : 'rgba(255, 255, 255, 0.02)'
+                      }}
+                    >
+                      <input
+                        type="radio"
+                        name="lens-style"
+                        checked={lensStyle === style.id}
+                        onChange={() => setLensStyle(style.id)}
+                        className="w-5 h-5 text-cyan-500 focus:ring-cyan-500 focus:ring-offset-0"
+                      />
+                      <div className="flex-1">
+                        <div className="font-semibold text-sm">{style.label}</div>
+                        <div className="text-xs text-white/40">{style.desc}</div>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+              {/* FILM GRAIN & TEXTURE */}
+              <div className="space-y-4 mt-8 pt-8 border-t border-white/10">
+                <h3 className="text-xs font-bold tracking-[0.2em] text-white/70 uppercase">
+                  Film Grain & Texture
+                </h3>
+                
+                {/* Grain Amount Slider */}
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-white/60">Grain Amount</span>
+                    <span className="text-sm font-mono text-cyan-400">
+                      {['None', 'Subtle', 'Medium', 'Heavy'][grainAmount]}
+                    </span>
+                  </div>
+                  <input 
+                    type="range" 
+                    min="0" 
+                    max="3" 
+                    step="1"
+                    value={grainAmount}
+                    onChange={(e) => setGrainAmount(parseInt(e.target.value))}
+                    className="w-full h-3 bg-gray-700 rounded-lg appearance-none cursor-pointer"
+                    style={{ accentColor: '#06b6d4' }}
+                  />
+                  <div className="flex justify-between text-[10px] text-white/30 font-mono">
+                    <span>NONE</span>
+                    <span>SUBTLE</span>
+                    <span>MEDIUM</span>
+                    <span>HEAVY</span>
+                  </div>
+                </div>
+                
+                {/* Grain Type (only show if grain amount > 0) */}
+                {grainAmount > 0 && (
+                  <div className="space-y-3">
+                    <span className="text-sm text-white/60">Grain Type</span>
+                    <div className="grid grid-cols-3 gap-3">
+                      {[
+                        { id: 'fine', label: 'Fine Grain', desc: '35mm quality' },
+                        { id: 'coarse', label: 'Coarse', desc: '16mm/high ISO' },
+                        { id: 'digital', label: 'Digital Noise', desc: 'Sensor artifact' }
+                      ].map(type => (
+                        <button
+                          key={type.id}
+                          onClick={() => setGrainType(type.id as any)}
+                          className={`p-3 border-2 rounded-lg text-left transition-all ${
+                            grainType === type.id 
+                              ? 'border-cyan-500 bg-cyan-500/10' 
+                              : 'border-white/10 bg-white/[0.02] hover:border-white/20'
+                          }`}
+                        >
+                          <div className="font-semibold text-sm">{type.label}</div>
+                          <div className="text-xs text-white/40">{type.desc}</div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              </div>
+
+            </div>
+          )}
+        </div>
+
+
+
+        {/* ─────────────────────────────────────────────────────────────────────
+            CAMERA ANGLES (OPTIONAL)
+        ───────────────────────────────────────────────────────────────────── */}
+        <div className="mb-8">
+          <div 
+            className="flex items-center justify-between mb-4 cursor-pointer hover:opacity-80 transition-opacity"
+            onClick={() => setIsCameraAnglesSectionOpen(!isCameraAnglesSectionOpen)}
+          >
+            <div className="flex items-center gap-3">
+              <span className="text-xs font-bold tracking-[0.2em] text-white/70 uppercase">Camera Angles (Optional)</span>
+              <div className="flex-1 h-px bg-gradient-to-r from-white/20 to-transparent" />
+            </div>
+            <button className="text-2xl text-white/40 hover:text-white/70 ml-4">
+              {isCameraAnglesSectionOpen ? '−' : '+'}
+            </button>
+          </div>
+
+          {isCameraAnglesSectionOpen && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 p-6 rounded-xl border border-white/10 bg-white/[0.02]">
+              {cameraAnglesData.camera.cards.map((angle) => (
                 <button
-                  key={card.id}
-                  onClick={() => handleCardSelect(activeCategory, card)}
-                  className={`
-                    group relative p-4 rounded-none border text-left transition-all duration-300 overflow-hidden
-                    ${isSelected 
-                      ? 'border-white/60 bg-white/5 backdrop-blur-sm' 
+                  key={angle.id}
+                  onClick={() => setSelectedCameraAngle(selectedCameraAngle === angle.id ? null : angle.id)}
+                  className={`group relative p-4 rounded-none border text-left transition-all duration-300 overflow-hidden ${
+                    selectedCameraAngle === angle.id
+                      ? 'border-cyan-500 bg-cyan-500/10'
                       : 'border-white/10 bg-black/40 hover:border-white/30 hover:bg-white/5'
-                    }
-                  `}
+                  }`}
                 >
                   {/* Tech corners */}
-                  <div className={`absolute top-0 left-0 w-2 h-2 border-l border-t transition-colors duration-300 ${isSelected ? 'border-white' : 'border-white/20'}`} />
-                  <div className={`absolute top-0 right-0 w-2 h-2 border-r border-t transition-colors duration-300 ${isSelected ? 'border-white' : 'border-white/20'}`} />
-                  <div className={`absolute bottom-0 left-0 w-2 h-2 border-l border-b transition-colors duration-300 ${isSelected ? 'border-white' : 'border-white/20'}`} />
-                  <div className={`absolute bottom-0 right-0 w-2 h-2 border-r border-b transition-colors duration-300 ${isSelected ? 'border-white' : 'border-white/20'}`} />
+                  <div className={`absolute top-0 left-0 w-2 h-2 border-l border-t transition-colors duration-300 ${selectedCameraAngle === angle.id ? 'border-cyan-500' : 'border-white/20'}`} />
+                  <div className={`absolute top-0 right-0 w-2 h-2 border-r border-t transition-colors duration-300 ${selectedCameraAngle === angle.id ? 'border-cyan-500' : 'border-white/20'}`} />
+                  <div className={`absolute bottom-0 left-0 w-2 h-2 border-l border-b transition-colors duration-300 ${selectedCameraAngle === angle.id ? 'border-cyan-500' : 'border-white/20'}`} />
+                  <div className={`absolute bottom-0 right-0 w-2 h-2 border-r border-b transition-colors duration-300 ${selectedCameraAngle === angle.id ? 'border-cyan-500' : 'border-white/20'}`} />
 
-                  {isSelected && (
+                  {selectedCameraAngle === angle.id && (
                     <div 
                       className="absolute inset-0 opacity-10"
                       style={{
-                        background: `radial-gradient(circle at center, ${currentPlatform.color} 0%, transparent 100%)`
+                        background: 'radial-gradient(circle at center, #06b6d4 0%, transparent 100%)'
                       }}
                     />
                   )}
                   
                   <div className="relative z-10">
                     <div className="flex items-start justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <span className={`text-sm font-mono uppercase tracking-wider ${isSelected ? 'text-white' : 'text-white/60 group-hover:text-white/90'}`}>
-                          {card.label}
-                        </span>
-                        {/* Info Icon - for all cards */}
-                        {cardInfo[card.id] && (
-                          <span
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setInfoModal(card.id);
-                            }}
-                            className="text-xs text-white/50 hover:text-amber-400 cursor-pointer transition-colors duration-200"
-                            title="Learn more"
-                          >
-                            ⓘ
-                          </span>
-                        )}
-                      </div>
-                      {isSelected && (
+                      <span className={`text-sm font-mono uppercase tracking-wider ${selectedCameraAngle === angle.id ? 'text-white' : 'text-white/60 group-hover:text-white/90'}`}>
+                        {angle.label}
+                      </span>
+                      {selectedCameraAngle === angle.id && (
                         <div 
                           className="w-1.5 h-1.5 rounded-full animate-pulse shadow-[0_0_10px_currentColor]"
-                          style={{ backgroundColor: currentPlatform.color }}
+                          style={{ backgroundColor: '#06b6d4' }}
                         />
                       )}
                     </div>
-                    <p className="text-[10px] text-white/30 uppercase tracking-wide font-mono">{card.desc}</p>
+                    <p className="text-[10px] text-white/30 uppercase tracking-wide font-mono">{angle.desc}</p>
                   </div>
                 </button>
-              );
-            })}
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* ─────────────────────────────────────────────────────────────────────
+            CAMERA MOVEMENT (OPTIONAL)
+        ───────────────────────────────────────────────────────────────────── */}
+        <div className="mb-8">
+          <div 
+            className="flex items-center justify-between mb-4 cursor-pointer hover:opacity-80 transition-opacity"
+            onClick={() => setIsCameraMovementSectionOpen(!isCameraMovementSectionOpen)}
+          >
+            <div className="flex items-center gap-3">
+              <span className="text-xs font-bold tracking-[0.2em] text-white/70 uppercase">Camera Movement (Optional)</span>
+              <div className="flex-1 h-px bg-gradient-to-r from-white/20 to-transparent" />
+            </div>
+            <button className="text-2xl text-white/40 hover:text-white/70 ml-4">
+              {isCameraMovementSectionOpen ? '−' : '+'}
+            </button>
           </div>
-        </CollapsibleSection>
+
+          {isCameraMovementSectionOpen && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 p-6 rounded-xl border border-white/10 bg-white/[0.02]">
+              {cameraAnglesData.movement.cards.map((movement) => (
+                <button
+                  key={movement.id}
+                  onClick={() => setSelectedCameraMovement(selectedCameraMovement === movement.id ? null : movement.id)}
+                  className={`group relative p-4 rounded-none border text-left transition-all duration-300 overflow-hidden ${
+                    selectedCameraMovement === movement.id
+                      ? 'border-cyan-500 bg-cyan-500/10'
+                      : 'border-white/10 bg-black/40 hover:border-white/30 hover:bg-white/5'
+                  }`}
+                >
+                  {/* Tech corners */}
+                  <div className={`absolute top-0 left-0 w-2 h-2 border-l border-t transition-colors duration-300 ${selectedCameraMovement === movement.id ? 'border-cyan-500' : 'border-white/20'}`} />
+                  <div className={`absolute top-0 right-0 w-2 h-2 border-r border-t transition-colors duration-300 ${selectedCameraMovement === movement.id ? 'border-cyan-500' : 'border-white/20'}`} />
+                  <div className={`absolute bottom-0 left-0 w-2 h-2 border-l border-b transition-colors duration-300 ${selectedCameraMovement === movement.id ? 'border-cyan-500' : 'border-white/20'}`} />
+                  <div className={`absolute bottom-0 right-0 w-2 h-2 border-r border-b transition-colors duration-300 ${selectedCameraMovement === movement.id ? 'border-cyan-500' : 'border-white/20'}`} />
+
+                  {selectedCameraMovement === movement.id && (
+                    <div 
+                      className="absolute inset-0 opacity-10"
+                      style={{
+                        background: 'radial-gradient(circle at center, #06b6d4 0%, transparent 100%)'
+                      }}
+                    />
+                  )}
+                  
+                  <div className="relative z-10">
+                    <div className="flex items-start justify-between mb-2">
+                      <span className={`text-sm font-mono uppercase tracking-wider ${selectedCameraMovement === movement.id ? 'text-white' : 'text-white/60 group-hover:text-white/90'}`}>
+                        {movement.label}
+                      </span>
+                      {selectedCameraMovement === movement.id && (
+                        <div 
+                          className="w-1.5 h-1.5 rounded-full animate-pulse shadow-[0_0_10px_currentColor]"
+                          style={{ backgroundColor: '#06b6d4' }}
+                        />
+                      )}
+                    </div>
+                    <p className="text-[10px] text-white/30 uppercase tracking-wide font-mono">{movement.desc}</p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
 
         {/* ─────────────────────────────────────────────────────────────────────
             4. TARGET OUTPUT (Collapsible) - moved BELOW Construction Bay
@@ -1449,38 +1900,57 @@ const PromptArmory = () => {
         </CollapsibleSection>
 
         {/* ─────────────────────────────────────────────────────────────────────
-            5. ASPECT RATIO (Static) - moved BELOW Target Output
+            5. ASPECT RATIO / FORMAT
         ───────────────────────────────────────────────────────────────────── */}
         <section className="mb-8 mt-8">
           <div className="flex items-center gap-3 mb-4">
-            <span className="text-xs font-bold tracking-[0.2em] text-white/70 uppercase">Aspect Ratio</span>
+            <span className="text-xs font-bold tracking-[0.2em] text-white/70 uppercase">
+              Aspect Ratio / Format
+            </span>
             <div className="flex-1 h-px bg-gradient-to-r from-white/20 to-transparent" />
           </div>
-          <div className="flex gap-3">
-            {[
-              { value: '16:9', label: '16:9', icon: '▬' },
-              { value: '9:16', label: '9:16', icon: '▮' },
-              { value: '1:1', label: '1:1', icon: '■' },
-              { value: '21:9', label: '21:9', icon: '━' }
-            ].map((ratio) => {
-              const isActive = promptState.aspectRatio === ratio.value;
-              return (
-                <button
-                  key={ratio.value}
-                  onClick={() => setPromptState(prev => ({ ...prev, aspectRatio: ratio.value }))}
-                  className={`
-                    flex items-center gap-2 px-4 py-2 rounded-lg border transition-all duration-200
-                    ${isActive 
-                      ? 'border-white/30 bg-white/10 text-white' 
-                      : 'border-white/10 bg-white/[0.02] text-white/50 hover:border-white/20'
-                    }
-                  `}
-                >
-                  <span className="text-xs">{ratio.icon}</span>
-                  <span className="text-sm">{ratio.label}</span>
-                </button>
-              );
-            })}
+          
+          {/* Category Tabs */}
+          <div className="flex gap-2 mb-4">
+            <button 
+              onClick={() => setAspectCategory('photo')}
+              className={`px-4 py-2 text-sm font-bold uppercase tracking-wider rounded transition-all ${
+                aspectCategory === 'photo' 
+                  ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500' 
+                  : 'bg-white/5 text-white/50 border border-white/10 hover:border-white/30'
+              }`}
+            >
+              Photography
+            </button>
+            <button 
+              onClick={() => setAspectCategory('cinema')}
+              className={`px-4 py-2 text-sm font-bold uppercase tracking-wider rounded transition-all ${
+                aspectCategory === 'cinema' 
+                  ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500' 
+                  : 'bg-white/5 text-white/50 border border-white/10 hover:border-white/30'
+              }`}
+            >
+              Cinematic
+            </button>
+          </div>
+          
+          {/* Aspect Ratio Cards */}
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+            {aspectRatios[aspectCategory].map(ratio => (
+              <button
+                key={ratio.value}
+                onClick={() => setPromptState(prev => ({ ...prev, aspectRatio: ratio.value }))}
+                className={`p-3 border-2 rounded-lg text-left transition-all ${
+                  promptState.aspectRatio === ratio.value
+                    ? 'border-cyan-500 bg-cyan-500/10'
+                    : 'border-white/10 bg-white/[0.02] hover:border-white/20'
+                }`}
+              >
+                <div className="font-bold text-sm mb-1">{ratio.value}</div>
+                <div className="text-xs font-semibold text-white/70">{ratio.label}</div>
+                <div className="text-[10px] text-white/40 mt-1">{ratio.desc}</div>
+              </button>
+            ))}
           </div>
         </section>
         {/* ... (Output Display, Action Buttons, Footer, Info Modal sections remain the same or similar) ... */}

@@ -15,7 +15,17 @@ export function buildMidjourneyPrompt(input: VisualPromptInput): string {
     parts.push(input.environment);
   }
 
-  // 3. Lighting / Film Stock / Style / Lens / Angle
+  // 3. Lens & Camera Settings
+  if (input.lensSettings) {
+    parts.push(input.lensSettings as string);
+  }
+  
+  // 4. Film Grain & Texture
+  if (input.grainSettings) {
+    parts.push(input.grainSettings);
+  }
+
+  // 4. Lighting / Film Stock / Style / Lens / Angle
   const attributes: string[] = [];
   
   if (input.camera?.angle) attributes.push(input.camera.angle);
@@ -42,7 +52,7 @@ export function buildMidjourneyPrompt(input: VisualPromptInput): string {
   // Add collected attributes to main parts
   parts.push(...attributes);
 
-  // 4. Parameters (Must be last)
+  // 5. Parameters (Must be last)
   let params = `--v 6.0`;
   
   // Aspect Ratio
@@ -62,4 +72,3 @@ export function buildMidjourneyPrompt(input: VisualPromptInput): string {
 
   return `${parts.join(', ')} ${params}`;
 }
-

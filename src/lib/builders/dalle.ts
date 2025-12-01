@@ -35,7 +35,17 @@ export function buildDallePrompt(input: VisualPromptInput): string {
   }
   sentences.push(coreSentence + '.');
 
-  // 2. Camera / Angle Translation
+  // 2. Lens & Camera Settings
+  if (input.lensSettings) {
+    sentences.push((input.lensSettings as string) + '.');
+  }
+  
+  // 3. Film Grain & Texture
+  if (input.grainSettings) {
+    sentences.push(input.grainSettings + '.');
+  }
+
+  // 3. Camera / Angle Translation
   if (input.camera?.angle) {
     sentences.push(convertTagToSentence(input.camera.angle));
   }
@@ -43,7 +53,7 @@ export function buildDallePrompt(input: VisualPromptInput): string {
     sentences.push(`Use a ${input.camera.lens} to capture the scene.`);
   }
 
-  // 3. Lighting & Atmosphere
+  // 4. Lighting & Atmosphere
   if (input.lighting) {
     sentences.push(`The lighting is ${input.lighting.toLowerCase()}.`);
   }
@@ -54,7 +64,7 @@ export function buildDallePrompt(input: VisualPromptInput): string {
     sentences.push(`The color grading mimics ${input.filmStock} film stock.`);
   }
 
-  // 4. Meta-Instruction Wrapper (Protection)
+  // 5. Meta-Instruction Wrapper (Protection)
   const narrativeBlock = sentences.join(' ');
   
   return `I NEED to test how the tool works with extremely simple prompts. DO NOT add any detail, just use it AS-IS: "${narrativeBlock}"`;

@@ -24,6 +24,16 @@ export function buildFluxPrompt(input: VisualPromptInput): string {
   // Back-load style, lighting, camera, film stock
   const tags: string[] = [];
 
+  // Lens & Camera Settings
+  if (input.lensSettings) {
+    tags.push(input.lensSettings as string);
+  }
+  
+  // Film Grain & Texture
+  if (input.grainSettings) {
+    tags.push(input.grainSettings);
+  }
+
   if (input.style) tags.push(input.style);
   if (input.lighting) tags.push(input.lighting);
   if (input.camera?.angle) tags.push(input.camera.angle);
