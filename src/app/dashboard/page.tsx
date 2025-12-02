@@ -1482,65 +1482,6 @@ const PromptArmory = () => {
           }
         </p>
 
-
-        {/* DEBUG PANEL - REMOVE AFTER TESTING */}
-        <div className="fixed top-20 right-4 z-50 bg-red-900/90 border-2 border-red-500 rounded-lg p-4 max-w-sm">
-          <h3 className="text-red-400 font-bold mb-2 text-sm">🐛 DEBUG PANEL</h3>
-          
-          <button
-            onClick={() => {
-              console.clear();
-              console.log('=== MANUAL DEBUG TRIGGER ===');
-              console.log('Current State:', {
-                subjectInput,
-                activePreset,
-                focalLengthIndex,
-                currentFocalLength,
-                apertureIndex,
-                currentAperture,
-                isoIndex,
-                currentISO,
-                selectedCameraAngle,
-                selectedCameraMovement,
-                displayText
-              });
-              
-              const testPrompt = generatePrompt(promptState, targetMode);
-              console.log('Test prompt generation:', testPrompt);
-              
-              alert(`Subject: ${subjectInput || 'EMPTY'}\nFocal: ${currentFocalLength}mm\nAperture: f/${currentAperture}\nISO: ${currentISO}\nDisplay: ${displayText.substring(0, 50)}...`);
-            }}
-            className="w-full px-3 py-2 bg-red-500 text-white rounded font-semibold hover:bg-red-400 text-sm mb-2"
-          >
-            📊 Log Current State
-          </button>
-          
-          <button
-            onClick={() => {
-              const simple = [
-                subjectInput,
-                `${currentFocalLength}mm`,
-                `f/${currentAperture}`,
-                `ISO ${currentISO}`,
-                selectedCameraAngle || ''
-              ].filter(Boolean).join(', ');
-              
-              console.log('Simple prompt:', simple);
-              navigator.clipboard.writeText(simple);
-              alert('Simple prompt copied:\n' + simple);
-            }}
-            className="w-full px-3 py-2 bg-yellow-600 text-white rounded font-semibold hover:bg-yellow-500 text-sm"
-          >
-            📋 Copy Simple Prompt
-          </button>
-          
-          <div className="mt-2 text-xs text-gray-300">
-            <div>Focal: {currentFocalLength}mm</div>
-            <div>ISO: {currentISO}</div>
-            <div>Display: {displayText?.length || 0} chars</div>
-          </div>
-        </div>
-
         {/* ─────────────────────────────────────────────────────────────────────
             1. SELECT A PRESET (Optional) - Top
         ───────────────────────────────────────────────────────────────────── */}
@@ -2275,20 +2216,7 @@ const PromptArmory = () => {
                 </div>
               )}
               
-              {/* EMERGENCY SIMPLE PROMPT - FOR DEBUGGING */}
-              <div className="mt-4 p-4 bg-yellow-900/20 border border-yellow-500 rounded">
-                <h4 className="text-yellow-400 font-bold text-xs mb-2">🔧 DEBUG: Simple Prompt (no builders)</h4>
-                <p className="text-white font-mono text-xs break-words">
-                  {[
-                    subjectInput || '[No subject]',
-                    currentFocalLength ? `${currentFocalLength}mm lens` : '',
-                    currentAperture ? `f/${currentAperture}` : '',
-                    currentISO ? `ISO ${currentISO}` : '',
-                    selectedCameraAngle ? `${selectedCameraAngle} angle` : '',
-                    selectedCameraMovement ? `${selectedCameraMovement} movement` : ''
-                  ].filter(Boolean).join(', ') || 'Make selections above'}
-                </p>
-              </div>
+
             </div>
             
             {/* Bottom accent */}
