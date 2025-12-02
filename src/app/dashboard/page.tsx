@@ -203,7 +203,7 @@ const PromptArmory = () => {
   
   // Core prompt state object - the "DNA" of our prompt
   const [promptState, setPromptState] = useState<PromptState>({
-    // subject removed - prompts now generated from selections only
+    subject: '', // Required by PromptState interface, but not used (using subjectInput instead)
     angle: null,
     movement: null,
     lens: null,
@@ -869,7 +869,7 @@ const PromptArmory = () => {
       'Describe your subject above';
     
     // Common Input Object
-    const lensPromptText = generateLensPrompt();
+    const lensPromptText = generateCompletePrompt();
     const grainPromptText = generateGrainPrompt();
     
     // Get selected angle and movement values
@@ -1105,7 +1105,7 @@ const PromptArmory = () => {
     setSubjectInput('');
     setSelectedAspectRatio(null);
     setPromptState({
-      // subject removed - no longer needed
+      subject: '', // Required by PromptState interface
       angle: null,
       movement: null,
       lens: null,
