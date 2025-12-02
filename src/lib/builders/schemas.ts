@@ -50,3 +50,4 @@ export const EmailPromptInputSchema = z.object({
 });
 export type EmailPromptInput = z.infer<typeof EmailPromptInputSchema>;
 
+

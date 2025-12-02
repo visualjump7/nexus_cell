@@ -45,3 +45,4 @@ export function buildRunwayPrompt(input: VideoPromptInput): string {
   return `[${movement}]: ${action}${aestheticString}.`;
 }
 
+

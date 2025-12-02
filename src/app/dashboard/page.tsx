@@ -135,6 +135,7 @@ const PromptArmory = () => {
   const [isoIndex, setIsoIndex] = useState(3); // Default to ISO 400 (index 3)
   const [lensEffects, setLensEffects] = useState<string[]>([]);
   const [lensStyle, setLensStyle] = useState<string>('modern');
+  const [isSpecialtyLensOpen, setIsSpecialtyLensOpen] = useState(false);
   
   // Camera Angles & Movement state
   const [isCameraAnglesSectionOpen, setIsCameraAnglesSectionOpen] = useState(false);
@@ -179,13 +180,13 @@ const PromptArmory = () => {
   
   // Collapsible section states - controlled by viewMode
   const [presetsOpen, setPresetsOpen] = useState(true);
-  const [targetOutputOpen, setTargetOutputOpen] = useState(true);
+
   
   // Reset collapsible states when cameraMode changes
   useEffect(() => {
     if (cameraMode === 'photography') {
       // Photography mode: hide camera movement, expand relevant sections
-      setTargetOutputOpen(true);
+
       setPresetsOpen(true);
       setIsLensSectionOpen(true);
       setIsCameraAnglesSectionOpen(true);
@@ -193,7 +194,7 @@ const PromptArmory = () => {
     } else {
       // Cinematography mode: show all sections including camera movement
       setPresetsOpen(true);
-      setTargetOutputOpen(true);
+
       setIsLensSectionOpen(true);
       setIsCameraAnglesSectionOpen(true);
       setIsCameraMovementSectionOpen(true); // Show in cinematography mode
@@ -1300,14 +1301,14 @@ const PromptArmory = () => {
     if (selectedCameraAngle) {
       console.log('✅ Camera angle:', selectedCameraAngle);
       const angleMap: Record<string, string> = {
-        'eye-level': 'eye level angle',
-        'low-angle': 'low angle shot, looking up',
-        'high-angle': 'high angle shot, looking down',
-        'dutch-angle': 'dutch angle, tilted',
-        'birds-eye': "bird's eye view, overhead",
-        'worms-eye': "worm's eye view, ground level",
-        'over-shoulder': 'over the shoulder shot',
-        'pov-shot': 'POV first person perspective'
+        'eye': 'eye level angle',
+        'low': 'low angle shot, looking up',
+        'high': 'high angle shot, looking down',
+        'dutch': 'dutch angle, tilted',
+        'birds': "bird's eye view, overhead",
+        'worms': "worm's eye view, ground level",
+        'over': 'over the shoulder shot',
+        'pov': 'POV first person perspective'
       };
       if (angleMap[selectedCameraAngle]) parts.push(angleMap[selectedCameraAngle]);
     }
@@ -1316,18 +1317,14 @@ const PromptArmory = () => {
     if (selectedCameraMovement && cameraMode === 'cinematography') {
       console.log('✅ Camera movement:', selectedCameraMovement);
       const movementMap: Record<string, string> = {
-        'static': 'static shot, locked camera',
-        'pan': 'panning camera movement',
-        'tilt': 'tilting camera movement',
-        'dolly': 'dolly shot, moving forward',
-        'tracking': 'tracking shot, following subject',
+        'push': 'dolly in, moving forward',
+        'pull': 'pull out, moving backward',
+        'dolly': 'dolly shot, tracking movement',
         'crane': 'crane shot, sweeping movement',
-        'steadicam': 'steadicam, smooth flowing',
-        'handheld': 'handheld camera, natural shake',
-        'zoom': 'zoom movement',
-        'whip-pan': 'whip pan, fast blur',
         'orbit': 'orbiting camera, 360 movement',
-        'drone': 'drone shot, aerial'
+        'whip': 'whip pan, fast blur',
+        'handheld': 'handheld camera, natural shake',
+        'steadicam': 'steadicam, smooth flowing'
       };
       if (movementMap[selectedCameraMovement]) parts.push(movementMap[selectedCameraMovement]);
     }
@@ -1335,16 +1332,40 @@ const PromptArmory = () => {
     // 10. ASPECT RATIO
     if (selectedAspectRatio) {
       console.log('✅ Aspect ratio:', selectedAspectRatio);
-      const ratioMap: Record<string, string> = {
-        '1:1': 'square format composition',
-        '4:5': 'vertical portrait format',
-        '3:2': 'classic photo format',
-        '16:9': 'widescreen format',
-        '1.85:1': 'academy flat cinema format',
-        '2.39:1': 'anamorphic widescreen format',
-        '1.43:1': 'IMAX format'
-      };
-      if (ratioMap[selectedAspectRatio]) parts.push(ratioMap[selectedAspectRatio]);
+      
+      // Create descriptive text for each ratio
+      let ratioDesc = '';
+      
+      switch(selectedAspectRatio) {
+        case '1:1':
+          ratioDesc = 'square format 1:1 aspect ratio';
+          break;
+        case '4:5':
+          ratioDesc = 'vertical 4:5 aspect ratio, portrait orientation';
+          break;
+        case '3:2':
+          ratioDesc = 'classic 3:2 photo aspect ratio';
+          break;
+        case '16:9':
+          ratioDesc = 'widescreen 16:9 aspect ratio';
+          break;
+        case '1.85:1':
+          ratioDesc = 'cinema 1.85:1 academy flat aspect ratio';
+          break;
+        case '2.39:1':
+          ratioDesc = 'anamorphic 2.39:1 widescreen aspect ratio';
+          break;
+        case '1.43:1':
+          ratioDesc = 'IMAX 1.43:1 tall format aspect ratio';
+          break;
+        default:
+          ratioDesc = `${selectedAspectRatio} aspect ratio`;
+      }
+      
+      parts.push(ratioDesc);
+      console.log('  Added to prompt:', ratioDesc);
+    } else {
+      console.log('⚠️ No aspect ratio selected');
     }
     
     const finalPrompt = parts.filter(Boolean).join(', ');
@@ -1678,63 +1699,84 @@ const PromptArmory = () => {
                 </p>
               </div>
 
-              {/* 2. SPECIALTY LENSES */}
+              {/* 2. SPECIALTY LENSES - COLLAPSIBLE (COLLAPSED BY DEFAULT) */}
               <div className="space-y-4">
-                <h3 className="text-xs font-bold tracking-[0.2em] text-white/70 uppercase">Specialty Lenses</h3>
-                
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <button
-                    onClick={() => toggleSpecialtyLens('macro')}
-                    className={`p-4 border-2 rounded-lg transition-all duration-200 text-left ${
-                      specialtyLens === 'macro' 
-                        ? 'border-cyan-500 bg-cyan-500/10' 
-                        : 'border-white/10 bg-white/[0.02] hover:border-white/20 hover:bg-white/[0.05]'
-                    }`}
-                  >
-                    <div className="text-3xl mb-2">🔬</div>
-                    <h4 className="font-semibold text-sm mb-1">MACRO</h4>
-                    <p className="text-xs text-white/40">
-                      Extreme close-ups<br/>
-                      Tiny details magnified
-                    </p>
-                  </button>
-                  
-                  <button
-                    onClick={() => toggleSpecialtyLens('fisheye')}
-                    className={`p-4 border-2 rounded-lg transition-all duration-200 text-left ${
-                      specialtyLens === 'fisheye' 
-                        ? 'border-cyan-500 bg-cyan-500/10' 
-                        : 'border-white/10 bg-white/[0.02] hover:border-white/20 hover:bg-white/[0.05]'
-                    }`}
-                  >
-                    <div className="text-3xl mb-2">🌐</div>
-                    <h4 className="font-semibold text-sm mb-1">FISHEYE</h4>
-                    <p className="text-xs text-white/40">
-                      Spherical distortion<br/>
-                      180° field of view
-                    </p>
-                  </button>
-                  
-                  <button
-                    onClick={() => toggleSpecialtyLens('tilt-shift')}
-                    className={`p-4 border-2 rounded-lg transition-all duration-200 text-left ${
-                      specialtyLens === 'tilt-shift' 
-                        ? 'border-cyan-500 bg-cyan-500/10' 
-                        : 'border-white/10 bg-white/[0.02] hover:border-white/20 hover:bg-white/[0.05]'
-                    }`}
-                  >
-                    <div className="text-3xl mb-2">⚡</div>
-                    <h4 className="font-semibold text-sm mb-1">TILT-SHIFT</h4>
-                    <p className="text-xs text-white/40">
-                      Selective focus plane<br/>
-                      Miniature effect
-                    </p>
+                <div 
+                  className="flex items-center justify-between cursor-pointer"
+                  onClick={() => setIsSpecialtyLensOpen(!isSpecialtyLensOpen)}
+                >
+                  <h3 className="text-xs font-bold tracking-[0.2em] text-white/70 uppercase">
+                    Specialty Lenses (Optional)
+                  </h3>
+                  <button className="text-2xl text-cyan-400">
+                    {isSpecialtyLensOpen ? '−' : '+'}
                   </button>
                 </div>
                 
+                {isSpecialtyLensOpen && (
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
+                    <button
+                      onClick={() => {
+                        console.log('🔬 Specialty lens clicked: macro');
+                        toggleSpecialtyLens('macro');
+                      }}
+                      className={`p-4 border-2 rounded-lg transition-all ${
+                        specialtyLens === 'macro' 
+                          ? 'border-cyan-500 bg-cyan-500/10' 
+                          : 'border-white/10 hover:border-white/20'
+                      }`}
+                    >
+                      <div className="text-3xl mb-2">🔬</div>
+                      <h4 className="font-semibold mb-1">MACRO</h4>
+                      <p className="text-xs text-gray-400">
+                        Extreme close-ups<br/>
+                        Tiny details magnified
+                      </p>
+                    </button>
+                    
+                    <button
+                      onClick={() => {
+                        console.log('🔬 Specialty lens clicked: fisheye');
+                        toggleSpecialtyLens('fisheye');
+                      }}
+                      className={`p-4 border-2 rounded-lg transition-all ${
+                        specialtyLens === 'fisheye' 
+                          ? 'border-cyan-500 bg-cyan-500/10' 
+                          : 'border-white/10 hover:border-white/20'
+                      }`}
+                    >
+                      <div className="text-3xl mb-2">🌐</div>
+                      <h4 className="font-semibold mb-1">FISHEYE</h4>
+                      <p className="text-xs text-gray-400">
+                        Spherical distortion<br/>
+                        180° field of view
+                      </p>
+                    </button>
+                    
+                    <button
+                      onClick={() => {
+                        console.log('🔬 Specialty lens clicked: tilt-shift');
+                        toggleSpecialtyLens('tilt-shift');
+                      }}
+                      className={`p-4 border-2 rounded-lg transition-all ${
+                        specialtyLens === 'tilt-shift' 
+                          ? 'border-cyan-500 bg-cyan-500/10' 
+                          : 'border-white/10 hover:border-white/20'
+                      }`}
+                    >
+                      <div className="text-3xl mb-2">⚡</div>
+                      <h4 className="font-semibold mb-1">TILT-SHIFT</h4>
+                      <p className="text-xs text-gray-400">
+                        Selective focus plane<br/>
+                        Miniature effect
+                      </p>
+                    </button>
+                  </div>
+                )}
+                
                 {specialtyLens !== 'none' && (
-                  <p className="text-xs text-white/50 italic">
-                    Note: Selecting a specialty lens overrides focal length
+                  <p className="text-xs text-amber-400 mt-2">
+                    ⓘ Specialty lens active - overrides focal length slider
                   </p>
                 )}
               </div>
@@ -2133,8 +2175,9 @@ const PromptArmory = () => {
               <button
                 key={ratio.id}
                 onClick={() => {
-                  console.log('🎬 Aspect ratio clicked:', ratio.value);
+                  console.log('🎯 Aspect ratio button clicked:', ratio.value);
                   setSelectedAspectRatio(ratio.value);
+                  console.log('🎯 State should now be:', ratio.value);
                 }}
                 className={`
                   p-4 border-2 rounded-lg transition-all text-center font-semibold
@@ -2160,148 +2203,6 @@ const PromptArmory = () => {
           )}
         </div>
 
-        {/* ─────────────────────────────────────────────────────────────────────
-            4. TARGET OUTPUT (Collapsible) - moved BELOW Construction Bay
-        ───────────────────────────────────────────────────────────────────── */}
-        <CollapsibleSection 
-          title="Target Output" 
-          optional
-          isOpen={targetOutputOpen}
-          onToggle={() => setTargetOutputOpen(!targetOutputOpen)}
-        >
-          <div className="mb-4">
-            {/* Type Filter */}
-            <div className="flex items-center gap-1 bg-white/[0.02] rounded-lg p-1 border border-white/5 w-fit">
-              {['all', 'image', 'video'].map((filter) => (
-                <button
-                  key={filter}
-                  onClick={() => setPlatformFilter(filter)}
-                  className={`px-3 py-1.5 text-xs font-bold tracking-wider rounded-md transition-all duration-200 ${
-                    platformFilter === filter 
-                      ? 'bg-white/10 text-white' 
-                      : 'text-white/40 hover:text-white/60'
-                  }`}
-                >
-                  {filter.toUpperCase()}
-                </button>
-              ))}
-            </div>
-          </div>
-          
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-px bg-white/5 border border-white/10 p-px">
-            {getFilteredPlatforms().map((platform) => {
-              const isActive = targetMode === platform.id;
-              return (
-                <button
-                  key={platform.id}
-                  onClick={() => handlePlatformChange(platform.id)}
-                  className={`
-                    relative group p-4 transition-all duration-300 overflow-hidden
-                    ${isActive 
-                      ? 'bg-white/10' 
-                      : 'bg-black/40 hover:bg-white/5'
-                    }
-                  `}
-                >
-                  {isActive && (
-                    <div 
-                      className="absolute inset-0 opacity-10"
-                      style={{
-                        background: `radial-gradient(circle at center, ${platform.color} 0%, transparent 100%)`
-                      }}
-                    />
-                  )}
-                  
-                  {/* Active Indicator Bar */}
-                  <div 
-                    className={`absolute top-0 left-0 w-full h-[2px] transition-all duration-300 ${isActive ? 'opacity-100 shadow-[0_0_10px_currentColor]' : 'opacity-0'}`}
-                    style={{ backgroundColor: platform.color }}
-                  />
-
-                  <div className="relative z-10 flex flex-col items-center gap-2 text-center">
-                    {/* Info Icon for Platform */}
-                    <div 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setInfoModal(platform.id);
-                      }}
-                      className="absolute top-2 right-2 text-xs text-white/50 hover:text-amber-400 cursor-pointer transition-colors duration-200"
-                      title="Learn more about this model"
-                    >
-                      ⓘ
-                    </div>
-
-                    <span 
-                      className="text-2xl transition-transform duration-300 group-hover:scale-110"
-                      style={{ color: isActive ? platform.color : 'rgba(255,255,255,0.3)' }}
-                    >
-                      {platform.icon}
-                    </span>
-                    <div className={`text-sm font-mono font-bold tracking-widest uppercase leading-tight ${isActive ? 'text-white' : 'text-white/40'}`}>
-                      {platform.name}
-                    </div>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        </CollapsibleSection>
-
-        {/* ─────────────────────────────────────────────────────────────────────
-            5. ASPECT RATIO / FORMAT
-        ───────────────────────────────────────────────────────────────────── */}
-        <section className="mb-8 mt-8">
-          <div className="flex items-center gap-3 mb-4">
-            <span className="text-xs font-bold tracking-[0.2em] text-white/70 uppercase">
-              Aspect Ratio / Format
-            </span>
-            <div className="flex-1 h-px bg-gradient-to-r from-white/20 to-transparent" />
-          </div>
-          
-          {/* Category Tabs */}
-          <div className="flex gap-2 mb-4">
-            <button 
-              onClick={() => setAspectCategory('photo')}
-              className={`px-4 py-2 text-sm font-bold uppercase tracking-wider rounded transition-all ${
-                aspectCategory === 'photo' 
-                  ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500' 
-                  : 'bg-white/5 text-white/50 border border-white/10 hover:border-white/30'
-              }`}
-            >
-              Photography
-            </button>
-            <button 
-              onClick={() => setAspectCategory('cinema')}
-              className={`px-4 py-2 text-sm font-bold uppercase tracking-wider rounded transition-all ${
-                aspectCategory === 'cinema' 
-                  ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500' 
-                  : 'bg-white/5 text-white/50 border border-white/10 hover:border-white/30'
-              }`}
-            >
-              Cinematic
-            </button>
-          </div>
-          
-          {/* Aspect Ratio Cards */}
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
-            {aspectRatios[aspectCategory].map(ratio => (
-              <button
-                key={ratio.value}
-                onClick={() => setPromptState(prev => ({ ...prev, aspectRatio: ratio.value }))}
-                className={`p-3 border-2 rounded-lg text-left transition-all ${
-                  promptState.aspectRatio === ratio.value
-                    ? 'border-cyan-500 bg-cyan-500/10'
-                    : 'border-white/10 bg-white/[0.02] hover:border-white/20'
-                }`}
-              >
-                <div className="font-bold text-sm mb-1">{ratio.value}</div>
-                <div className="text-xs font-semibold text-white/70">{ratio.label}</div>
-                <div className="text-[10px] text-white/40 mt-1">{ratio.desc}</div>
-              </button>
-            ))}
-          </div>
-        </section>
-        {/* ... (Output Display, Action Buttons, Footer, Info Modal sections remain the same or similar) ... */}
         {/* ─────────────────────────────────────────────────────────────────────
             OUTPUT DISPLAY
         ───────────────────────────────────────────────────────────────────── */}
