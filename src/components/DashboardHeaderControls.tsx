@@ -32,7 +32,7 @@ export const DashboardHeaderControls: React.FC<DashboardHeaderControlsProps> = (
         </Link>
       </div>
 
-      {/* Row 2: Dual App Navigation - Stack on mobile */}
+      {/* Row 2: App Navigation - Email Armory temporarily disabled */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-5 w-full sm:w-auto">
         {/* Visual Armory Button */}
         <Link
@@ -49,7 +49,8 @@ export const DashboardHeaderControls: React.FC<DashboardHeaderControlsProps> = (
           <span className="text-xs sm:text-sm font-mono uppercase tracking-wider">Visual Armory</span>
         </Link>
 
-        {/* Email Armory Button */}
+        {/* Email Armory Button - Temporarily Disabled */}
+        {/* 
         <Link
           href="/dashboard/email"
           className={`flex items-center gap-2 sm:gap-3 px-4 sm:px-6 py-2 sm:py-3 border-2 rounded-lg h-[44px] sm:h-[50px] transition-all duration-300 justify-center sm:justify-start ${
@@ -63,6 +64,7 @@ export const DashboardHeaderControls: React.FC<DashboardHeaderControlsProps> = (
           </span>
           <span className="text-xs sm:text-sm font-mono uppercase tracking-wider">Email Armory</span>
         </Link>
+        */}
       </div>
     </div>
   );

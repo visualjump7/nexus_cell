@@ -2,10 +2,10 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
-import { SystemStateToggle } from '@/components/SystemStateToggle';
+import { CameraModeToggle } from '@/components/CameraModeToggle';
 import { DashboardHeaderControls } from '@/components/DashboardHeaderControls';
 import { CollapsibleSection } from '@/components/CollapsibleSection';
-import { useViewMode } from '@/hooks/useViewMode';
+// import { useViewMode } from '@/hooks/useViewMode'; // Replaced with cameraMode
 
 
 import { motion } from 'framer-motion';
@@ -34,6 +34,33 @@ const STANDARD_FOCAL_LENGTHS = [
 ];
 
 const F_STOPS = [1.2, 1.4, 2.0, 2.8, 4.0, 5.6, 8.0, 11, 16, 22];
+
+const ISO_VALUES = [
+  50,    // Extremely fine grain, studio quality
+  100,   // Fine grain, daylight standard
+  200,   // Slight grain, versatile
+  400,   // Moderate grain, film stock standard
+  800,   // Noticeable grain, low light
+  1600,  // Heavy grain, evening/indoor
+  3200,  // Very heavy grain, night scenes
+  6400,  // Extreme grain, gritty aesthetic
+  12800  // Maximum grain, ultra low light
+];
+
+// Aspect ratios
+const PHOTO_ASPECT_RATIOS = [
+  { id: '1:1', label: 'Square', value: '1:1' },
+  { id: '4:5', label: 'Portrait', value: '4:5' },
+  { id: '3:2', label: 'Classic Photo', value: '3:2' },
+  { id: '16:9', label: 'Wide', value: '16:9' },
+];
+
+const CINEMA_ASPECT_RATIOS = [
+  { id: '16:9', label: 'HD Standard', value: '16:9' },
+  { id: '1.85:1', label: 'Academy Flat', value: '1.85:1' },
+  { id: '2.39:1', label: 'Anamorphic', value: '2.39:1' },
+  { id: '1.43:1', label: 'IMAX', value: '1.43:1' },
+];
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // POLYMORPHIC PROMPT ARMORY — ULTIMATE EDITION
@@ -94,9 +121,10 @@ const PromptArmory = () => {
   const [displayText, setDisplayText] = useState('');
   const [copied, setCopied] = useState(false);
   const [activePreset, setActivePreset] = useState<string | null>(null);
+  const [subjectInput, setSubjectInput] = useState('');
   const [platformFilter, setPlatformFilter] = useState('all');
   const [infoModal, setInfoModal] = useState<string | null>(null);
-  const [isSubjectEmpty, setIsSubjectEmpty] = useState(true);
+  // const [isSubjectEmpty, setIsSubjectEmpty] = useState(true); // Removed - no longer using subject input
   const [presetBorderColor, setPresetBorderColor] = useState('#ffffff'); // Default white for border glow
   
   // Lens & Camera state
@@ -104,6 +132,7 @@ const PromptArmory = () => {
   const [focalLengthIndex, setFocalLengthIndex] = useState(10); // Default to 50mm (index 10)
   const [specialtyLens, setSpecialtyLens] = useState<'none' | 'macro' | 'fisheye' | 'tilt-shift'>('none');
   const [apertureIndex, setApertureIndex] = useState(5); // Default to f/5.6 (index 5)
+  const [isoIndex, setIsoIndex] = useState(3); // Default to ISO 400 (index 3)
   const [lensEffects, setLensEffects] = useState<string[]>([]);
   const [lensStyle, setLensStyle] = useState<string>('modern');
   
@@ -119,39 +148,61 @@ const PromptArmory = () => {
   
   // Aspect Ratio category state
   const [aspectCategory, setAspectCategory] = useState<'photo' | 'cinema'>('cinema');
+  const [selectedAspectRatio, setSelectedAspectRatio] = useState<string | null>(null);
   
   // Helper to get current values from indices
   const currentFocalLength = STANDARD_FOCAL_LENGTHS[focalLengthIndex];
   const currentAperture = F_STOPS[apertureIndex];
+  const currentISO = ISO_VALUES[isoIndex];
   
-  const { viewMode, setViewMode } = useViewMode();
+  // Debug: Component initialization and constants verification
+  useEffect(() => {
+    console.log('🚀 === COMPONENT INITIALIZED ===');
+    console.log('Constants check:', {
+      STANDARD_FOCAL_LENGTHS: STANDARD_FOCAL_LENGTHS?.length,
+      F_STOPS: F_STOPS?.length,
+      ISO_VALUES: ISO_VALUES?.length
+    });
+    console.log('Initial indices:', {
+      focalLengthIndex,
+      apertureIndex,
+      isoIndex
+    });
+    console.log('Initial computed values:', {
+      currentFocalLength,
+      currentAperture,
+      currentISO
+    });
+  }, []);
+  
+  const [cameraMode, setCameraMode] = useState<'photography' | 'cinematography'>('photography');
   
   // Collapsible section states - controlled by viewMode
   const [presetsOpen, setPresetsOpen] = useState(true);
   const [targetOutputOpen, setTargetOutputOpen] = useState(true);
   
-  // Reset collapsible states when viewMode changes
+  // Reset collapsible states when cameraMode changes
   useEffect(() => {
-    if (viewMode === 'focus') {
-      // Focus mode: collapse Target Output, Lens, and Camera sections
-      setTargetOutputOpen(false);
-      setPresetsOpen(true); // Presets stay open
-      setIsLensSectionOpen(false); // Lens section collapsed in focus mode
-      setIsCameraAnglesSectionOpen(false); // Camera Angles collapsed in focus mode
-      setIsCameraMovementSectionOpen(false); // Camera Movement collapsed in focus mode
+    if (cameraMode === 'photography') {
+      // Photography mode: hide camera movement, expand relevant sections
+      setTargetOutputOpen(true);
+      setPresetsOpen(true);
+      setIsLensSectionOpen(true);
+      setIsCameraAnglesSectionOpen(true);
+      setIsCameraMovementSectionOpen(false); // Hide in photography mode
     } else {
-      // Advanced mode: expand all sections
+      // Cinematography mode: show all sections including camera movement
       setPresetsOpen(true);
       setTargetOutputOpen(true);
-      setIsLensSectionOpen(true); // Lens section expanded in advanced mode
-      setIsCameraAnglesSectionOpen(true); // Camera Angles expanded in advanced mode
-      setIsCameraMovementSectionOpen(true); // Camera Movement expanded in advanced mode
+      setIsLensSectionOpen(true);
+      setIsCameraAnglesSectionOpen(true);
+      setIsCameraMovementSectionOpen(true); // Show in cinematography mode
     }
-  }, [viewMode]);
+  }, [cameraMode]);
   
   // Core prompt state object - the "DNA" of our prompt
   const [promptState, setPromptState] = useState<PromptState>({
-    subject: '',
+    // subject removed - prompts now generated from selections only
     angle: null,
     movement: null,
     lens: null,
@@ -804,8 +855,17 @@ const PromptArmory = () => {
   // ─────────────────────────────────────────────────────────────────────────────
   
   const generatePrompt = useCallback((state: PromptState, platform: string) => {
-    const { subject, angle, movement, lens, lighting, style, filmStock, aspectRatio } = state;
-    const subjectText = subject || '[Your Subject]';
+    console.log('🎬 === GENERATE PROMPT CALLED ===');
+    console.log('Platform:', platform);
+    console.log('PromptState:', state);
+    console.log('SubjectInput:', subjectInput);
+    console.log('ActivePreset:', activePreset);
+    
+    const { angle, movement, lens, lighting, style, filmStock, aspectRatio } = state;
+    // Use user's subject input as primary, fall back to preset name if empty
+    const subjectText = subjectInput?.trim() || 
+      (activePreset ? presets.find(p => p.id === activePreset)?.name : null) || 
+      'Describe your subject above';
     
     // Common Input Object
     const lensPromptText = generateLensPrompt();
@@ -844,7 +904,9 @@ const PromptArmory = () => {
 
     switch (platform) {
       case 'midjourney':
-        return buildMidjourneyPrompt(visualInput);
+        const mjResult = buildMidjourneyPrompt(visualInput);
+        console.log('✅ Midjourney prompt:', mjResult);
+        return mjResult;
       
       case 'dalle':
         return buildDallePrompt(visualInput);
@@ -986,10 +1048,29 @@ const PromptArmory = () => {
   // ─────────────────────────────────────────────────────────────────────────────
   
   useEffect(() => {
-    const newPrompt = generatePrompt(promptState, targetMode);
+    console.log('⚡ === USEEFFECT TRIGGERED ===');
+    
+    const newPrompt = generateCompletePrompt();
+    console.log('📝 New prompt generated:', newPrompt);
+    
     animateCipherDecode(newPrompt);
+    console.log('✅ Prompt sent to animation');
+    
     return () => { if (animationRef.current) cancelAnimationFrame(animationRef.current); };
-  }, [promptState, targetMode, generatePrompt, animateCipherDecode]);
+  }, [
+    subjectInput,
+    activePreset,
+    focalLengthIndex,
+    specialtyLens,
+    apertureIndex,
+    isoIndex,
+    lensEffects,          // CRITICAL - was missing
+    lensStyle,            // CRITICAL - was missing
+    selectedCameraAngle,
+    selectedCameraMovement,
+    selectedAspectRatio,  // CRITICAL - was missing
+    cameraMode
+  ]);
 
   // ─────────────────────────────────────────────────────────────────────────────
   // HANDLERS
@@ -1020,8 +1101,10 @@ const PromptArmory = () => {
   
   const handleClear = () => {
     setActivePreset(null);
+    setSubjectInput('');
+    setSelectedAspectRatio(null);
     setPromptState({
-      subject: '',
+      // subject removed - no longer needed
       angle: null,
       movement: null,
       lens: null,
@@ -1073,7 +1156,46 @@ const PromptArmory = () => {
     return "Maximum depth of field. Everything sharp from foreground to background. Landscape/architecture.";
   }
 
+  function getISODescription(iso: number): string {
+    if (iso <= 100) {
+      return "Extremely fine grain, clean image. Studio quality, bright daylight. Minimal noise.";
+    } else if (iso <= 200) {
+      return "Fine grain, crisp detail. Bright conditions, commercial work. Subtle texture.";
+    } else if (iso <= 400) {
+      return "Moderate grain, film stock standard. Balanced, versatile. Classic film aesthetic.";
+    } else if (iso <= 800) {
+      return "Noticeable grain, low light capable. Evening, overcast. Visible texture.";
+    } else if (iso <= 1600) {
+      return "Heavy grain, moody aesthetic. Indoor, dusk. Strong film character.";
+    } else if (iso <= 3200) {
+      return "Very heavy grain, night scenes. Gritty, dramatic. Vintage film look.";
+    } else {
+      return "Extreme grain, ultra low light. Maximum texture. Documentary/guerrilla aesthetic.";
+    }
+  }
+
+  function getGrainDescriptionFromISO(iso: number): string {
+    if (iso <= 100) {
+      return 'pristine clean image, no grain';
+    } else if (iso <= 200) {
+      return 'very fine grain, clean';
+    } else if (iso <= 400) {
+      return 'subtle film grain';
+    } else if (iso <= 800) {
+      return 'moderate film grain, grainy texture';
+    } else if (iso <= 1600) {
+      return 'noticeable film grain, textured';
+    } else if (iso <= 3200) {
+      return 'heavy film grain, gritty, grainy';
+    } else if (iso <= 6400) {
+      return 'very heavy film grain, extremely grainy, rough texture';
+    } else {
+      return 'extreme film grain, ultra grainy, heavily textured, noise, gritty';
+    }
+  }
+
   function toggleLensEffect(effect: string) {
+    console.log('🎨 Effect toggled:', effect);
     setLensEffects(prev => 
       prev.includes(effect) 
         ? prev.filter(e => e !== effect)
@@ -1085,74 +1207,152 @@ const PromptArmory = () => {
     setSpecialtyLens(prev => prev === lens ? 'none' : lens);
   }
 
-  function generateLensPrompt(): string {
+  function generateCompletePrompt(): string {
+    console.log('🎬 ===== GENERATING COMPLETE PROMPT =====');
+    
     const parts: string[] = [];
     
-    // 1. FOCAL LENGTH OR SPECIALTY
+    // 1. SUBJECT
+    if (subjectInput && subjectInput.trim()) {
+      parts.push(subjectInput.trim());
+      console.log('✅ Subject:', subjectInput.trim());
+    } else {
+      console.log('⚠️ No subject');
+    }
+    
+    // 2. PRESET
+    if (activePreset) {
+      const presetData = presets.find(p => p.id === activePreset);
+      if (presetData) {
+        parts.push(presetData.name);
+        console.log('✅ Preset:', presetData.name);
+      }
+    }
+    
+    // 3. FOCAL LENGTH
     if (specialtyLens !== 'none') {
-      switch (specialtyLens) {
-        case 'macro':
-          parts.push('macro photography lens, extreme close-up, magnified details');
-          break;
-        case 'fisheye':
-          parts.push('fisheye lens, 180 degree field of view, spherical distortion');
-          break;
-        case 'tilt-shift':
-          parts.push('tilt-shift lens, selective focus plane, miniature effect');
-          break;
+      if (specialtyLens === 'macro') {
+        parts.push('macro lens, extreme close-up');
+      } else if (specialtyLens === 'fisheye') {
+        parts.push('fisheye lens, 180 degree view');
+      } else if (specialtyLens === 'tilt-shift') {
+        parts.push('tilt-shift lens, selective focus');
       }
-    } else {
+      console.log('✅ Specialty lens:', specialtyLens);
+    } else if (currentFocalLength) {
       parts.push(`${currentFocalLength}mm lens`);
-      if (currentFocalLength < 21) parts.push('ultra-wide angle, expansive perspective');
-      else if (currentFocalLength < 40) parts.push('wide angle');
-      else if (currentFocalLength < 70) parts.push('standard focal length');
-      else if (currentFocalLength < 135) parts.push('portrait lens, flattering compression');
-      else parts.push('telephoto lens, compressed perspective');
+      console.log('✅ Focal length:', currentFocalLength);
     }
     
-    // 2. APERTURE (DEPTH OF FIELD)
-    if (currentAperture <= 2.0) {
-      parts.push(`f/${currentAperture}, extremely shallow depth of field, beautiful bokeh`);
-    } else if (currentAperture <= 4.0) {
-      parts.push(`f/${currentAperture}, shallow depth of field, background blur`);
-    } else if (currentAperture <= 8.0) {
-      parts.push(`f/${currentAperture}, moderate depth of field`);
-    } else {
-      parts.push(`f/${currentAperture}, deep focus, everything sharp`);
-    }
-    
-    // 3. LENS EFFECTS
-    const effectMap: { [key: string]: string } = {
-      'lens-flare': 'cinematic lens flare',
-      'bokeh': 'bokeh highlights',
-      'vignette': 'natural vignette',
-      'chromatic': 'subtle chromatic aberration',
-      'light-leaks': 'film light leaks',
-      'soft-glow': 'soft glow halation',
-      'anamorphic-flare': 'anamorphic horizontal flare',
-      'distortion': 'barrel distortion'
-    };
-    
-    lensEffects.forEach(effect => {
-      if (effectMap[effect]) {
-        parts.push(effectMap[effect]);
+    // 4. APERTURE
+    if (currentAperture) {
+      parts.push(`f/${currentAperture}`);
+      if (currentAperture <= 2.0) {
+        parts.push('extremely shallow depth of field, bokeh');
+      } else if (currentAperture <= 4.0) {
+        parts.push('shallow depth of field');
+      } else if (currentAperture <= 8.0) {
+        parts.push('moderate depth of field');
+      } else {
+        parts.push('deep focus');
       }
-    });
-    
-    // 4. STYLE
-    const styleMap: { [key: string]: string } = {
-      'modern': 'sharp modern optics, high contrast, clinical precision',
-      'vintage': 'vintage cinema lens, warm tones, classic film aesthetic',
-      'soft': 'soft focus dreamy look, diffused glow, ethereal',
-      'high-contrast': 'high contrast dramatic lighting, deep blacks',
-      'film-stock': 'film grain, analog film stock look, organic color shifts'
-    };
-    
-    if (styleMap[lensStyle]) {
-      parts.push(styleMap[lensStyle]);
+      console.log('✅ Aperture:', currentAperture);
     }
     
-    return parts.join(', ');
+    // 5. ISO / GRAIN
+    if (currentISO) {
+      const grainDesc = getGrainDescriptionFromISO(currentISO);
+      parts.push(grainDesc);
+      console.log('✅ ISO/Grain:', currentISO, '→', grainDesc);
+    }
+    
+    // 6. LENS EFFECTS
+    if (lensEffects && lensEffects.length > 0) {
+      console.log('✅ Lens effects:', lensEffects);
+      const effectMap: Record<string, string> = {
+        'lens-flare': 'cinematic lens flare',
+        'bokeh': 'beautiful bokeh highlights',
+        'vignette': 'natural vignette, darkened corners',
+        'chromatic': 'chromatic aberration',
+        'light-leaks': 'film light leaks',
+        'soft-glow': 'soft glow, halation',
+        'anamorphic-flare': 'anamorphic horizontal flare',
+        'distortion': 'barrel distortion'
+      };
+      lensEffects.forEach(effect => {
+        if (effectMap[effect]) parts.push(effectMap[effect]);
+      });
+    }
+    
+    // 7. LENS STYLE
+    if (lensStyle && lensStyle !== 'modern') {
+      console.log('✅ Lens style:', lensStyle);
+      const styleMap: Record<string, string> = {
+        'vintage': 'vintage cinema lens, warm tones, classic film aesthetic',
+        'soft': 'soft focus, dreamy aesthetic, diffused',
+        'high-contrast': 'high contrast, punchy',
+        'film-stock': 'film stock emulation, analog look'
+      };
+      if (styleMap[lensStyle]) parts.push(styleMap[lensStyle]);
+    }
+    
+    // 8. CAMERA ANGLE
+    if (selectedCameraAngle) {
+      console.log('✅ Camera angle:', selectedCameraAngle);
+      const angleMap: Record<string, string> = {
+        'eye-level': 'eye level angle',
+        'low-angle': 'low angle shot, looking up',
+        'high-angle': 'high angle shot, looking down',
+        'dutch-angle': 'dutch angle, tilted',
+        'birds-eye': "bird's eye view, overhead",
+        'worms-eye': "worm's eye view, ground level",
+        'over-shoulder': 'over the shoulder shot',
+        'pov-shot': 'POV first person perspective'
+      };
+      if (angleMap[selectedCameraAngle]) parts.push(angleMap[selectedCameraAngle]);
+    }
+    
+    // 9. CAMERA MOVEMENT (cinematography mode only)
+    if (selectedCameraMovement && cameraMode === 'cinematography') {
+      console.log('✅ Camera movement:', selectedCameraMovement);
+      const movementMap: Record<string, string> = {
+        'static': 'static shot, locked camera',
+        'pan': 'panning camera movement',
+        'tilt': 'tilting camera movement',
+        'dolly': 'dolly shot, moving forward',
+        'tracking': 'tracking shot, following subject',
+        'crane': 'crane shot, sweeping movement',
+        'steadicam': 'steadicam, smooth flowing',
+        'handheld': 'handheld camera, natural shake',
+        'zoom': 'zoom movement',
+        'whip-pan': 'whip pan, fast blur',
+        'orbit': 'orbiting camera, 360 movement',
+        'drone': 'drone shot, aerial'
+      };
+      if (movementMap[selectedCameraMovement]) parts.push(movementMap[selectedCameraMovement]);
+    }
+    
+    // 10. ASPECT RATIO
+    if (selectedAspectRatio) {
+      console.log('✅ Aspect ratio:', selectedAspectRatio);
+      const ratioMap: Record<string, string> = {
+        '1:1': 'square format composition',
+        '4:5': 'vertical portrait format',
+        '3:2': 'classic photo format',
+        '16:9': 'widescreen format',
+        '1.85:1': 'academy flat cinema format',
+        '2.39:1': 'anamorphic widescreen format',
+        '1.43:1': 'IMAX format'
+      };
+      if (ratioMap[selectedAspectRatio]) parts.push(ratioMap[selectedAspectRatio]);
+    }
+    
+    const finalPrompt = parts.filter(Boolean).join(', ');
+    console.log('✅ ===== FINAL PROMPT =====');
+    console.log(finalPrompt);
+    console.log('===========================');
+    
+    return finalPrompt;
   }
 
   function generateGrainPrompt(): string {
@@ -1246,12 +1446,79 @@ const PromptArmory = () => {
               <div className="hidden sm:block h-px w-12 bg-white/20" />
             </div>
             
-            {/* Right: FOCUS/ADVANCED Toggle */}
+            {/* Right: PHOTOGRAPHY/CINEMATOGRAPHY Toggle */}
             <div className="w-full sm:w-auto flex justify-center">
-              <SystemStateToggle viewMode={viewMode} setViewMode={setViewMode} />
+              <CameraModeToggle cameraMode={cameraMode} setCameraMode={setCameraMode} />
             </div>
           </div>
         </header>
+
+        {/* Mode Description */}
+        <p className="text-center text-sm text-gray-400 mb-8 px-4">
+          {cameraMode === 'photography' 
+            ? 'Optimized for single frame composition and still imagery'
+            : 'Optimized for motion picture storytelling and sequential frames'
+          }
+        </p>
+
+
+        {/* DEBUG PANEL - REMOVE AFTER TESTING */}
+        <div className="fixed top-20 right-4 z-50 bg-red-900/90 border-2 border-red-500 rounded-lg p-4 max-w-sm">
+          <h3 className="text-red-400 font-bold mb-2 text-sm">🐛 DEBUG PANEL</h3>
+          
+          <button
+            onClick={() => {
+              console.clear();
+              console.log('=== MANUAL DEBUG TRIGGER ===');
+              console.log('Current State:', {
+                subjectInput,
+                activePreset,
+                focalLengthIndex,
+                currentFocalLength,
+                apertureIndex,
+                currentAperture,
+                isoIndex,
+                currentISO,
+                selectedCameraAngle,
+                selectedCameraMovement,
+                displayText
+              });
+              
+              const testPrompt = generatePrompt(promptState, targetMode);
+              console.log('Test prompt generation:', testPrompt);
+              
+              alert(`Subject: ${subjectInput || 'EMPTY'}\nFocal: ${currentFocalLength}mm\nAperture: f/${currentAperture}\nISO: ${currentISO}\nDisplay: ${displayText.substring(0, 50)}...`);
+            }}
+            className="w-full px-3 py-2 bg-red-500 text-white rounded font-semibold hover:bg-red-400 text-sm mb-2"
+          >
+            📊 Log Current State
+          </button>
+          
+          <button
+            onClick={() => {
+              const simple = [
+                subjectInput,
+                `${currentFocalLength}mm`,
+                `f/${currentAperture}`,
+                `ISO ${currentISO}`,
+                selectedCameraAngle || ''
+              ].filter(Boolean).join(', ');
+              
+              console.log('Simple prompt:', simple);
+              navigator.clipboard.writeText(simple);
+              alert('Simple prompt copied:\n' + simple);
+            }}
+            className="w-full px-3 py-2 bg-yellow-600 text-white rounded font-semibold hover:bg-yellow-500 text-sm"
+          >
+            📋 Copy Simple Prompt
+          </button>
+          
+          <div className="mt-2 text-xs text-gray-300">
+            <div>Focal: {currentFocalLength}mm</div>
+            <div>ISO: {currentISO}</div>
+            <div>Display: {displayText?.length || 0} chars</div>
+          </div>
+        </div>
 
         {/* ─────────────────────────────────────────────────────────────────────
             1. SELECT A PRESET (Optional) - Top
@@ -1304,90 +1571,51 @@ const PromptArmory = () => {
         </CollapsibleSection>
 
 
+
+
+
         {/* ─────────────────────────────────────────────────────────────────────
-            2. YOUR SUBJECT (Static) - Middle
+            YOUR SUBJECT
         ───────────────────────────────────────────────────────────────────── */}
-        <section className="mb-8">
+        <div className="mb-8">
           <div className="flex items-center gap-3 mb-4">
             <span className="text-xs font-bold tracking-[0.2em] text-white/70 uppercase">Your Subject</span>
             <div className="flex-1 h-px bg-gradient-to-r from-white/20 to-transparent" />
+            <span className="text-xs text-amber-400 uppercase tracking-wider">Required</span>
           </div>
           
-          <div className="relative group">
-            {/* Animated Border Sweep Layer */}
-            <div className="absolute inset-0 rounded overflow-hidden pointer-events-none">
-              <motion.div
-                className="absolute inset-[-2px]"
-                style={{
-                  background: `conic-gradient(
-                    from 0deg,
-                    transparent 0%,
-                    transparent 70%,
-                    ${presetBorderColor}66 85%,
-                    transparent 100%
-                  )`,
-                  maskImage: `linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)`,
-                  maskComposite: 'exclude',
-                  padding: '2px'
-                }}
-                animate={{ rotate: 360 }}
-                transition={{
-                  duration: 5,
-                  repeat: Infinity,
-                  ease: "linear"
-                }}
-              />
-            </div>
-
-            {/* Pulsing Glow Effect - BORDER ONLY, NOT INTERIOR */}
-            {isSubjectEmpty && (
-              <motion.div
-                className="absolute inset-0 rounded pointer-events-none"
-                style={{
-                  background: 'transparent',
-                  boxShadow: `0 0 20px ${presetBorderColor}80, 0 0 40px ${presetBorderColor}40`
-                }}
-                animate={{
-                  boxShadow: [
-                    `0 0 15px ${presetBorderColor}60, 0 0 30px ${presetBorderColor}30`,
-                    `0 0 25px ${presetBorderColor}90, 0 0 50px ${presetBorderColor}50`,
-                    `0 0 15px ${presetBorderColor}60, 0 0 30px ${presetBorderColor}30`
-                  ]
-                }}
-                transition={{
-                  duration: 2.5,
-                  repeat: Infinity,
-                  ease: "easeInOut"
-                }}
-              />
-            )}
-
-            {/* Main Textarea with Dynamic Border */}
-            <textarea
-              rows={3}
-              value={promptState.subject}
-              onChange={(e) => {
-                const newValue = e.target.value;
-                setIsSubjectEmpty(newValue.length === 0);
-                setPromptState(prev => ({ ...prev, subject: newValue }));
-              }}
-              placeholder="Describe your subject... (e.g., 'a lone samurai standing in rainfall')"
-              className="relative z-10 w-full bg-black/80 border-2 transition-all duration-500 ease-out px-6 py-5 text-base sm:text-lg font-light text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-white/50 shadow-lg resize-none overflow-y-auto"
-              style={{ 
-                borderColor: isSubjectEmpty 
-                  ? `${presetBorderColor}80`  // Bright when empty (50% opacity)
-                  : `${presetBorderColor}40`,  // Dim when has content (25% opacity)
-                minHeight: '120px',
-                maxHeight: '120px',
-                fontSize: '16px' // Prevent iOS zoom
-              }}
-            />
-            <div className={`absolute right-4 top-4 text-xs font-mono transition-colors duration-300 z-20 ${promptState.subject.length > 0 ? 'text-white/70' : 'text-white/30'}`}>
-              {promptState.subject.length > 0 && `${promptState.subject.length} CHARS`}
-            </div>
+          <textarea
+            value={subjectInput}
+            onChange={(e) => {
+              const newValue = e.target.value;
+              console.log('📝 Subject changed:', newValue);
+              setSubjectInput(newValue);
+            }}
+            placeholder="Describe what you want to create... (e.g., 'a lone samurai standing in rainfall', 'sunset over mountains', 'portrait of elderly woman')"
+            className="
+              w-full 
+              h-32
+              p-4 
+              bg-black/80 
+              border-2 border-white/10
+              hover:border-white/20
+              focus:border-cyan-500 
+              rounded-lg
+              text-base text-white/90
+              placeholder:text-white/30
+              focus:outline-none
+              focus:ring-2 focus:ring-cyan-500/50
+              transition-all
+              resize-none
+              font-light
+            "
+          />
+          
+          <div className="mt-2 flex items-start gap-2 text-xs text-white/40">
+            <span>💡</span>
+            <span>Describe the main subject or scene you want to generate. Be specific and detailed.</span>
           </div>
-        </section>
-
+        </div>
 
         {/* ─────────────────────────────────────────────────────────────────────
             LENS & CAMERA CONTROLS (OPTIONAL)
@@ -1422,7 +1650,14 @@ const PromptArmory = () => {
                   max={STANDARD_FOCAL_LENGTHS.length - 1}
                   step="1"
                   value={focalLengthIndex}
-                  onChange={(e) => setFocalLengthIndex(parseInt(e.target.value))}
+                  onChange={(e) => {
+                    const newIndex = parseInt(e.target.value);
+                    console.log('🎯 Focal length changed:', {
+                      index: newIndex,
+                      value: STANDARD_FOCAL_LENGTHS[newIndex]
+                    });
+                    setFocalLengthIndex(newIndex);
+                  }}
                   disabled={specialtyLens !== 'none'}
                   className="w-full h-4 sm:h-3 bg-gray-700 rounded-lg appearance-none cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
                   style={{
@@ -1517,7 +1752,14 @@ const PromptArmory = () => {
                   max={F_STOPS.length - 1}
                   step="1"
                   value={apertureIndex}
-                  onChange={(e) => setApertureIndex(parseInt(e.target.value))}
+                  onChange={(e) => {
+                    const newIndex = parseInt(e.target.value);
+                    console.log('📷 Aperture changed:', {
+                      index: newIndex,
+                      value: F_STOPS[newIndex]
+                    });
+                    setApertureIndex(newIndex);
+                  }}
                   className="w-full h-4 sm:h-3 bg-gray-700 rounded-lg appearance-none cursor-pointer"
                   style={{
                     accentColor: '#06b6d4'
@@ -1548,7 +1790,63 @@ const PromptArmory = () => {
                 </p>
               </div>
 
-              {/* 4. LENS EFFECTS */}
+              {/* 4. ISO SENSITIVITY (FILM GRAIN) */}
+              <div className="space-y-4">
+                <div className="flex justify-between items-center mb-2">
+                  <h3 className="text-xs font-bold tracking-[0.2em] text-white/70 uppercase">ISO Sensitivity (Film Grain)</h3>
+                  <span className="text-2xl font-bold text-cyan-400">ISO {currentISO}</span>
+                </div>
+                
+                <input
+                  type="range"
+                  min="0"
+                  max={ISO_VALUES.length - 1}
+                  step="1"
+                  value={isoIndex}
+                  onChange={(e) => {
+                    const newIndex = parseInt(e.target.value);
+                    console.log('🎞️ ISO changed:', {
+                      index: newIndex,
+                      value: ISO_VALUES[newIndex]
+                    });
+                    setIsoIndex(newIndex);
+                  }}
+                  className="w-full h-4 sm:h-3 bg-gray-700 rounded-lg appearance-none cursor-pointer"
+                  style={{
+                    accentColor: '#06b6d4'
+                  }}
+                />
+                
+                <div className="flex justify-between text-[9px] text-white/40 font-mono">
+                  {ISO_VALUES.map((iso, idx) => (
+                    <span key={idx} className={isoIndex === idx ? 'text-cyan-400 font-bold' : ''}>
+                      {iso}
+                    </span>
+                  ))}
+                </div>
+                
+                <div className="flex justify-between items-center text-sm mt-3">
+                  <span className="text-left w-1/2 text-white/50">
+                    ← Fine Grain<br/>
+                    <span className="text-[10px] text-white/30">Clean, bright</span>
+                  </span>
+                  <span className="text-right w-1/2 text-white/50">
+                    Heavy Grain →<br/>
+                    <span className="text-[10px] text-white/30">Gritty, low light</span>
+                  </span>
+                </div>
+                
+                <p className="text-sm text-white/60 mt-2 p-3 bg-white/[0.02] rounded border border-white/5">
+                  {getISODescription(currentISO)}
+                </p>
+                
+                <div className="text-xs text-white/40 mt-2 flex items-start gap-2">
+                  <span>💡</span>
+                  <span>ISO controls sensor/film sensitivity. Higher ISO = more grain but better low-light performance.</span>
+                </div>
+              </div>
+
+              {/* 5. LENS EFFECTS */}
               <div className="space-y-4">
                 <h3 className="text-xs font-bold tracking-[0.2em] text-white/70 uppercase">Lens Effects (Optional)</h3>
                 
@@ -1582,7 +1880,7 @@ const PromptArmory = () => {
                 </div>
               </div>
 
-              {/* 5. LENS CHARACTER / STYLE */}
+              {/* 6. LENS CHARACTER / STYLE */}
               <div className="space-y-4">
                 <h3 className="text-xs font-bold tracking-[0.2em] text-white/70 uppercase">Lens Character / Style</h3>
                 
@@ -1606,7 +1904,10 @@ const PromptArmory = () => {
                         type="radio"
                         name="lens-style"
                         checked={lensStyle === style.id}
-                        onChange={() => setLensStyle(style.id)}
+                        onChange={() => {
+                          console.log('🎨 Style selected:', style.id);
+                          setLensStyle(style.id);
+                        }}
                         className="w-5 h-5 text-cyan-500 focus:ring-cyan-500 focus:ring-offset-0"
                       />
                       <div className="flex-1">
@@ -1749,8 +2050,9 @@ const PromptArmory = () => {
         </div>
 
         {/* ─────────────────────────────────────────────────────────────────────
-            CAMERA MOVEMENT (OPTIONAL)
+            CAMERA MOVEMENT (OPTIONAL) - Cinematography Mode Only
         ───────────────────────────────────────────────────────────────────── */}
+        {cameraMode === 'cinematography' && (
         <div className="mb-8">
           <div 
             className="flex items-center justify-between mb-4 cursor-pointer hover:opacity-80 transition-opacity"
@@ -1809,6 +2111,52 @@ const PromptArmory = () => {
                 </button>
               ))}
             </div>
+          )}
+        </div>
+        )}
+
+
+        {/* ─────────────────────────────────────────────────────────────────────
+            ASPECT RATIO / FORMAT
+        ───────────────────────────────────────────────────────────────────── */}
+        <div className="mb-8">
+          <div className="flex items-center gap-3 mb-4">
+            <span className="text-xs font-bold tracking-[0.2em] text-white/70 uppercase">
+              Aspect Ratio / Format
+            </span>
+            <div className="flex-1 h-px bg-gradient-to-r from-white/20 to-transparent" />
+            <span className="text-xs text-white/40 uppercase tracking-wider">Optional</span>
+          </div>
+          
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {(cameraMode === 'photography' ? PHOTO_ASPECT_RATIOS : CINEMA_ASPECT_RATIOS).map(ratio => (
+              <button
+                key={ratio.id}
+                onClick={() => {
+                  console.log('🎬 Aspect ratio clicked:', ratio.value);
+                  setSelectedAspectRatio(ratio.value);
+                }}
+                className={`
+                  p-4 border-2 rounded-lg transition-all text-center font-semibold
+                  \${selectedAspectRatio === ratio.value
+                    ? 'border-cyan-500 bg-cyan-500/10 text-cyan-400'
+                    : 'border-white/10 hover:border-white/20 text-white/70'
+                  }
+                `}
+              >
+                <div className="text-sm mb-1">{ratio.label}</div>
+                <div className="text-xs text-gray-400">{ratio.value}</div>
+              </button>
+            ))}
+          </div>
+          
+          {selectedAspectRatio && (
+            <button
+              onClick={() => setSelectedAspectRatio(null)}
+              className="mt-3 text-xs text-gray-500 hover:text-gray-300"
+            >
+              ✕ Clear selection
+            </button>
           )}
         </div>
 
@@ -2016,6 +2364,30 @@ const PromptArmory = () => {
               >
                 {displayText || '> AWAITING PARAMETERS...'}
               </p>
+              
+              {!subjectInput && !activePreset && !displayText && (
+                <div className="mt-4 p-4 bg-amber-500/10 border border-amber-500/30 rounded flex items-start gap-3">
+                  <span className="text-amber-400 text-lg">💡</span>
+                  <p className="text-sm text-amber-300">
+                    <strong>Tip:</strong> Describe your subject above, then select visual options to enhance your prompt. Or start with a preset for quick inspiration.
+                  </p>
+                </div>
+              )}
+              
+              {/* EMERGENCY SIMPLE PROMPT - FOR DEBUGGING */}
+              <div className="mt-4 p-4 bg-yellow-900/20 border border-yellow-500 rounded">
+                <h4 className="text-yellow-400 font-bold text-xs mb-2">🔧 DEBUG: Simple Prompt (no builders)</h4>
+                <p className="text-white font-mono text-xs break-words">
+                  {[
+                    subjectInput || '[No subject]',
+                    currentFocalLength ? `${currentFocalLength}mm lens` : '',
+                    currentAperture ? `f/${currentAperture}` : '',
+                    currentISO ? `ISO ${currentISO}` : '',
+                    selectedCameraAngle ? `${selectedCameraAngle} angle` : '',
+                    selectedCameraMovement ? `${selectedCameraMovement} movement` : ''
+                  ].filter(Boolean).join(', ') || 'Make selections above'}
+                </p>
+              </div>
             </div>
             
             {/* Bottom accent */}
