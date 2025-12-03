@@ -63,6 +63,65 @@ const CINEMA_ASPECT_RATIOS = [
   { id: '1.43:1', label: 'IMAX', value: '1.43:1' },
 ];
 
+// Lens style options with gradient configurations
+const LENS_STYLE_OPTIONS = [
+  {
+    id: 'modern',
+    label: 'Modern Sharp & Clean',
+    description: 'High contrast, clinical precision, neutral colors',
+    icon: '◆',
+    gradient: {
+      from: '#4facfe',
+      to: '#00f2fe',
+      angle: '135deg'
+    }
+  },
+  {
+    id: 'vintage',
+    label: 'Vintage Cinematic',
+    description: 'Warm tones, lower contrast, classic film aesthetic',
+    icon: '◐',
+    gradient: {
+      from: '#f093fb',
+      to: '#f5576c',
+      angle: '135deg'
+    }
+  },
+  {
+    id: 'soft',
+    label: 'Soft & Dreamy',
+    description: 'Diffused glow, ethereal beauty, romantic',
+    icon: '✧',
+    gradient: {
+      from: '#fa709a',
+      to: '#fee140',
+      angle: '135deg'
+    }
+  },
+  {
+    id: 'high-contrast',
+    label: 'High Contrast',
+    description: 'Deep blacks, punchy highlights, dramatic',
+    icon: '◈',
+    gradient: {
+      from: '#a770ef',
+      to: '#00d4ff',
+      angle: '135deg'
+    }
+  },
+  {
+    id: 'film-stock',
+    label: 'Film Stock Emulation',
+    description: 'Film grain, color shifts, organic analog feel',
+    icon: '◎',
+    gradient: {
+      from: '#30cfd0',
+      to: '#330867',
+      angle: '135deg'
+    }
+  }
+];
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // POLYMORPHIC PROMPT ARMORY — ULTIMATE EDITION
 // Clean AAA Cinematic Design with Multi-Platform Output & Preset System
@@ -1758,41 +1817,117 @@ const PromptArmory = () => {
 
               {/* 6. LENS CHARACTER / STYLE */}
               <div className="space-y-4">
-                <h3 className="text-xs font-bold tracking-[0.2em] text-white/70 uppercase">Lens Character / Style</h3>
+                <h3 className="text-xs font-bold tracking-[0.2em] text-white/70 uppercase">
+                  Lens Character / Style
+                </h3>
                 
-                <div className="space-y-3">
-                  {[
-                    { id: 'modern', label: 'Modern Sharp & Clean', desc: 'High contrast, clinical precision, neutral colors' },
-                    { id: 'vintage', label: 'Vintage Cinematic', desc: 'Warm tones, lower contrast, classic film aesthetic' },
-                    { id: 'soft', label: 'Soft & Dreamy', desc: 'Diffused glow, ethereal beauty, romantic' },
-                    { id: 'high-contrast', label: 'High Contrast', desc: 'Deep blacks, punchy highlights, dramatic' },
-                    { id: 'film-stock', label: 'Film Stock Emulation', desc: 'Film grain, color shifts, organic analog feel' }
-                  ].map(style => (
-                    <label 
+                {/* Glass-Morphic Style Cards Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
+                  {LENS_STYLE_OPTIONS.map((style) => (
+                    <div
                       key={style.id}
-                      className="flex items-center space-x-3 p-3 border-2 rounded-lg cursor-pointer transition-all duration-200"
+                      onClick={() => {
+                        console.log('🎨 Style selected:', style.id);
+                        setLensStyle(style.id);
+                      }}
+                      className={`
+                        relative overflow-hidden
+                        rounded-2xl p-6
+                        border transition-all duration-300
+                        cursor-pointer group
+                        min-h-[140px]
+                        ${lensStyle === style.id
+                          ? 'border-2'
+                          : 'border border-white/10 hover:border-white/20'
+                        }
+                      `}
                       style={{
-                        borderColor: lensStyle === style.id ? '#06b6d4' : 'rgba(255, 255, 255, 0.1)',
-                        backgroundColor: lensStyle === style.id ? 'rgba(6, 182, 212, 0.1)' : 'rgba(255, 255, 255, 0.02)'
+                        background: '#1a1d29',
+                        borderColor: lensStyle === style.id 
+                          ? style.gradient.from 
+                          : undefined
                       }}
                     >
-                      <input
-                        type="radio"
-                        name="lens-style"
-                        checked={lensStyle === style.id}
-                        onChange={() => {
-                          console.log('🎨 Style selected:', style.id);
-                          setLensStyle(style.id);
+                      {/* Gradient Overlay */}
+                      <div 
+                        className={`
+                          absolute inset-0 
+                          transition-opacity duration-300
+                          ${lensStyle === style.id 
+                            ? 'opacity-100' 
+                            : 'opacity-50 group-hover:opacity-70'
+                          }
+                        `}
+                        style={{
+                          background: `linear-gradient(${style.gradient.angle}, ${style.gradient.from}, ${style.gradient.to})`,
+                          mixBlendMode: 'screen'
                         }}
-                        className="w-5 h-5 text-cyan-500 focus:ring-cyan-500 focus:ring-offset-0"
                       />
-                      <div className="flex-1">
-                        <div className="font-semibold text-sm">{style.label}</div>
-                        <div className="text-xs text-white/40">{style.desc}</div>
+                      
+                      {/* Backdrop Blur Layer */}
+                      <div 
+                        className="absolute inset-0 backdrop-blur-[2px]"
+                        style={{
+                          background: 'rgba(0,0,0,0.2)'
+                        }}
+                      />
+                      
+                      {/* Content */}
+                      <div className="relative z-10">
+                        {/* Icon Container - Top Right */}
+                        <div 
+                          className={`
+                            absolute -top-2 -right-2
+                            w-11 h-11
+                            rounded-xl
+                            backdrop-blur-md
+                            border transition-all duration-300
+                            flex items-center justify-center
+                            text-xl
+                            ${lensStyle === style.id
+                              ? 'bg-white/20 border-white/30'
+                              : 'bg-white/10 border-white/20'
+                            }
+                          `}
+                        >
+                          {style.icon}
+                        </div>
+                        
+                        {/* Title */}
+                        <h4 
+                          className={`
+                            text-lg font-semibold mb-2
+                            transition-all duration-300
+                            ${lensStyle === style.id ? 'text-white' : 'text-white/90'}
+                          `}
+                          style={{
+                            textShadow: lensStyle === style.id 
+                              ? `0 0 20px ${style.gradient.from}80`
+                              : '0 2px 8px rgba(0,0,0,0.3)'
+                          }}
+                        >
+                          {style.label}
+                        </h4>
+                        
+                        {/* Description */}
+                        <p className="text-xs text-white/60 leading-relaxed line-clamp-2">
+                          {style.description}
+                        </p>
                       </div>
-                    </label>
+                      
+                      {/* Selected Glow Effect */}
+                      {lensStyle === style.id && (
+                        <div 
+                          className="absolute inset-0 -z-10 blur-2xl opacity-50"
+                          style={{
+                            background: `radial-gradient(circle at center, ${style.gradient.from}, transparent 70%)`
+                          }}
+                        />
+                      )}
+                    </div>
                   ))}
                 </div>
+              </div>
               {/* FILM GRAIN & TEXTURE */}
               <div className="space-y-4 mt-8 pt-8 border-t border-white/10">
                 <h3 className="text-xs font-bold tracking-[0.2em] text-white/70 uppercase">
@@ -1851,8 +1986,6 @@ const PromptArmory = () => {
                     </div>
                   </div>
                 )}
-              </div>
-
               </div>
 
             </div>
