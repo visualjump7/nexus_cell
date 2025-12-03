@@ -32,40 +32,7 @@ export const DashboardHeaderControls: React.FC<DashboardHeaderControlsProps> = (
         </Link>
       </div>
 
-      {/* Row 2: App Navigation - Email Armory temporarily disabled */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-5 w-full sm:w-auto">
-        {/* Visual Armory Button */}
-        <Link
-          href="/dashboard"
-          className={`flex items-center gap-2 sm:gap-3 px-4 sm:px-6 py-2 sm:py-3 border-2 rounded-lg h-[44px] sm:h-[50px] transition-all duration-300 justify-center sm:justify-start ${
-            currentApp === 'visual'
-              ? 'bg-cyan-500 border-cyan-500 text-white shadow-lg shadow-cyan-500/30 cursor-default pointer-events-none'
-              : 'bg-transparent border-cyan-400 text-cyan-400 hover:bg-cyan-400/10 cursor-pointer'
-          }`}
-        >
-          <span className={currentApp === 'visual' ? 'text-white' : 'text-cyan-400 drop-shadow-[0_0_8px_rgba(34,211,238,0.5)]'}>
-            <LayoutDashboard size={18} className="sm:w-5 sm:h-5" />
-          </span>
-          <span className="text-xs sm:text-sm font-mono uppercase tracking-wider">Visual Armory</span>
-        </Link>
 
-        {/* Email Armory Button - Temporarily Disabled */}
-        {/* 
-        <Link
-          href="/dashboard/email"
-          className={`flex items-center gap-2 sm:gap-3 px-4 sm:px-6 py-2 sm:py-3 border-2 rounded-lg h-[44px] sm:h-[50px] transition-all duration-300 justify-center sm:justify-start ${
-            currentApp === 'text'
-              ? 'bg-amber-500 border-amber-500 text-white shadow-lg shadow-amber-500/30 cursor-default pointer-events-none'
-              : 'bg-transparent border-amber-500 text-amber-500 hover:bg-amber-500/10 cursor-pointer'
-          }`}
-        >
-          <span className={currentApp === 'text' ? 'text-white' : 'text-amber-500 drop-shadow-[0_0_8px_rgba(245,158,11,0.5)]'}>
-            <MessageSquare size={18} className="sm:w-5 sm:h-5" />
-          </span>
-          <span className="text-xs sm:text-sm font-mono uppercase tracking-wider">Email Armory</span>
-        </Link>
-        */}
-      </div>
     </div>
   );
 };

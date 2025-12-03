@@ -180,7 +180,8 @@ const PromptArmory = () => {
   const [cameraMode, setCameraMode] = useState<'photography' | 'cinematography'>('photography');
   
   // Collapsible section states - controlled by viewMode
-  const [presetsOpen, setPresetsOpen] = useState(true);
+  const [presetsOpen, setPresetsOpen] = useState(false);
+  const [isSubjectFocused, setIsSubjectFocused] = useState(false);
 
   
   // Reset collapsible states when cameraMode changes
@@ -1554,24 +1555,27 @@ const PromptArmory = () => {
               console.log('📝 Subject changed:', newValue);
               setSubjectInput(newValue);
             }}
+            onFocus={() => setIsSubjectFocused(true)}
+            onBlur={() => setIsSubjectFocused(false)}
             placeholder="Describe what you want to create... (e.g., 'a lone samurai standing in rainfall', 'sunset over mountains', 'portrait of elderly woman')"
-            className="
+            className={`
               w-full 
               h-32
               p-4 
               bg-black/80 
-              border-2 border-white/10
-              hover:border-white/20
-              focus:border-cyan-500 
+              border-2
               rounded-lg
               text-base text-white/90
               placeholder:text-white/30
               focus:outline-none
-              focus:ring-2 focus:ring-cyan-500/50
-              transition-all
+              transition-all duration-300
               resize-none
               font-light
-            "
+              ${isSubjectFocused || subjectInput.length > 0
+                ? 'border-cyan-500 shadow-[0_0_20px_rgba(6,182,212,0.5)]'
+                : 'border-white/10 hover:border-white/20'
+              }
+            `}
           />
           
           <div className="mt-2 flex items-start gap-2 text-xs text-white/40">
