@@ -1867,7 +1867,7 @@ const PromptArmory = () => {
                 </div>
               </div>
 
-{/* 6. LENS CHARACTER / STYLE - Vertical Carousel */}
+              {/* 6. LENS CHARACTER / STYLE - Vertical Carousel */}
               <div className="space-y-4">
                 <h3 className="text-xs font-bold tracking-[0.2em] text-white/70 uppercase">
                   Lens Character / Style
@@ -2025,7 +2025,7 @@ const PromptArmory = () => {
                   />
                 </div>
               </div>
-                            {/* FILM GRAIN & TEXTURE */}
+              {/* FILM GRAIN & TEXTURE */}
               <div className="space-y-4 mt-8 pt-8 border-t border-white/10">
                 <h3 className="text-xs font-bold tracking-[0.2em] text-white/70 uppercase">
                   Film Grain & Texture
