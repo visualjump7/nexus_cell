@@ -1438,7 +1438,7 @@ const PromptArmory = () => {
   }
 
   return (
-    <div className="min-h-screen bg-black text-white overflow-hidden relative selection:bg-white/20">
+    <div className="min-h-screen bg-black text-white overflow-hidden relative selection:bg-white/20" style={{ paddingBottom: '180px' }}>
       {/* ═══════════════════════════════════════════════════════════════════════
           BACKGROUND EFFECTS
       ═══════════════════════════════════════════════════════════════════════ */}
@@ -2091,149 +2091,6 @@ const PromptArmory = () => {
         </div>
 
         {/* ─────────────────────────────────────────────────────────────────────
-            OUTPUT DISPLAY
-        ───────────────────────────────────────────────────────────────────── */}
-        <section className="mb-8 mt-8">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3">
-              <span className="text-xs font-bold tracking-[0.2em] text-white/70 uppercase">Generated Output</span>
-              <div 
-                className="px-2 py-0.5 rounded text-xs transition-colors duration-300"
-                style={{ 
-                  backgroundColor: `${currentPlatform.color}20`,
-                  color: currentPlatform.color
-                }}
-              >
-                {currentPlatform.name}
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              {isTransitioning && (
-                <span className="text-xs text-white/30 animate-pulse">Encoding...</span>
-              )}
-            </div>
-          </div>
-          
-          {/* Output Box */}
-          <div 
-            className="relative border overflow-hidden group"
-            style={{ 
-              borderColor: `${currentPlatform.color}40`,
-              backgroundColor: 'rgba(0,0,0,0.8)'
-            }}
-          >
-            {/* Header bar */}
-            <div 
-              className="flex items-center justify-between px-4 py-2 border-b"
-              style={{ 
-                borderColor: `${currentPlatform.color}20`,
-                background: `linear-gradient(90deg, ${currentPlatform.color}10 0%, transparent 100%)`
-              }}
-            >
-              <div className="flex items-center gap-3">
-                <span className="font-mono" style={{ color: currentPlatform.color }}>{currentPlatform.icon}</span>
-                <span className="text-xs font-mono uppercase tracking-wider text-white/60">{currentPlatform.name} TERMINAL</span>
-              </div>
-              <div className="flex items-center gap-1 opacity-50">
-                <div className="w-1.5 h-1.5 bg-white/20" />
-                <div className="w-1.5 h-1.5 bg-white/20" />
-                <div className="w-1.5 h-1.5 bg-white/20" />
-              </div>
-            </div>
-            
-            {/* Text content */}
-            <div className="p-6 min-h-[120px] relative">
-              {/* Scanline effect */}
-              <div className="absolute inset-0 opacity-[0.02] pointer-events-none bg-[linear-gradient(transparent_50%,rgba(255,255,255,0.1)_50%)] bg-[length:100%_4px]" />
-              
-              <p 
-                className={`font-mono text-sm leading-relaxed transition-opacity duration-200 ${isTransitioning ? 'text-white/50' : 'text-white/90'}`}
-                style={{ wordBreak: 'break-word' }}
-              >
-                {displayText || '> AWAITING PARAMETERS...'}
-              </p>
-              
-              {!subjectInput && !activePreset && !displayText && (
-                <div className="mt-4 p-4 bg-amber-500/10 border border-amber-500/30 rounded flex items-start gap-3">
-                  <span className="text-amber-400 text-lg">💡</span>
-                  <p className="text-sm text-amber-300">
-                    <strong>Tip:</strong> Describe your subject above, then select visual options to enhance your prompt. Or start with a preset for quick inspiration.
-                  </p>
-                </div>
-              )}
-              
-
-            </div>
-            
-            {/* Bottom accent */}
-            <div 
-              className="h-0.5 w-full"
-              style={{ 
-                background: `linear-gradient(90deg, ${currentPlatform.color} 0%, transparent 100%)`
-              }}
-            />
-          </div>
-        </section>
-
-        {/* ─────────────────────────────────────────────────────────────────────
-            ACTION BUTTONS
-        ───────────────────────────────────────────────────────────────────── */}
-        <section className="flex items-center gap-4">
-          <button
-            onClick={handleCopy}
-            disabled={isTransitioning}
-            className="group relative flex items-center gap-3 px-6 py-3 rounded-lg font-medium transition-all duration-300 overflow-hidden"
-            style={{ 
-              backgroundColor: copied ? '#10b981' : currentPlatform.color,
-              color: 'black'
-            }}
-          >
-            <span className="relative z-10">
-              {copied ? (
-                <>
-                  <svg className="w-4 h-4 inline mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                  Copied!
-                </>
-              ) : (
-                <>Copy for {currentPlatform.name}</>
-              )}
-            </span>
-          </button>
-          
-          <button
-            onClick={handleClear}
-            className="flex items-center gap-2 px-5 py-3 rounded-lg border border-white/20 text-white/70 hover:bg-white/5 hover:text-white transition-all duration-200"
-          >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-            </svg>
-            Clear All
-          </button>
-          
-          <div className="flex-1" />
-          
-          {/* Platform quick switch */}
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-white/30">Quick:</span>
-            {Object.values(platforms).slice(0, 6).map((p) => (
-              <button
-                key={p.id}
-                onClick={() => handlePlatformChange(p.id)}
-                className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200 ${
-                  targetMode === p.id ? 'bg-white/20' : 'bg-white/5 hover:bg-white/10'
-                }`}
-                style={{ color: targetMode === p.id ? p.color : 'rgba(255,255,255,0.4)' }}
-                title={p.name}
-              >
-                {p.icon}
-              </button>
-            ))}
-          </div>
-        </section>
-
-        {/* ─────────────────────────────────────────────────────────────────────
             FOOTER
         ───────────────────────────────────────────────────────────────────── */}
         <footer className="mt-12 pt-6 border-t border-white/5">
@@ -2305,6 +2162,76 @@ const PromptArmory = () => {
           </div>
         </div>
       )}
+
+      {/* ═══════════════════════════════════════════════════════════════════════
+          FIXED BOTTOM PROMPT PANEL
+      ═══════════════════════════════════════════════════════════════════════ */}
+      <div className="fixed-prompt-panel">
+        <div className="prompt-panel-inner">
+          
+          {/* Header */}
+          <div className="fixed-prompt-header">
+            <div className="flex items-center">
+              <span className="section-label">Generated Prompt</span>
+              <span className="encoding-indicator">LIVE</span>
+            </div>
+            <div>
+              <span className="platform-badge">{currentPlatform.name}</span>
+            </div>
+          </div>
+
+          {/* Prompt Display */}
+          <div className="prompt-display-area">
+            <div className="prompt-text-wrapper">
+              <p className="prompt-text">
+                {displayText || '> Select options above to build your prompt...'}
+              </p>
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div className="prompt-actions">
+            <div className="actions-left">
+              <button 
+                className={`btn-copy ${copied ? 'copied' : ''}`}
+                onClick={handleCopy}
+                disabled={isTransitioning}
+              >
+                {copied ? (
+                  <>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M5 13l4 4L19 7" />
+                    </svg>
+                    Copied!
+                  </>
+                ) : (
+                  <>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                    </svg>
+                    Copy to Clipboard
+                  </>
+                )}
+              </button>
+              
+              <button className="btn-clear" onClick={handleClear}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+                Clear All
+              </button>
+            </div>
+            
+            <div className="actions-right">
+              <span className="char-count">
+                {displayText?.length || 0} characters
+              </span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
     </div>
   );
 };
