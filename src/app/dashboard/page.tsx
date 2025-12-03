@@ -74,7 +74,8 @@ const LENS_STYLE_OPTIONS = [
       from: '#4facfe',
       to: '#00f2fe',
       angle: '135deg'
-    }
+    },
+    accentColor: '#06b6d4'
   },
   {
     id: 'vintage',
@@ -85,7 +86,8 @@ const LENS_STYLE_OPTIONS = [
       from: '#f093fb',
       to: '#f5576c',
       angle: '135deg'
-    }
+    },
+    accentColor: '#a855f7'
   },
   {
     id: 'soft',
@@ -96,7 +98,8 @@ const LENS_STYLE_OPTIONS = [
       from: '#fa709a',
       to: '#fee140',
       angle: '135deg'
-    }
+    },
+    accentColor: '#ec4899'
   },
   {
     id: 'high-contrast',
@@ -107,7 +110,8 @@ const LENS_STYLE_OPTIONS = [
       from: '#a770ef',
       to: '#00d4ff',
       angle: '135deg'
-    }
+    },
+    accentColor: '#6366f1'
   },
   {
     id: 'film-stock',
@@ -118,7 +122,8 @@ const LENS_STYLE_OPTIONS = [
       from: '#30cfd0',
       to: '#330867',
       angle: '135deg'
-    }
+    },
+    accentColor: '#10b981'
   }
 ];
 
@@ -195,8 +200,7 @@ const PromptArmory = () => {
   const [isoIndex, setIsoIndex] = useState(3); // Default to ISO 400 (index 3)
   const [lensEffects, setLensEffects] = useState<string[]>([]);
   const [lensStyle, setLensStyle] = useState<string>('modern');
-  const lensCarouselRef = useRef<HTMLDivElement>(null);
-  const [activeCardIndex, setActiveCardIndex] = useState(0);
+  const lensListRef = useRef<HTMLDivElement>(null);
   const [isSpecialtyLensOpen, setIsSpecialtyLensOpen] = useState(false);
   
   // Camera Angles & Movement state
@@ -1271,56 +1275,6 @@ const PromptArmory = () => {
     setSpecialtyLens(prev => prev === lens ? 'none' : lens);
   }
 
-  // Update active card based on scroll position
-  const handleLensCarouselScroll = useCallback(() => {
-    if (!lensCarouselRef.current) return;
-    
-    const track = lensCarouselRef.current;
-    const cards = track.querySelectorAll('[data-card-index]');
-    const trackRect = track.getBoundingClientRect();
-    const centerY = trackRect.top + trackRect.height / 2;
-    
-    let closestIndex = 0;
-    let closestDistance = Infinity;
-    
-    cards.forEach((card, index) => {
-      const cardRect = card.getBoundingClientRect();
-      const cardCenterY = cardRect.top + cardRect.height / 2;
-      const distance = Math.abs(centerY - cardCenterY);
-      
-      if (distance < closestDistance) {
-        closestDistance = distance;
-        closestIndex = index;
-      }
-    });
-    
-    if (closestIndex !== activeCardIndex) {
-      setActiveCardIndex(closestIndex);
-      setLensStyle(LENS_STYLE_OPTIONS[closestIndex].id);
-      console.log('🎨 Carousel style changed:', LENS_STYLE_OPTIONS[closestIndex].id);
-    }
-  }, [activeCardIndex]);
-
-  // Lens carousel scroll listener
-  useEffect(() => {
-    const carousel = lensCarouselRef.current;
-    if (!carousel) return;
-    
-    let scrollTimeout: NodeJS.Timeout;
-    const handleScroll = () => {
-      clearTimeout(scrollTimeout);
-      scrollTimeout = setTimeout(handleLensCarouselScroll, 100);
-    };
-    
-    carousel.addEventListener('scroll', handleScroll);
-    handleLensCarouselScroll(); // Initial state
-    
-    return () => {
-      carousel.removeEventListener('scroll', handleScroll);
-      clearTimeout(scrollTimeout);
-    };
-  }, [handleLensCarouselScroll]);
-
   function generateCompletePrompt(): string {
     console.log('🎬 ===== GENERATING COMPLETE PROMPT =====');
     
@@ -1867,164 +1821,117 @@ const PromptArmory = () => {
                 </div>
               </div>
 
-              {/* 6. LENS CHARACTER / STYLE - Vertical Carousel */}
+              {/* 6. LENS CHARACTER / STYLE - Vertical List */}
               <div className="space-y-4">
                 <h3 className="text-xs font-bold tracking-[0.2em] text-white/70 uppercase">
                   Lens Character / Style
                 </h3>
                 
-                {/* Vertical Scrolling Carousel */}
-                <div className="relative w-full" style={{ height: '500px' }}>
-                  {/* Carousel Track */}
+                {/* Vertical Scrolling List Container */}
+                <div className="w-full mx-auto" style={{ maxWidth: '700px' }}>
                   <div
-                    ref={lensCarouselRef}
-                    className="flex flex-col items-center gap-6 h-full overflow-y-auto py-24 scrollbar-hide"
+                    ref={lensListRef}
+                    className="h-[450px] overflow-y-auto px-4 py-4 flex flex-col gap-3.5"
                     style={{
-                      scrollSnapType: 'y mandatory',
-                      scrollPaddingTop: '140px',
-                      scrollPaddingBottom: '140px'
+                      scrollbarWidth: 'thin',
+                      scrollbarColor: 'rgba(255, 255, 255, 0.2) transparent'
                     }}
                   >
-                    {LENS_STYLE_OPTIONS.map((style, index) => {
-                      const isActive = activeCardIndex === index;
-                      const distance = Math.abs(activeCardIndex - index);
-                      const opacity = isActive ? 1 : Math.max(0.4, 1 - distance * 0.3);
-                      const scale = isActive ? 1 : Math.max(0.92, 1 - distance * 0.04);
-                      const blur = isActive ? 0 : Math.min(distance, 2);
+                    {LENS_STYLE_OPTIONS.map((style) => {
+                      const isActive = lensStyle === style.id;
                       
                       return (
-                        <div
+                        <button
                           key={style.id}
-                          data-card-index={index}
                           onClick={() => {
-                            const card = lensCarouselRef.current?.querySelector(`[data-card-index="${index}"]`);
-                            card?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            console.log('🎨 Style selected:', style.id);
+                            setLensStyle(style.id);
                           }}
-                          className="relative w-full max-w-2xl flex-shrink-0 cursor-pointer transition-all duration-400"
+                          className={`
+                            relative w-full h-[85px] rounded-[22px]
+                            backdrop-filter backdrop-blur-[20px]
+                            border transition-all duration-200
+                            cursor-pointer text-left
+                            overflow-hidden
+                            ${isActive
+                              ? 'bg-[rgba(20,25,35,0.75)] shadow-2xl'
+                              : 'bg-[rgba(15,20,30,0.6)] shadow-lg hover:bg-[rgba(20,25,35,0.65)]'
+                            }
+                            ${isActive
+                              ? 'border-opacity-50'
+                              : 'border-white/10 hover:border-white/20'
+                            }
+                            hover:transform hover:-translate-y-0.5
+                          `}
                           style={{
-                            height: '220px',
-                            scrollSnapAlign: 'center',
-                            scrollSnapStop: 'always',
-                            opacity,
-                            transform: `scale(${scale})`,
-                            filter: `blur(${blur}px)`,
-                            pointerEvents: distance > 1 ? 'none' : 'auto',
-                            zIndex: isActive ? 10 : 5 - distance
+                            borderColor: isActive ? style.accentColor : undefined,
+                            boxShadow: isActive 
+                              ? `0 0 24px ${style.accentColor}50, 0 6px 20px rgba(0,0,0,0.4)`
+                              : undefined
                           }}
                         >
-                          {/* Glass-morphic Card Base */}
+                          {/* Accent Line (Left Edge) */}
                           <div
                             className={`
-                              relative w-full h-full
-                              rounded-3xl p-8
-                              border transition-all duration-400
-                              ${isActive ? 'border-2 shadow-2xl' : 'border border-white/15 shadow-lg'}
+                              absolute left-0 top-0 bottom-0 w-[3px]
+                              rounded-l-[22px] transition-all duration-200
+                              ${isActive ? 'opacity-100' : 'opacity-0'}
                             `}
                             style={{
-                              background: 'rgba(10, 10, 15, 0.6)',
-                              backdropFilter: 'blur(20px)',
-                              borderColor: isActive ? style.gradient.from : undefined,
-                              boxShadow: isActive 
-                                ? `0 12px 48px rgba(0,0,0,0.6), 0 0 40px ${style.gradient.from}40`
-                                : '0 8px 32px rgba(0,0,0,0.4)'
+                              background: isActive ? style.accentColor : 'transparent',
+                              boxShadow: isActive ? `0 0 12px ${style.accentColor}` : 'none'
                             }}
-                          >
-                            {/* Gradient Overlay */}
-                            <div
-                              className="absolute inset-0 rounded-3xl transition-opacity duration-400"
-                              style={{
-                                background: `linear-gradient(${style.gradient.angle}, ${style.gradient.from}, ${style.gradient.to})`,
-                                mixBlendMode: 'screen',
-                                opacity: isActive ? 0.85 : 0.35,
-                                pointerEvents: 'none'
-                              }}
-                            />
-                            
-                            {/* Content Container */}
-                            <div className="relative z-10 h-full flex items-start justify-between">
-                              {/* Left: Text Content */}
-                              <div className="flex-1">
-                                <h4
-                                  className="text-2xl font-semibold mb-3 text-white transition-all duration-300"
-                                  style={{
-                                    textShadow: isActive 
-                                      ? `0 0 20px ${style.gradient.from}80, 0 2px 12px rgba(0,0,0,0.4)`
-                                      : '0 2px 12px rgba(0,0,0,0.4)'
-                                  }}
-                                >
-                                  {style.label}
-                                </h4>
-                                <p className="text-sm text-white/70 leading-relaxed max-w-md">
-                                  {style.description}
-                                </p>
-                              </div>
-                              
-                              {/* Right: Icon Container */}
-                              <div
-                                className={`
-                                  w-14 h-14 rounded-2xl
-                                  backdrop-blur-md border
-                                  flex items-center justify-center
-                                  text-2xl flex-shrink-0 ml-6
-                                  transition-all duration-300
-                                  ${isActive ? 'bg-white/20 border-white/30' : 'bg-white/8 border-white/15'}
-                                `}
+                          />
+                          
+                          {/* Card Content */}
+                          <div className="flex items-center justify-between px-5 py-4 h-full relative z-10">
+                            {/* Left: Text Content */}
+                            <div className="flex-1 ml-2">
+                              <h3
+                                className="text-lg font-semibold text-white mb-1 leading-tight"
+                                style={{
+                                  textShadow: isActive ? `0 0 8px ${style.accentColor}66` : 'none'
+                                }}
                               >
-                                {style.icon}
-                              </div>
+                                {style.label}
+                              </h3>
+                              <p className="text-[13px] text-white/60 leading-snug">
+                                {style.description}
+                              </p>
                             </div>
                             
-                            {/* Active Card Glow */}
-                            {isActive && (
-                              <div
-                                className="absolute inset-0 -z-10 blur-3xl opacity-50 rounded-3xl"
-                                style={{
-                                  background: `radial-gradient(circle at center, ${style.gradient.from}, transparent 70%)`
-                                }}
-                              />
-                            )}
+                            {/* Right: Selection Indicator */}
+                            <div
+                              className={`
+                                w-6 h-6 rounded-full flex items-center justify-center
+                                flex-shrink-0 ml-4 transition-all duration-200
+                                ${isActive ? 'opacity-100' : 'opacity-0'}
+                              `}
+                              style={{
+                                background: isActive ? style.accentColor : 'rgba(255,255,255,0.1)',
+                                boxShadow: isActive ? `0 0 12px ${style.accentColor}80` : 'none'
+                              }}
+                            >
+                              {isActive && (
+                                <svg
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="white"
+                                  strokeWidth="3"
+                                  className="w-3.5 h-3.5"
+                                >
+                                  <path d="M5 13l4 4L19 7" />
+                                </svg>
+                              )}
+                            </div>
                           </div>
-                        </div>
+                        </button>
                       );
                     })}
                   </div>
-                  
-                  {/* Carousel Indicators (Right Side) */}
-                  <div className="absolute right-4 top-1/2 -translate-y-1/2 flex flex-col gap-3 z-20">
-                    {LENS_STYLE_OPTIONS.map((style, index) => (
-                      <button
-                        key={style.id}
-                        onClick={() => {
-                          const card = lensCarouselRef.current?.querySelector(`[data-card-index="${index}"]`);
-                          card?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                        }}
-                        className={`
-                          rounded-full border-none cursor-pointer transition-all duration-300
-                          ${activeCardIndex === index
-                            ? 'w-2 h-6 bg-white rounded-md'
-                            : 'w-2 h-2 bg-white/30 hover:bg-white/50'
-                          }
-                        `}
-                        aria-label={`Select ${style.label}`}
-                      />
-                    ))}
-                  </div>
-                  
-                  {/* Gradient Fade Overlays (Top & Bottom) */}
-                  <div
-                    className="absolute top-0 left-0 right-0 h-24 pointer-events-none z-15"
-                    style={{
-                      background: 'linear-gradient(to bottom, rgba(0,0,0,0.8), transparent)'
-                    }}
-                  />
-                  <div
-                    className="absolute bottom-0 left-0 right-0 h-24 pointer-events-none z-15"
-                    style={{
-                      background: 'linear-gradient(to top, rgba(0,0,0,0.8), transparent)'
-                    }}
-                  />
                 </div>
               </div>
+
               {/* FILM GRAIN & TEXTURE */}
               <div className="space-y-4 mt-8 pt-8 border-t border-white/10">
                 <h3 className="text-xs font-bold tracking-[0.2em] text-white/70 uppercase">
