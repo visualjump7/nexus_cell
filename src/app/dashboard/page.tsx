@@ -195,6 +195,8 @@ const PromptArmory = () => {
   const [isoIndex, setIsoIndex] = useState(3); // Default to ISO 400 (index 3)
   const [lensEffects, setLensEffects] = useState<string[]>([]);
   const [lensStyle, setLensStyle] = useState<string>('modern');
+  const lensCarouselRef = useRef<HTMLDivElement>(null);
+  const [activeCardIndex, setActiveCardIndex] = useState(0);
   const [isSpecialtyLensOpen, setIsSpecialtyLensOpen] = useState(false);
   
   // Camera Angles & Movement state
@@ -1269,6 +1271,56 @@ const PromptArmory = () => {
     setSpecialtyLens(prev => prev === lens ? 'none' : lens);
   }
 
+  // Update active card based on scroll position
+  const handleLensCarouselScroll = useCallback(() => {
+    if (!lensCarouselRef.current) return;
+    
+    const track = lensCarouselRef.current;
+    const cards = track.querySelectorAll('[data-card-index]');
+    const trackRect = track.getBoundingClientRect();
+    const centerY = trackRect.top + trackRect.height / 2;
+    
+    let closestIndex = 0;
+    let closestDistance = Infinity;
+    
+    cards.forEach((card, index) => {
+      const cardRect = card.getBoundingClientRect();
+      const cardCenterY = cardRect.top + cardRect.height / 2;
+      const distance = Math.abs(centerY - cardCenterY);
+      
+      if (distance < closestDistance) {
+        closestDistance = distance;
+        closestIndex = index;
+      }
+    });
+    
+    if (closestIndex !== activeCardIndex) {
+      setActiveCardIndex(closestIndex);
+      setLensStyle(LENS_STYLE_OPTIONS[closestIndex].id);
+      console.log('🎨 Carousel style changed:', LENS_STYLE_OPTIONS[closestIndex].id);
+    }
+  }, [activeCardIndex]);
+
+  // Lens carousel scroll listener
+  useEffect(() => {
+    const carousel = lensCarouselRef.current;
+    if (!carousel) return;
+    
+    let scrollTimeout: NodeJS.Timeout;
+    const handleScroll = () => {
+      clearTimeout(scrollTimeout);
+      scrollTimeout = setTimeout(handleLensCarouselScroll, 100);
+    };
+    
+    carousel.addEventListener('scroll', handleScroll);
+    handleLensCarouselScroll(); // Initial state
+    
+    return () => {
+      carousel.removeEventListener('scroll', handleScroll);
+      clearTimeout(scrollTimeout);
+    };
+  }, [handleLensCarouselScroll]);
+
   function generateCompletePrompt(): string {
     console.log('🎬 ===== GENERATING COMPLETE PROMPT =====');
     
@@ -1815,120 +1867,165 @@ const PromptArmory = () => {
                 </div>
               </div>
 
-              {/* 6. LENS CHARACTER / STYLE */}
+{/* 6. LENS CHARACTER / STYLE - Vertical Carousel */}
               <div className="space-y-4">
                 <h3 className="text-xs font-bold tracking-[0.2em] text-white/70 uppercase">
                   Lens Character / Style
                 </h3>
                 
-                {/* Glass-Morphic Style Cards Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
-                  {LENS_STYLE_OPTIONS.map((style) => (
-                    <div
-                      key={style.id}
-                      onClick={() => {
-                        console.log('🎨 Style selected:', style.id);
-                        setLensStyle(style.id);
-                      }}
-                      className={`
-                        relative overflow-hidden
-                        rounded-2xl p-6
-                        border transition-all duration-300
-                        cursor-pointer group
-                        min-h-[140px]
-                        ${lensStyle === style.id
-                          ? 'border-2'
-                          : 'border border-white/10 hover:border-white/20'
-                        }
-                      `}
-                      style={{
-                        background: '#1a1d29',
-                        borderColor: lensStyle === style.id 
-                          ? style.gradient.from 
-                          : undefined
-                      }}
-                    >
-                      {/* Gradient Overlay */}
-                      <div 
+                {/* Vertical Scrolling Carousel */}
+                <div className="relative w-full" style={{ height: '500px' }}>
+                  {/* Carousel Track */}
+                  <div
+                    ref={lensCarouselRef}
+                    className="flex flex-col items-center gap-6 h-full overflow-y-auto py-24 scrollbar-hide"
+                    style={{
+                      scrollSnapType: 'y mandatory',
+                      scrollPaddingTop: '140px',
+                      scrollPaddingBottom: '140px'
+                    }}
+                  >
+                    {LENS_STYLE_OPTIONS.map((style, index) => {
+                      const isActive = activeCardIndex === index;
+                      const distance = Math.abs(activeCardIndex - index);
+                      const opacity = isActive ? 1 : Math.max(0.4, 1 - distance * 0.3);
+                      const scale = isActive ? 1 : Math.max(0.92, 1 - distance * 0.04);
+                      const blur = isActive ? 0 : Math.min(distance, 2);
+                      
+                      return (
+                        <div
+                          key={style.id}
+                          data-card-index={index}
+                          onClick={() => {
+                            const card = lensCarouselRef.current?.querySelector(`[data-card-index="${index}"]`);
+                            card?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                          }}
+                          className="relative w-full max-w-2xl flex-shrink-0 cursor-pointer transition-all duration-400"
+                          style={{
+                            height: '220px',
+                            scrollSnapAlign: 'center',
+                            scrollSnapStop: 'always',
+                            opacity,
+                            transform: `scale(${scale})`,
+                            filter: `blur(${blur}px)`,
+                            pointerEvents: distance > 1 ? 'none' : 'auto',
+                            zIndex: isActive ? 10 : 5 - distance
+                          }}
+                        >
+                          {/* Glass-morphic Card Base */}
+                          <div
+                            className={`
+                              relative w-full h-full
+                              rounded-3xl p-8
+                              border transition-all duration-400
+                              ${isActive ? 'border-2 shadow-2xl' : 'border border-white/15 shadow-lg'}
+                            `}
+                            style={{
+                              background: 'rgba(10, 10, 15, 0.6)',
+                              backdropFilter: 'blur(20px)',
+                              borderColor: isActive ? style.gradient.from : undefined,
+                              boxShadow: isActive 
+                                ? `0 12px 48px rgba(0,0,0,0.6), 0 0 40px ${style.gradient.from}40`
+                                : '0 8px 32px rgba(0,0,0,0.4)'
+                            }}
+                          >
+                            {/* Gradient Overlay */}
+                            <div
+                              className="absolute inset-0 rounded-3xl transition-opacity duration-400"
+                              style={{
+                                background: `linear-gradient(${style.gradient.angle}, ${style.gradient.from}, ${style.gradient.to})`,
+                                mixBlendMode: 'screen',
+                                opacity: isActive ? 0.85 : 0.35,
+                                pointerEvents: 'none'
+                              }}
+                            />
+                            
+                            {/* Content Container */}
+                            <div className="relative z-10 h-full flex items-start justify-between">
+                              {/* Left: Text Content */}
+                              <div className="flex-1">
+                                <h4
+                                  className="text-2xl font-semibold mb-3 text-white transition-all duration-300"
+                                  style={{
+                                    textShadow: isActive 
+                                      ? `0 0 20px ${style.gradient.from}80, 0 2px 12px rgba(0,0,0,0.4)`
+                                      : '0 2px 12px rgba(0,0,0,0.4)'
+                                  }}
+                                >
+                                  {style.label}
+                                </h4>
+                                <p className="text-sm text-white/70 leading-relaxed max-w-md">
+                                  {style.description}
+                                </p>
+                              </div>
+                              
+                              {/* Right: Icon Container */}
+                              <div
+                                className={`
+                                  w-14 h-14 rounded-2xl
+                                  backdrop-blur-md border
+                                  flex items-center justify-center
+                                  text-2xl flex-shrink-0 ml-6
+                                  transition-all duration-300
+                                  ${isActive ? 'bg-white/20 border-white/30' : 'bg-white/8 border-white/15'}
+                                `}
+                              >
+                                {style.icon}
+                              </div>
+                            </div>
+                            
+                            {/* Active Card Glow */}
+                            {isActive && (
+                              <div
+                                className="absolute inset-0 -z-10 blur-3xl opacity-50 rounded-3xl"
+                                style={{
+                                  background: `radial-gradient(circle at center, ${style.gradient.from}, transparent 70%)`
+                                }}
+                              />
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  
+                  {/* Carousel Indicators (Right Side) */}
+                  <div className="absolute right-4 top-1/2 -translate-y-1/2 flex flex-col gap-3 z-20">
+                    {LENS_STYLE_OPTIONS.map((style, index) => (
+                      <button
+                        key={style.id}
+                        onClick={() => {
+                          const card = lensCarouselRef.current?.querySelector(`[data-card-index="${index}"]`);
+                          card?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }}
                         className={`
-                          absolute inset-0 
-                          transition-opacity duration-300
-                          ${lensStyle === style.id 
-                            ? 'opacity-100' 
-                            : 'opacity-50 group-hover:opacity-70'
+                          rounded-full border-none cursor-pointer transition-all duration-300
+                          ${activeCardIndex === index
+                            ? 'w-2 h-6 bg-white rounded-md'
+                            : 'w-2 h-2 bg-white/30 hover:bg-white/50'
                           }
                         `}
-                        style={{
-                          background: `linear-gradient(${style.gradient.angle}, ${style.gradient.from}, ${style.gradient.to})`,
-                          mixBlendMode: 'screen'
-                        }}
+                        aria-label={`Select ${style.label}`}
                       />
-                      
-                      {/* Backdrop Blur Layer */}
-                      <div 
-                        className="absolute inset-0 backdrop-blur-[2px]"
-                        style={{
-                          background: 'rgba(0,0,0,0.2)'
-                        }}
-                      />
-                      
-                      {/* Content */}
-                      <div className="relative z-10">
-                        {/* Icon Container - Top Right */}
-                        <div 
-                          className={`
-                            absolute -top-2 -right-2
-                            w-11 h-11
-                            rounded-xl
-                            backdrop-blur-md
-                            border transition-all duration-300
-                            flex items-center justify-center
-                            text-xl
-                            ${lensStyle === style.id
-                              ? 'bg-white/20 border-white/30'
-                              : 'bg-white/10 border-white/20'
-                            }
-                          `}
-                        >
-                          {style.icon}
-                        </div>
-                        
-                        {/* Title */}
-                        <h4 
-                          className={`
-                            text-lg font-semibold mb-2
-                            transition-all duration-300
-                            ${lensStyle === style.id ? 'text-white' : 'text-white/90'}
-                          `}
-                          style={{
-                            textShadow: lensStyle === style.id 
-                              ? `0 0 20px ${style.gradient.from}80`
-                              : '0 2px 8px rgba(0,0,0,0.3)'
-                          }}
-                        >
-                          {style.label}
-                        </h4>
-                        
-                        {/* Description */}
-                        <p className="text-xs text-white/60 leading-relaxed line-clamp-2">
-                          {style.description}
-                        </p>
-                      </div>
-                      
-                      {/* Selected Glow Effect */}
-                      {lensStyle === style.id && (
-                        <div 
-                          className="absolute inset-0 -z-10 blur-2xl opacity-50"
-                          style={{
-                            background: `radial-gradient(circle at center, ${style.gradient.from}, transparent 70%)`
-                          }}
-                        />
-                      )}
-                    </div>
-                  ))}
+                    ))}
+                  </div>
+                  
+                  {/* Gradient Fade Overlays (Top & Bottom) */}
+                  <div
+                    className="absolute top-0 left-0 right-0 h-24 pointer-events-none z-15"
+                    style={{
+                      background: 'linear-gradient(to bottom, rgba(0,0,0,0.8), transparent)'
+                    }}
+                  />
+                  <div
+                    className="absolute bottom-0 left-0 right-0 h-24 pointer-events-none z-15"
+                    style={{
+                      background: 'linear-gradient(to top, rgba(0,0,0,0.8), transparent)'
+                    }}
+                  />
                 </div>
               </div>
-              {/* FILM GRAIN & TEXTURE */}
+                            {/* FILM GRAIN & TEXTURE */}
               <div className="space-y-4 mt-8 pt-8 border-t border-white/10">
                 <h3 className="text-xs font-bold tracking-[0.2em] text-white/70 uppercase">
                   Film Grain & Texture
