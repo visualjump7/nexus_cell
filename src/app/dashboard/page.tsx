@@ -209,10 +209,6 @@ const PromptArmory = () => {
   const [isCameraMovementSectionOpen, setIsCameraMovementSectionOpen] = useState(false);
   const [selectedCameraMovement, setSelectedCameraMovement] = useState<string | null>(null);
   
-  // Film Grain & Texture state
-  const [grainAmount, setGrainAmount] = useState(0); // 0=none, 1=subtle, 2=medium, 3=heavy
-  const [grainType, setGrainType] = useState<'fine' | 'coarse' | 'digital' | null>(null);
-  
   // Aspect Ratio category state
   const [aspectCategory, setAspectCategory] = useState<'photo' | 'cinema'>('cinema');
   const [selectedAspectRatio, setSelectedAspectRatio] = useState<string | null>(null);
@@ -937,7 +933,6 @@ const PromptArmory = () => {
     
     // Common Input Object
     const lensPromptText = generateCompletePrompt();
-    const grainPromptText = generateGrainPrompt();
     
     // Get selected angle and movement values
     const selectedAngleValue = selectedCameraAngle 
@@ -961,7 +956,6 @@ const PromptArmory = () => {
       },
       aspectRatio: aspectRatio as any,
       lensSettings: lensPromptText, // Generated lens prompt as string
-      grainSettings: grainPromptText, // Generated grain prompt as string
     };
 
     const videoInput: VideoPromptInput = {
@@ -1443,24 +1437,6 @@ const PromptArmory = () => {
     return finalPrompt;
   }
 
-  function generateGrainPrompt(): string {
-    if (grainAmount === 0) return '';
-    
-    const grainLevels = ['', 'subtle film grain', 'medium film grain', 'heavy film grain, gritty texture'];
-    const grainTypes = {
-      fine: 'fine grain texture, 35mm film quality',
-      coarse: 'coarse grain, 16mm aesthetic, high ISO look',
-      digital: 'digital noise, high ISO sensor artifact'
-    };
-    
-    const parts = [grainLevels[grainAmount]];
-    if (grainType && grainAmount > 0) {
-      parts.push(grainTypes[grainType]);
-    }
-    
-    return parts.filter(Boolean).join(', ');
-  }
-
   return (
     <div className="min-h-screen bg-black text-white overflow-hidden relative selection:bg-white/20">
       {/* ═══════════════════════════════════════════════════════════════════════
@@ -1930,66 +1906,6 @@ const PromptArmory = () => {
                     })}
                   </div>
                 </div>
-              </div>
-
-              {/* FILM GRAIN & TEXTURE */}
-              <div className="space-y-4 mt-8 pt-8 border-t border-white/10">
-                <h3 className="text-xs font-bold tracking-[0.2em] text-white/70 uppercase">
-                  Film Grain & Texture
-                </h3>
-                
-                {/* Grain Amount Slider */}
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-white/60">Grain Amount</span>
-                    <span className="text-sm font-mono text-cyan-400">
-                      {['None', 'Subtle', 'Medium', 'Heavy'][grainAmount]}
-                    </span>
-                  </div>
-                  <input 
-                    type="range" 
-                    min="0" 
-                    max="3" 
-                    step="1"
-                    value={grainAmount}
-                    onChange={(e) => setGrainAmount(parseInt(e.target.value))}
-                    className="w-full h-3 bg-gray-700 rounded-lg appearance-none cursor-pointer"
-                    style={{ accentColor: '#06b6d4' }}
-                  />
-                  <div className="flex justify-between text-[10px] text-white/30 font-mono">
-                    <span>NONE</span>
-                    <span>SUBTLE</span>
-                    <span>MEDIUM</span>
-                    <span>HEAVY</span>
-                  </div>
-                </div>
-                
-                {/* Grain Type (only show if grain amount > 0) */}
-                {grainAmount > 0 && (
-                  <div className="space-y-3">
-                    <span className="text-sm text-white/60">Grain Type</span>
-                    <div className="grid grid-cols-3 gap-3">
-                      {[
-                        { id: 'fine', label: 'Fine Grain', desc: '35mm quality' },
-                        { id: 'coarse', label: 'Coarse', desc: '16mm/high ISO' },
-                        { id: 'digital', label: 'Digital Noise', desc: 'Sensor artifact' }
-                      ].map(type => (
-                        <button
-                          key={type.id}
-                          onClick={() => setGrainType(type.id as any)}
-                          className={`p-3 border-2 rounded-lg text-left transition-all ${
-                            grainType === type.id 
-                              ? 'border-cyan-500 bg-cyan-500/10' 
-                              : 'border-white/10 bg-white/[0.02] hover:border-white/20'
-                          }`}
-                        >
-                          <div className="font-semibold text-sm">{type.label}</div>
-                          <div className="text-xs text-white/40">{type.desc}</div>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
               </div>
 
             </div>
