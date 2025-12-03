@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { CameraModeToggle } from '@/components/CameraModeToggle';
 import { DashboardHeaderControls } from '@/components/DashboardHeaderControls';
 import { CollapsibleSection } from '@/components/CollapsibleSection';
+import { DialWidget } from '@/components/DialWidget';
 // import { useViewMode } from '@/hooks/useViewMode'; // Replaced with cameraMode
 
 
@@ -1599,45 +1600,40 @@ const PromptArmory = () => {
           {isLensSectionOpen && (
             <div className="space-y-8 p-6 rounded-xl border border-white/10 bg-white/[0.02]">
               
-              {/* 1. FOCAL LENGTH SLIDER */}
-              <div className="space-y-4">
-                <div className="flex justify-between items-center mb-2">
-                  <h3 className="text-xs font-bold tracking-[0.2em] text-white/70 uppercase">Focal Length</h3>
-                  <span className="text-2xl font-bold text-cyan-400">{currentFocalLength}mm</span>
-                </div>
-                
-                <input
-                  type="range"
-                  min="0"
-                  max={STANDARD_FOCAL_LENGTHS.length - 1}
-                  step="1"
+              {/* CAMERA DIAL WIDGETS - Professional Three-Column Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                <DialWidget
+                  title="FOCAL LENGTH"
                   value={focalLengthIndex}
-                  onChange={(e) => {
-                    const newIndex = parseInt(e.target.value);
-                    console.log('🎯 Focal length changed:', {
-                      index: newIndex,
-                      value: STANDARD_FOCAL_LENGTHS[newIndex]
-                    });
-                    setFocalLengthIndex(newIndex);
-                  }}
+                  values={STANDARD_FOCAL_LENGTHS}
+                  onChange={setFocalLengthIndex}
+                  unit="mm"
+                  accentColor="#94a3b8"
+                  description={getFocalLengthDescription(currentFocalLength)}
                   disabled={specialtyLens !== 'none'}
-                  className="w-full h-4 sm:h-3 bg-gray-700 rounded-lg appearance-none cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
-                  style={{
-                    accentColor: '#06b6d4'
-                  }}
                 />
                 
-                <div className="flex justify-between text-[10px] text-white/40 mt-2 font-mono uppercase tracking-wider">
-                  <span className="text-center">Ultra-Wide<br/>14-20mm</span>
-                  <span className="text-center">Wide<br/>21-35mm</span>
-                  <span className="text-center">Standard<br/>40-60mm</span>
-                  <span className="text-center">Portrait<br/>70-135mm</span>
-                  <span className="text-center">Telephoto<br/>135-600mm</span>
-                </div>
+                <DialWidget
+                  title="APERTURE"
+                  value={apertureIndex}
+                  values={F_STOPS}
+                  onChange={setApertureIndex}
+                  unit="f/"
+                  accentColor="#06b6d4"
+                  description={getApertureDescription(currentAperture)}
+                  formatDisplay={(val) => `f/${val}`}
+                />
                 
-                <p className="text-sm text-white/60 mt-2 p-3 bg-white/[0.02] rounded border border-white/5">
-                  {getFocalLengthDescription(currentFocalLength)}
-                </p>
+                <DialWidget
+                  title="ISO SENSITIVITY"
+                  value={isoIndex}
+                  values={ISO_VALUES}
+                  onChange={setIsoIndex}
+                  unit="ISO "
+                  accentColor="#a855f7"
+                  description={getISODescription(currentISO)}
+                  formatDisplay={(val) => `ISO ${val}`}
+                />
               </div>
 
               {/* 2. SPECIALTY LENSES - COLLAPSIBLE (COLLAPSED BY DEFAULT) */}
@@ -1720,113 +1716,6 @@ const PromptArmory = () => {
                     ⓘ Specialty lens active - overrides focal length slider
                   </p>
                 )}
-              </div>
-
-              {/* 3. APERTURE SLIDER */}
-              <div className="space-y-4">
-                <div className="flex justify-between items-center mb-2">
-                  <h3 className="text-xs font-bold tracking-[0.2em] text-white/70 uppercase">Aperture (Depth of Field)</h3>
-                  <span className="text-2xl font-bold text-cyan-400">f/{currentAperture}</span>
-                </div>
-                
-                <input
-                  type="range"
-                  min="0"
-                  max={F_STOPS.length - 1}
-                  step="1"
-                  value={apertureIndex}
-                  onChange={(e) => {
-                    const newIndex = parseInt(e.target.value);
-                    console.log('📷 Aperture changed:', {
-                      index: newIndex,
-                      value: F_STOPS[newIndex]
-                    });
-                    setApertureIndex(newIndex);
-                  }}
-                  className="w-full h-4 sm:h-3 bg-gray-700 rounded-lg appearance-none cursor-pointer"
-                  style={{
-                    accentColor: '#06b6d4'
-                  }}
-                />
-                
-                <div className="flex justify-between text-[9px] text-white/40 font-mono">
-                  {F_STOPS.map((stop, idx) => (
-                    <span key={idx} className={apertureIndex === idx ? 'text-cyan-400 font-bold' : ''}>
-                      f/{stop}
-                    </span>
-                  ))}
-                </div>
-                
-                <div className="flex justify-between items-center text-xs mt-3">
-                  <span className="text-left w-1/2 text-white/50">
-                    ← Extremely Shallow<br/>
-                    <span className="text-[10px] text-white/30">Blurry background</span>
-                  </span>
-                  <span className="text-right w-1/2 text-white/50">
-                    Everything Sharp →<br/>
-                    <span className="text-[10px] text-white/30">Deep focus</span>
-                  </span>
-                </div>
-                
-                <p className="text-sm text-white/60 mt-2 p-3 bg-white/[0.02] rounded border border-white/5">
-                  {getApertureDescription(currentAperture)}
-                </p>
-              </div>
-
-              {/* 4. ISO SENSITIVITY (FILM GRAIN) */}
-              <div className="space-y-4">
-                <div className="flex justify-between items-center mb-2">
-                  <h3 className="text-xs font-bold tracking-[0.2em] text-white/70 uppercase">ISO Sensitivity (Film Grain)</h3>
-                  <span className="text-2xl font-bold text-cyan-400">ISO {currentISO}</span>
-                </div>
-                
-                <input
-                  type="range"
-                  min="0"
-                  max={ISO_VALUES.length - 1}
-                  step="1"
-                  value={isoIndex}
-                  onChange={(e) => {
-                    const newIndex = parseInt(e.target.value);
-                    console.log('🎞️ ISO changed:', {
-                      index: newIndex,
-                      value: ISO_VALUES[newIndex]
-                    });
-                    setIsoIndex(newIndex);
-                  }}
-                  className="w-full h-4 sm:h-3 bg-gray-700 rounded-lg appearance-none cursor-pointer"
-                  style={{
-                    accentColor: '#06b6d4'
-                  }}
-                />
-                
-                <div className="flex justify-between text-[9px] text-white/40 font-mono">
-                  {ISO_VALUES.map((iso, idx) => (
-                    <span key={idx} className={isoIndex === idx ? 'text-cyan-400 font-bold' : ''}>
-                      {iso}
-                    </span>
-                  ))}
-                </div>
-                
-                <div className="flex justify-between items-center text-sm mt-3">
-                  <span className="text-left w-1/2 text-white/50">
-                    ← Fine Grain<br/>
-                    <span className="text-[10px] text-white/30">Clean, bright</span>
-                  </span>
-                  <span className="text-right w-1/2 text-white/50">
-                    Heavy Grain →<br/>
-                    <span className="text-[10px] text-white/30">Gritty, low light</span>
-                  </span>
-                </div>
-                
-                <p className="text-sm text-white/60 mt-2 p-3 bg-white/[0.02] rounded border border-white/5">
-                  {getISODescription(currentISO)}
-                </p>
-                
-                <div className="text-xs text-white/40 mt-2 flex items-start gap-2">
-                  <span>💡</span>
-                  <span>ISO controls sensor/film sensitivity. Higher ISO = more grain but better low-light performance.</span>
-                </div>
               </div>
 
               {/* 5. LENS EFFECTS */}
