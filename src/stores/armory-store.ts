@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { PlatformId, PromptState, defaultPromptState } from '@/types';
+import { LightingPreset } from '@/types/lighting.types';
 
 interface ArmoryStore {
   // Prompt State
@@ -24,6 +25,10 @@ interface ArmoryStore {
   
   platformFilter: 'all' | 'image' | 'video';
   setPlatformFilter: (filter: 'all' | 'image' | 'video') => void;
+
+  // Lighting
+  selectedLighting: LightingPreset | null;
+  setSelectedLighting: (preset: LightingPreset | null) => void;
 
   // Generation State
   isGenerating: boolean;
@@ -63,6 +68,10 @@ export const useArmoryStore = create<ArmoryStore>()(
       platformFilter: 'all',
       setPlatformFilter: (filter) => set({ platformFilter: filter }),
 
+      // Lighting
+      selectedLighting: null,
+      setSelectedLighting: (preset) => set({ selectedLighting: preset }),
+
       // Generation State
       isGenerating: false,
       setIsGenerating: (value) => set({ isGenerating: value }),
@@ -75,6 +84,7 @@ export const useArmoryStore = create<ArmoryStore>()(
       partialize: (state) => ({
         targetPlatform: state.targetPlatform,
         platformFilter: state.platformFilter,
+        selectedLighting: state.selectedLighting,
       }),
     }
   )

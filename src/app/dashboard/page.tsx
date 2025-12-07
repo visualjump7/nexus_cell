@@ -6,6 +6,8 @@ import { CameraModeToggle } from '@/components/CameraModeToggle';
 import { DashboardHeaderControls } from '@/components/DashboardHeaderControls';
 import { CollapsibleSection } from '@/components/CollapsibleSection';
 import { DialWidget } from '@/components/DialWidget';
+import { LightingSection } from '@/components/lighting/LightingSection';
+import { useArmoryStore } from '@/stores/armory-store';
 // import { useViewMode } from '@/hooks/useViewMode'; // Replaced with cameraMode
 
 
@@ -180,6 +182,9 @@ const PromptArmory = () => {
   // ─────────────────────────────────────────────────────────────────────────────
   // STATE MANAGEMENT
   // ─────────────────────────────────────────────────────────────────────────────
+  
+  // Zustand store
+  const { selectedLighting } = useArmoryStore();
   
   const [targetMode, setTargetMode] = useState('universal');
   const [isTransitioning, setIsTransitioning] = useState(false);
@@ -1122,6 +1127,7 @@ const PromptArmory = () => {
   }, [
     subjectInput,
     activePreset,
+    selectedLighting,
     focalLengthIndex,
     specialtyLens,
     apertureIndex,
@@ -1289,6 +1295,12 @@ const PromptArmory = () => {
         parts.push(presetData.name);
         console.log('✅ Preset:', presetData.name);
       }
+    }
+    
+    // 2.5. LIGHTING
+    if (selectedLighting) {
+      parts.push(selectedLighting.prompt);
+      console.log('✅ Lighting:', selectedLighting.prompt);
     }
     
     // 3. FOCAL LENGTH
@@ -1624,6 +1636,11 @@ const PromptArmory = () => {
             <span>Describe the main subject or scene you want to generate. Be specific and detailed.</span>
           </div>
         </div>
+
+        {/* ─────────────────────────────────────────────────────────────────────
+            LIGHTING SECTION (OPTIONAL)
+        ───────────────────────────────────────────────────────────────────── */}
+        <LightingSection />
 
         {/* ─────────────────────────────────────────────────────────────────────
             LENS & CAMERA CONTROLS (OPTIONAL)
