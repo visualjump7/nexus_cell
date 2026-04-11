@@ -3,15 +3,8 @@
 @tailwind utilities;
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --background: #08090f;
+  --foreground: #ffffff;
 }
 
 body {
@@ -20,8 +13,41 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
+@keyframes nexus-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+@keyframes nexus-ring {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes nexus-ring-pulse {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.6; }
+}
+
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(20px) scale(0.9); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
 @layer utilities {
   .text-balance {
     text-wrap: balance;
+  }
+  .animate-nexus-pulse {
+    animation: nexus-pulse 3s ease-in-out infinite;
+  }
+  .animate-nexus-ring {
+    animation: nexus-ring 20s linear infinite;
+  }
+  .animate-nexus-ring-pulse {
+    animation: nexus-ring-pulse 3s ease-in-out infinite;
+  }
+  .animate-fade-in-up {
+    animation: fade-in-up 0.5s ease-out forwards;
+    opacity: 0;
   }
 }

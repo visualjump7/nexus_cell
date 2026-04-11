@@ -243,6 +243,74 @@ export interface Budget {
   updated_at: string
 }
 
+// Project Directory — Block System
+export type ProjectBlockType = 'gallery' | 'personnel' | 'subcontractor' | 'notes'
+
+export interface ProjectBlock {
+  id: string
+  project_id: string
+  organization_id: string
+  type: ProjectBlockType
+  title: string | null
+  position: number
+  config: Record<string, unknown>
+  created_by: string | null
+  created_at: string
+  updated_at: string
+  // Nested relations (populated by select joins)
+  project_contacts?: ProjectContact[]
+  project_images?: ProjectImage[]
+}
+
+export type ContactStatus = 'active' | 'on-leave' | 'completed' | 'terminated'
+
+export interface ProjectContact {
+  id: string
+  block_id: string
+  organization_id: string
+  contact_type: 'personnel' | 'subcontractor'
+  name: string
+  email: string | null
+  phone: string | null
+  avatar_url: string | null
+  status: ContactStatus
+  notes: string | null
+  position: number
+  // Personnel-specific
+  role: string | null
+  company: string | null
+  department: string | null
+  // Subcontractor-specific
+  company_name: string | null
+  trade: string | null
+  contract_value_cents: number | null
+  contract_start: string | null
+  contract_end: string | null
+  license_number: string | null
+  insurance_on_file: boolean
+  insurance_expiry: string | null
+  metadata: Record<string, unknown>
+  created_at: string
+  updated_at: string
+}
+
+export interface ProjectImage {
+  id: string
+  block_id: string
+  organization_id: string
+  url: string
+  thumbnail_url: string | null
+  caption: string | null
+  taken_at: string | null
+  file_name: string | null
+  file_size: number | null
+  width: number | null
+  height: number | null
+  position: number
+  uploaded_by: string | null
+  created_at: string
+}
+
 export interface AuditLogEntry {
   id: string
   organization_id: string
