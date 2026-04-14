@@ -20,23 +20,21 @@ export default function NexusOrb({ size = 'large', onClick }: NexusOrbProps) {
 
   return (
     <div className="relative flex flex-col items-center">
-      {/* Outer ring 1 */}
-      <div className="absolute w-[160px] h-[160px] rounded-full border border-teal-500/20 animate-nexus-ring" style={{ top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }} />
-
-      {/* Outer ring 2 */}
-      <div className="absolute w-[140px] h-[140px] rounded-full border border-teal-400/15 animate-nexus-ring-pulse" style={{ top: '50%', left: '50%', transform: 'translate(-50%, -50%)', animationDirection: 'reverse', animationDuration: '25s' }} />
-
-      {/* Core orb */}
+      {/* Core orb — rings are children so they center perfectly */}
       <button
         onClick={onClick}
-        className="relative w-[120px] h-[120px] rounded-full animate-nexus-pulse cursor-pointer flex flex-col items-center justify-center z-10"
+        className="relative w-[120px] h-[120px] rounded-full animate-nexus-pulse cursor-pointer flex items-center justify-center z-10"
         style={{
           background: 'radial-gradient(circle, #5eead4 0%, #0d9488 40%, #064e3b 100%)',
           boxShadow: '0 0 60px rgba(94, 234, 212, 0.3), 0 0 120px rgba(94, 234, 212, 0.1)',
         }}
       >
-        <span className="text-[11px] font-bold tracking-[0.3em] text-white/90 select-none">NEXUS</span>
-        <span className="text-[9px] text-white/50 mt-0.5 select-none">AI</span>
+        {/* Ring 1 — centered via inset-0 + m-auto inside the button */}
+        <div className="absolute inset-0 m-auto w-[160px] h-[160px] rounded-full border border-teal-500/20 animate-nexus-ring-pulse" />
+        {/* Ring 2 */}
+        <div className="absolute inset-0 m-auto w-[140px] h-[140px] rounded-full border border-teal-400/10 animate-nexus-ring-pulse" style={{ animationDelay: '1.5s' }} />
+
+        <span className="text-[9px] text-white/50 select-none relative z-10">AI</span>
       </button>
 
       {/* Hint text */}

@@ -5,10 +5,11 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import type { Trip, TripSegment, TravelDoc, UserRole } from '@/lib/types'
 import DeleteConfirm from '@/components/DeleteConfirm'
-
-const segmentIcons: Record<string, string> = {
-  flight: '✈️', hotel: '🏨', car: '🚗', train: '🚆', ground_transport: '🚐', other: '📍',
-}
+import TripMap from '@/components/travel/TripMap'
+import DateTimePicker from '@/components/shared/DateTimePicker'
+import SegmentDetail from '@/components/travel/SegmentDetail'
+import { getSegmentIcon } from '@/components/travel/SegmentIcons'
+import { segmentColors } from '@/lib/travel-constants'
 
 const statusColors: Record<string, string> = {
   planning: 'bg-yellow-500/15 text-yellow-400 border-yellow-500/30',
@@ -25,6 +26,8 @@ export default function TripDetail({ trip, segments, docs, role }: Props) {
   const canWrite = ['ea', 'admin'].includes(role)
   const [showSegForm, setShowSegForm] = useState(false)
   const [deletingSeg, setDeletingSeg] = useState<TripSegment | null>(null)
+  const [selectedSegId, setSelectedSegId] = useState<string | null>(null)
+  const [detailSeg, setDetailSeg] = useState<TripSegment | null>(null)
 
   function formatDT(d: string | null) {
     if (!d) return '—'
@@ -46,7 +49,7 @@ export default function TripDetail({ trip, segments, docs, role }: Props) {
   const inputClass = 'w-full px-3 py-2 bg-card border border-white/10 rounded-lg text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 text-sm'
 
   return (
-    <div className="max-w-4xl">
+    <div className="max-w-4xl" onClick={() => setSelectedSegId(null)}>
       {/* Header */}
       <div className="mb-6">
         <Link href="/travel" className="text-sm text-gray-500 hover:text-white transition-colors mb-2 inline-block">← Back to Travel</Link>
@@ -60,12 +63,19 @@ export default function TripDetail({ trip, segments, docs, role }: Props) {
         {trip.notes && <p className="text-sm text-gray-400 mt-2">{trip.notes}</p>}
       </div>
 
+      {/* Map */}
+      <TripMap
+        segments={segments}
+        selectedSegmentId={selectedSegId}
+        onSegmentSelect={setSelectedSegId}
+      />
+
       {/* Timeline / Segments */}
       <div className="mb-8">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold">Itinerary</h2>
           {canWrite && (
-            <button onClick={() => setShowSegForm(true)} className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-medium rounded-lg text-xs transition-colors">
+            <button onClick={(e) => { e.stopPropagation(); setShowSegForm(true) }} className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-medium rounded-lg text-xs transition-colors">
               + Add Segment
             </button>
           )}
@@ -77,32 +87,50 @@ export default function TripDetail({ trip, segments, docs, role }: Props) {
           </div>
         ) : (
           <div className="space-y-3">
-            {segments.map(seg => (
-              <div key={seg.id} className="bg-card rounded-xl shadow-lg shadow-black/20 p-4 flex items-start gap-4">
-                <div className="text-2xl mt-0.5">{segmentIcons[seg.segment_type] || '📍'}</div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-xs text-gray-500 uppercase font-medium">{seg.segment_type.replace('_', ' ')}</span>
-                    {seg.carrier && <span className="text-xs text-gray-600">· {seg.carrier}</span>}
-                    {seg.confirmation_code && <span className="text-xs text-emerald-500 font-mono">{seg.confirmation_code}</span>}
+            {segments.map(seg => {
+              const isSelected = selectedSegId === seg.id
+              const color = segmentColors[seg.segment_type] || '#94a3b8'
+              return (
+                <div
+                  key={seg.id}
+                  onClick={(e) => { e.stopPropagation(); setSelectedSegId(prev => prev === seg.id ? null : seg.id) }}
+                  className={`rounded-xl shadow-lg shadow-black/20 p-4 flex items-start gap-4 cursor-pointer transition-all duration-200 border-l-[3px] ${
+                    isSelected
+                      ? 'bg-white/[0.06] ring-1 ring-white/10'
+                      : 'bg-card border-l-transparent hover:bg-white/[0.03]'
+                  }`}
+                  style={isSelected ? { borderLeftColor: color } : undefined}
+                >
+                  <div className="text-gray-500 mt-0.5">{getSegmentIcon(seg.segment_type)}</div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-xs text-gray-500 uppercase font-medium">{seg.segment_type.replace('_', ' ')}</span>
+                      {seg.carrier && <span className="text-xs text-gray-600">· {seg.carrier}</span>}
+                      {seg.confirmation_code && <span className="text-xs text-emerald-500 font-mono">{seg.confirmation_code}</span>}
+                    </div>
+                    <p className="text-white font-medium">
+                      {seg.from_location || '—'} → {seg.to_location || '—'}
+                    </p>
+                    <div className="text-sm text-gray-500 mt-1 space-y-0.5">
+                      {seg.depart_at && <p>Depart: {formatDT(seg.depart_at)}</p>}
+                      {seg.arrive_at && <p>Arrive: {formatDT(seg.arrive_at)}</p>}
+                      {seg.check_in && <p>Check-in: {formatDT(seg.check_in)}</p>}
+                      {seg.check_out && <p>Check-out: {formatDT(seg.check_out)}</p>}
+                      {seg.seat_info && <p>Seat: {seg.seat_info}</p>}
+                      {seg.notes && <p className="text-gray-600">{seg.notes}</p>}
+                    </div>
                   </div>
-                  <p className="text-white font-medium">
-                    {seg.from_location || '—'} → {seg.to_location || '—'}
-                  </p>
-                  <div className="text-sm text-gray-500 mt-1 space-y-0.5">
-                    {seg.depart_at && <p>Depart: {formatDT(seg.depart_at)}</p>}
-                    {seg.arrive_at && <p>Arrive: {formatDT(seg.arrive_at)}</p>}
-                    {seg.check_in && <p>Check-in: {formatDT(seg.check_in)}</p>}
-                    {seg.check_out && <p>Check-out: {formatDT(seg.check_out)}</p>}
-                    {seg.seat_info && <p>Seat: {seg.seat_info}</p>}
-                    {seg.notes && <p className="text-gray-600">{seg.notes}</p>}
+                  <div className="flex flex-col items-end gap-2 shrink-0">
+                    <button onClick={(e) => { e.stopPropagation(); setDetailSeg(seg) }} className="px-3 py-1.5 bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white text-xs rounded-lg transition-all">
+                      Details ›
+                    </button>
+                    {canWrite && (
+                      <button onClick={(e) => { e.stopPropagation(); setDeletingSeg(seg) }} className="text-gray-600 hover:text-red-400 text-xs transition-colors">Delete</button>
+                    )}
                   </div>
                 </div>
-                {canWrite && (
-                  <button onClick={() => setDeletingSeg(seg)} className="text-gray-600 hover:text-red-400 text-xs transition-colors shrink-0">Delete</button>
-                )}
-              </div>
-            ))}
+              )
+            })}
           </div>
         )}
       </div>
@@ -133,7 +161,8 @@ export default function TripDetail({ trip, segments, docs, role }: Props) {
         )}
       </div>
 
-      {/* Segment Form Modal */}
+      {/* Modals */}
+      {detailSeg && <SegmentDetail segment={detailSeg} canWrite={canWrite} onClose={() => setDetailSeg(null)} />}
       {showSegForm && <SegmentFormModal tripId={trip.id} onClose={() => setShowSegForm(false)} inputClass={inputClass} />}
       {deletingSeg && <DeleteConfirm itemName={`${deletingSeg.segment_type} segment`} onConfirm={handleDeleteSeg} onCancel={() => setDeletingSeg(null)} />}
     </div>
@@ -160,6 +189,13 @@ function SegmentFormModal({ tripId, onClose, inputClass }: { tripId: string; onC
 
   const isHotel = form.segment_type === 'hotel'
 
+  // Derive sort_order from the primary datetime so segments auto-sort chronologically
+  function getSortTimestamp(): number {
+    const primary = isHotel ? form.check_in : form.depart_at
+    if (!primary) return Date.now()
+    return new Date(primary).getTime()
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setSaving(true)
@@ -179,6 +215,7 @@ function SegmentFormModal({ tripId, onClose, inputClass }: { tripId: string; onC
         confirmation_code: form.confirmation_code || null,
         seat_info: form.seat_info || null,
         notes: form.notes || null,
+        sort_order: getSortTimestamp(),
       }),
     })
     if (!res.ok) {
@@ -191,8 +228,6 @@ function SegmentFormModal({ tripId, onClose, inputClass }: { tripId: string; onC
     onClose()
   }
 
-  const labelClass = 'block text-sm text-gray-400 mb-1'
-
   return (
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4" onClick={onClose}>
       <div className="bg-main rounded-xl shadow-2xl shadow-black/40 w-full max-w-lg max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
@@ -202,7 +237,7 @@ function SegmentFormModal({ tripId, onClose, inputClass }: { tripId: string; onC
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div>
-            <label className={labelClass}>Type</label>
+            <label className="block text-sm text-gray-400 mb-1">Type</label>
             <select className={inputClass} value={form.segment_type} onChange={e => setForm(p => ({ ...p, segment_type: e.target.value }))}>
               <option value="flight">Flight</option>
               <option value="hotel">Hotel</option>
@@ -214,33 +249,33 @@ function SegmentFormModal({ tripId, onClose, inputClass }: { tripId: string; onC
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className={labelClass}>{isHotel ? 'Location' : 'From'}</label>
-              <input className={inputClass} value={form.from_location} onChange={e => setForm(p => ({ ...p, from_location: e.target.value }))} placeholder={isHotel ? 'e.g. Miami Beach' : 'e.g. KTEB'} />
+              <label className="block text-sm text-gray-400 mb-1">{isHotel ? 'Location' : 'From'}</label>
+              <input className={inputClass} value={form.from_location} onChange={e => setForm(p => ({ ...p, from_location: e.target.value }))} placeholder={isHotel ? 'e.g. Four Seasons Miami' : 'e.g. KTEB'} />
             </div>
             {!isHotel && (
               <div>
-                <label className={labelClass}>To</label>
+                <label className="block text-sm text-gray-400 mb-1">To</label>
                 <input className={inputClass} value={form.to_location} onChange={e => setForm(p => ({ ...p, to_location: e.target.value }))} placeholder="e.g. KOPF" />
               </div>
             )}
           </div>
           {isHotel ? (
             <div className="grid grid-cols-2 gap-4">
-              <div><label className={labelClass}>Check-in</label><input className={inputClass} type="datetime-local" value={form.check_in} onChange={e => setForm(p => ({ ...p, check_in: e.target.value }))} /></div>
-              <div><label className={labelClass}>Check-out</label><input className={inputClass} type="datetime-local" value={form.check_out} onChange={e => setForm(p => ({ ...p, check_out: e.target.value }))} /></div>
+              <DateTimePicker label="Check-in" value={form.check_in} onChange={v => setForm(p => ({ ...p, check_in: v }))} />
+              <DateTimePicker label="Check-out" value={form.check_out} onChange={v => setForm(p => ({ ...p, check_out: v }))} />
             </div>
           ) : (
             <div className="grid grid-cols-2 gap-4">
-              <div><label className={labelClass}>Depart</label><input className={inputClass} type="datetime-local" value={form.depart_at} onChange={e => setForm(p => ({ ...p, depart_at: e.target.value }))} /></div>
-              <div><label className={labelClass}>Arrive</label><input className={inputClass} type="datetime-local" value={form.arrive_at} onChange={e => setForm(p => ({ ...p, arrive_at: e.target.value }))} /></div>
+              <DateTimePicker label="Depart" value={form.depart_at} onChange={v => setForm(p => ({ ...p, depart_at: v }))} />
+              <DateTimePicker label="Arrive" value={form.arrive_at} onChange={v => setForm(p => ({ ...p, arrive_at: v }))} />
             </div>
           )}
           <div className="grid grid-cols-2 gap-4">
-            <div><label className={labelClass}>Carrier / Provider</label><input className={inputClass} value={form.carrier} onChange={e => setForm(p => ({ ...p, carrier: e.target.value }))} placeholder="e.g. NetJets" /></div>
-            <div><label className={labelClass}>Confirmation Code</label><input className={inputClass} value={form.confirmation_code} onChange={e => setForm(p => ({ ...p, confirmation_code: e.target.value }))} /></div>
+            <div><label className="block text-sm text-gray-400 mb-1">Carrier / Provider</label><input className={inputClass} value={form.carrier} onChange={e => setForm(p => ({ ...p, carrier: e.target.value }))} placeholder="e.g. NetJets" /></div>
+            <div><label className="block text-sm text-gray-400 mb-1">Confirmation Code</label><input className={inputClass} value={form.confirmation_code} onChange={e => setForm(p => ({ ...p, confirmation_code: e.target.value }))} /></div>
           </div>
-          <div><label className={labelClass}>Seat / Room Info</label><input className={inputClass} value={form.seat_info} onChange={e => setForm(p => ({ ...p, seat_info: e.target.value }))} /></div>
-          <div><label className={labelClass}>Notes</label><textarea className={`${inputClass} resize-none`} rows={2} value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} /></div>
+          <div><label className="block text-sm text-gray-400 mb-1">Seat / Room Info</label><input className={inputClass} value={form.seat_info} onChange={e => setForm(p => ({ ...p, seat_info: e.target.value }))} /></div>
+          <div><label className="block text-sm text-gray-400 mb-1">Notes</label><textarea className={`${inputClass} resize-none`} rows={2} value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} /></div>
           {error && <p className="text-red-400 text-sm">{error}</p>}
           <div className="flex gap-3 pt-2">
             <button type="button" onClick={onClose} className="flex-1 py-2 px-4 bg-white/10 hover:bg-white/15 text-gray-300 rounded-lg text-sm transition-colors">Cancel</button>

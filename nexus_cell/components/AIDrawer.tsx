@@ -1,73 +1,150 @@
 'use client'
 
+import { useState, useRef, useEffect } from 'react'
+
 interface AIDrawerProps {
   isOpen: boolean
   onClose: () => void
 }
 
+interface ChatMessage {
+  role: 'user' | 'assistant'
+  content: string
+}
+
 const exampleQueries = [
-  'Pending approvals',
-  'Next flight',
-  'Monthly spend',
-  'Overdue bills',
-  'Open tasks',
+  'What\'s pending approval?',
+  'When is my next flight?',
+  'How much did we spend this month?',
+  'What bills are overdue?',
+  'Upcoming renewals',
 ]
 
 export default function AIDrawer({ isOpen, onClose }: AIDrawerProps) {
+  const [input, setInput] = useState('')
+  const [messages, setMessages] = useState<ChatMessage[]>([])
+  const [loading, setLoading] = useState(false)
+  const [conversationHistory, setConversationHistory] = useState<ChatMessage[]>([])
+  const scrollRef = useRef<HTMLDivElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    if (isOpen) inputRef.current?.focus()
+  }, [isOpen])
+
+  useEffect(() => {
+    if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight
+  }, [messages])
+
+  async function sendMessage(text: string) {
+    if (!text.trim() || loading) return
+    const userMsg: ChatMessage = { role: 'user', content: text.trim() }
+    setMessages(prev => [...prev, userMsg])
+    setInput('')
+    setLoading(true)
+
+    try {
+      const res = await fetch('/api/ai/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: text.trim(), conversationHistory }),
+      })
+      const data = await res.json()
+      const aiMsg: ChatMessage = { role: 'assistant', content: data.response || 'Sorry, I couldn\'t process that.' }
+      setMessages(prev => [...prev, aiMsg])
+      setConversationHistory(data.conversationHistory || [])
+    } catch {
+      setMessages(prev => [...prev, { role: 'assistant', content: 'Nexus is unavailable right now. Please try again.' }])
+    }
+    setLoading(false)
+  }
+
+  function handleKeyDown(e: React.KeyboardEvent) {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(input) }
+    if (e.key === 'Escape') onClose()
+  }
+
   if (!isOpen) return null
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
-      {/* Backdrop */}
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+      <div className="relative w-full max-w-lg bg-[#0f1117] rounded-2xl border border-white/10 shadow-2xl shadow-black/40 flex flex-col max-h-[80vh]" onClick={e => e.stopPropagation()}>
 
-      {/* Panel */}
-      <div
-        className="relative w-full max-w-lg bg-[#0f1117] rounded-2xl border border-white/10 shadow-2xl shadow-black/40 p-6"
-        onClick={e => e.stopPropagation()}
-      >
-        {/* Decorative mini orb */}
-        <div className="flex justify-center mb-5">
-          <div
-            className="w-10 h-10 rounded-full"
-            style={{
-              background: 'radial-gradient(circle, #5eead4 0%, #0d9488 50%, #064e3b 100%)',
-              boxShadow: '0 0 30px rgba(94, 234, 212, 0.2)',
-            }}
-          />
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 pt-5 pb-3">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-full" style={{ background: 'radial-gradient(circle, #5eead4 0%, #0d9488 50%, #064e3b 100%)', boxShadow: '0 0 20px rgba(94,234,212,0.2)' }} />
+            <div>
+              <h2 className="text-sm font-semibold text-[#5eead4]">Nexus AI</h2>
+              <p className="text-[10px] text-[#64748b]">Search across all your data</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="text-gray-600 hover:text-white text-lg">&times;</button>
         </div>
 
-        <h2 className="text-lg font-semibold text-white text-center mb-4">Ask Nexus</h2>
+        {/* Messages area */}
+        <div ref={scrollRef} className="flex-1 overflow-y-auto px-6 py-3 space-y-3 min-h-[100px]">
+          {messages.length === 0 && !loading && (
+            <div className="text-center py-6">
+              <p className="text-[#475569] text-sm">Ask me anything about your operations.</p>
+            </div>
+          )}
+          {messages.map((msg, i) => (
+            <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+              <div className={`max-w-[85%] px-3.5 py-2.5 rounded-xl text-sm leading-relaxed ${
+                msg.role === 'user'
+                  ? 'bg-[#141520] text-[#e2e8f0]'
+                  : 'bg-[#5eead4]/10 text-[#e2e8f0] border border-[#5eead4]/10'
+              }`}>
+                <p className="whitespace-pre-wrap">{msg.content}</p>
+              </div>
+            </div>
+          ))}
+          {loading && (
+            <div className="flex justify-start">
+              <div className="bg-[#5eead4]/10 border border-[#5eead4]/10 px-4 py-3 rounded-xl flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 bg-[#5eead4] rounded-full animate-pulse" />
+                <span className="w-1.5 h-1.5 bg-[#5eead4] rounded-full animate-pulse" style={{ animationDelay: '150ms' }} />
+                <span className="w-1.5 h-1.5 bg-[#5eead4] rounded-full animate-pulse" style={{ animationDelay: '300ms' }} />
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Example chips (only when no messages) */}
+        {messages.length === 0 && (
+          <div className="px-6 pb-3 flex flex-wrap gap-2">
+            {exampleQueries.map(q => (
+              <button key={q} onClick={() => sendMessage(q)} className="bg-white/5 rounded-full px-3 py-1.5 text-xs text-[#94a3b8] hover:bg-white/10 hover:text-white transition-colors">
+                {q}
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* Input */}
-        <div className="relative mb-4">
-          <input
-            type="text"
-            placeholder="Ask anything about your operations..."
-            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500/50 text-sm"
-            autoFocus
-          />
-        </div>
-
-        {/* Example chips */}
-        <div className="flex flex-wrap gap-2 mb-6">
-          {exampleQueries.map(q => (
+        <div className="px-6 pb-5 pt-2">
+          <div className="flex gap-2">
+            <input
+              ref={inputRef}
+              type="text"
+              value={input}
+              onChange={e => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Ask anything..."
+              className="flex-1 bg-[#141520] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-[#475569] focus:outline-none focus:border-[#5eead4]/50"
+            />
             <button
-              key={q}
-              className="bg-white/5 rounded-full px-3 py-1.5 text-xs text-gray-400 hover:bg-white/10 hover:text-gray-300 transition-colors"
+              onClick={() => sendMessage(input)}
+              disabled={!input.trim() || loading}
+              className="px-4 py-2.5 rounded-xl text-sm font-medium text-white disabled:opacity-30 transition-all hover:brightness-110"
+              style={{ background: 'linear-gradient(to right, #14b8a6, #10b981)' }}
             >
-              {q}
+              Send
             </button>
-          ))}
+          </div>
         </div>
-
-        {/* Submit */}
-        <button className="w-full py-2.5 rounded-xl text-sm font-medium text-white transition-all hover:brightness-110" style={{ background: 'linear-gradient(to right, #14b8a6, #10b981)' }}>
-          Ask Nexus
-        </button>
-
-        {/* Close hint */}
-        <p className="text-center text-[11px] text-gray-600 mt-3">Press <kbd className="bg-white/5 px-1.5 py-0.5 rounded text-gray-500 font-mono">Esc</kbd> to close</p>
       </div>
     </div>
   )

@@ -78,6 +78,10 @@ export interface TripSegment {
   seat_info: string | null
   notes: string | null
   sort_order: number
+  from_lat: number | null
+  from_lng: number | null
+  to_lat: number | null
+  to_lng: number | null
   created_at: string
 }
 
