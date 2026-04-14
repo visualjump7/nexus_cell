@@ -1,0 +1,10 @@
+{
+  "name": "nexus_cell_repo",
+  "private": true,
+  "workspaces": ["nexus_cell"],
+  "scripts": {
+    "build": "npm run build -w nexus_cell",
+    "dev": "npm run dev -w nexus_cell",
+    "lint": "npm run lint -w nexus_cell"
+  }
+}
