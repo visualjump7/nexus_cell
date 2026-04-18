@@ -236,6 +236,7 @@ export interface ProjectFile {
 }
 
 export interface Budget {
+  organization_id?: string
   id: string
   project_id: string
   category: string
@@ -245,6 +246,7 @@ export interface Budget {
   notes: string | null
   created_at: string
   updated_at: string
+  metadata?: Record<string, unknown>
 }
 
 // Project Directory — Block System
