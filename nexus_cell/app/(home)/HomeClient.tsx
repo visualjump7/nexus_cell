@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import OrbLayout from '@/components/OrbLayout'
 import AIDrawer from '@/components/AIDrawer'
-import { LayoutIcon, DollarIcon, PlaneIcon, BellIcon, CheckIcon, HeartIcon, FolderIcon } from '@/components/icons'
+import { LayoutIcon, DollarIcon, PlaneIcon, BellIcon, CheckIcon, HeartIcon, FolderIcon, FileTextIcon } from '@/components/icons'
 
 interface Props {
   firstName: string
@@ -25,6 +25,7 @@ export default function HomeClient({ firstName, alertsCount, tasksCount }: Props
     { href: '/tasks', icon: <CheckIcon className="w-6 h-6" />, label: 'Tasks', color: 'cyan', badge: tasksCount },
     { href: '/lifestyle', icon: <HeartIcon className="w-6 h-6" />, label: 'Lifestyle', color: 'rose' },
     { href: '/projects', icon: <FolderIcon className="w-6 h-6" />, label: 'Projects', color: 'orange' },
+    { href: '/brief', icon: <FileTextIcon className="w-6 h-6" />, label: 'Brief', color: 'teal' },
   ]
 
   return (
