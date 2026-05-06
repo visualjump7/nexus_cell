@@ -217,6 +217,8 @@ export interface Project {
   project_type: string | null
   status: 'active' | 'on_hold' | 'completed' | 'archived'
   location: string | null
+  latitude: number | null
+  longitude: number | null
   description: string | null
   notes: string | null
   created_at: string
@@ -315,6 +317,97 @@ export interface ProjectImage {
   position: number
   uploaded_by: string | null
   created_at: string
+}
+
+// Executive Command Center — EA-curated view for principals.
+// One row per (organization_id, principal_user_id) — see sql/008.
+export interface ExecutiveView {
+  id: string
+  organization_id: string
+  principal_user_id: string
+  widgets: WidgetConfig[]
+  greeting_style: 'none' | 'time_of_day' | 'custom'
+  custom_greeting: string | null
+  updated_by: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface WidgetConfig {
+  widget_id: string
+  settings?: Record<string, unknown>
+}
+
+// External calendar subscription (read-only ICS). See sql/011.
+export interface ExternalCalendar {
+  id: string
+  organization_id: string
+  name: string
+  provider: 'apple' | 'outlook' | 'google' | 'ics'
+  ics_url: string
+  color: string
+  added_by: string | null
+  last_synced_at: string | null
+  last_sync_error: string | null
+  archived: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface ExternalCalendarPreference {
+  id: string
+  user_id: string
+  external_calendar_id: string
+  visible: boolean
+  updated_at: string
+}
+
+export interface ExternalCalendarEvent {
+  id: string
+  external_calendar_id: string
+  uid: string
+  title: string | null
+  description: string | null
+  location: string | null
+  start_at: string
+  end_at: string | null
+  all_day: boolean
+  rrule: string | null
+  synced_at: string
+}
+
+// EA-proposed user invitation. Admin must approve before the auth user is
+// created and the org member row is added. See sql/009.
+export interface PendingInvitation {
+  id: string
+  organization_id: string
+  proposed_by: string
+  email: string
+  full_name: string
+  role: UserRole
+  notes: string | null
+  status: 'pending' | 'approved' | 'rejected'
+  reviewed_by: string | null
+  reviewed_at: string | null
+  created_at: string
+  updated_at: string
+}
+
+// QuickBooks Online Integration
+export interface QuickBooksConnection {
+  id: string
+  organization_id: string
+  realm_id: string
+  environment: 'sandbox' | 'production'
+  access_token: string
+  refresh_token: string
+  access_token_expires_at: string
+  refresh_token_expires_at: string
+  connected_by: string | null
+  connected_at: string
+  last_synced_at: string | null
+  last_sync_error: string | null
+  updated_at: string
 }
 
 export interface AuditLogEntry {

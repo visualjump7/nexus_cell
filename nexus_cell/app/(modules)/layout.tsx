@@ -2,6 +2,7 @@ import { createClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation'
 import NexusCorner from '@/components/NexusCorner'
 import FloatingAdd from '@/components/shared/FloatingAdd'
+import HamburgerMount from '@/components/shared/HamburgerMount'
 import type { UserRole } from '@/lib/types'
 
 export default async function ModulesLayout({ children }: { children: React.ReactNode }) {
@@ -22,10 +23,11 @@ export default async function ModulesLayout({ children }: { children: React.Reac
   return (
     <div className="min-h-screen bg-nexus text-white">
       <NexusCorner />
-      <main className="pl-16 pr-6 pt-6 pb-8">
+      <main className="pl-20 pr-6 pt-8 pb-8">
         {children}
       </main>
       {canWrite && <FloatingAdd />}
+      <HamburgerMount />
     </div>
   )
 }

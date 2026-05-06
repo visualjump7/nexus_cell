@@ -95,18 +95,20 @@ export default function TasksList({ tasks, role, userId, members }: Props) {
       ) : (
         <div className="space-y-2">
           {filtered.map(task => (
-            <div key={task.id} className="bg-card rounded-xl shadow-lg shadow-black/20 p-4 flex items-center gap-4">
+            <div key={task.id} className="bg-card rounded-xl shadow-lg shadow-black/20 p-4 flex items-center gap-3">
               <div className={`w-2 h-2 rounded-full shrink-0 ${priorityDots[task.priority]}`} title={task.priority} />
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <p className={`font-medium ${task.status === 'done' ? 'text-gray-500 line-through' : 'text-white'}`}>{task.title}</p>
-                  <span className={`text-[11px] font-medium px-2 py-0.5 rounded border ${statusColors[task.status] || ''}`}>
+                <p className={`font-medium truncate ${task.status === 'done' ? 'text-gray-500 line-through' : 'text-white'}`}>{task.title}</p>
+                <div className="text-[11px] text-gray-500 mt-1 flex items-center gap-2 flex-wrap">
+                  <span className={`font-medium px-1.5 py-0.5 rounded whitespace-nowrap ${statusColors[task.status] || ''}`}>
                     {task.status.replace('_', ' ')}
                   </span>
-                </div>
-                <div className="text-xs text-gray-500 mt-1 flex gap-3">
+                  <span className="text-gray-600">·</span>
                   <span>{getMemberName(task.assigned_to)}</span>
-                  {task.due_date && <span>Due {formatDate(task.due_date)}</span>}
+                  {task.due_date && <>
+                    <span className="text-gray-600">·</span>
+                    <span>Due {formatDate(task.due_date)}</span>
+                  </>}
                 </div>
               </div>
               {canWrite && (

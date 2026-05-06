@@ -32,9 +32,9 @@ export default function DashboardCharts({ categoryData }: Props) {
   const total = categoryData.reduce((sum, c) => sum + c.value, 0)
 
   return (
-    <div className="grid grid-cols-5 gap-4">
+    <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
       {/* Area Chart — Activity Overview */}
-      <div className="col-span-3 bg-card rounded-xl shadow-lg shadow-black/20 p-5">
+      <div className="lg:col-span-3 bg-card rounded-xl shadow-lg shadow-black/20 p-5">
         <h3 className="text-sm font-medium text-gray-400 mb-4">Activity Overview</h3>
         <ResponsiveContainer width="100%" height={240}>
           <AreaChart data={monthlyData}>
@@ -75,7 +75,7 @@ export default function DashboardCharts({ categoryData }: Props) {
       </div>
 
       {/* Donut Chart — Breakdown */}
-      <div className="col-span-2 bg-card rounded-xl shadow-lg shadow-black/20 p-5">
+      <div className="lg:col-span-2 bg-card rounded-xl shadow-lg shadow-black/20 p-5">
         <h3 className="text-sm font-medium text-gray-400 mb-4">Breakdown</h3>
         {categoryData.length === 0 ? (
           <div className="flex items-center justify-center h-[240px]">

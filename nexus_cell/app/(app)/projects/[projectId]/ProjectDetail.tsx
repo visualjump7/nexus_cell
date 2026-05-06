@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import type { Project, Budget, ProjectFile, UserRole } from '@/lib/types'
 import DeleteConfirm from '@/components/DeleteConfirm'
+import ProjectFilesUploader from '@/components/project-detail/ProjectFilesUploader'
 
 const statusColors: Record<string, string> = {
   active: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
@@ -13,9 +14,9 @@ const statusColors: Record<string, string> = {
   archived: 'bg-gray-500/15 text-gray-400 border-gray-500/30',
 }
 
-interface Props { project: Project; budgets: Budget[]; files: ProjectFile[]; role: UserRole }
+interface Props { project: Project; budgets: Budget[]; files: ProjectFile[]; role: UserRole; orgId: string }
 
-export default function ProjectDetail({ project, budgets, files, role }: Props) {
+export default function ProjectDetail({ project, budgets, files, role, orgId }: Props) {
   const router = useRouter()
   const canWrite = ['ea', 'admin'].includes(role)
   const [showBudgetForm, setShowBudgetForm] = useState(false)
@@ -136,7 +137,14 @@ export default function ProjectDetail({ project, budgets, files, role }: Props) 
       {/* Project Files */}
       <div>
         <h2 className="text-lg font-semibold mb-4">Files</h2>
-        {files.length === 0 ? (
+        {canWrite ? (
+          <ProjectFilesUploader
+            projectId={project.id}
+            orgId={orgId}
+            existingFiles={files}
+            canDelete
+          />
+        ) : files.length === 0 ? (
           <div className="bg-card rounded-xl shadow-lg shadow-black/20 p-8 text-center">
             <p className="text-gray-500">No files uploaded yet.</p>
           </div>

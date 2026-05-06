@@ -105,5 +105,5 @@ export async function fetchBillCategories(): Promise<string[]> {
     const c = (row.category || "").trim();
     if (c) set.add(c);
   }
-  return [...set].sort();
+  return Array.from(set).sort();
 }

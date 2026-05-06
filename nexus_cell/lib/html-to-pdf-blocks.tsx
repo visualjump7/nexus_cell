@@ -133,7 +133,7 @@ function renderInlineChildren(
       return (
         <Text
           key={i}
-          style={{ textDecoration: "underline" as "underline" }}
+          style={{ textDecoration: "underline" as const }}
         >
           {renderInlineChildren(child.children)}
         </Text>

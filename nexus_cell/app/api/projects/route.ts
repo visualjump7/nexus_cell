@@ -27,6 +27,8 @@ export async function POST(request: Request) {
       project_type: body.project_type || null,
       status: body.status || 'active',
       location: body.location || null,
+      latitude: typeof body.latitude === 'number' ? body.latitude : null,
+      longitude: typeof body.longitude === 'number' ? body.longitude : null,
       description: body.description || null,
       notes: body.notes || null,
     })

@@ -27,6 +27,7 @@ import {
   publishBrief,
   unpublishBrief,
   deleteBrief,
+  setBriefPrincipalVisible,
   fetchCashFlowData,
   fetchUpcomingBillsData,
   fetchProjectsSnapshot,
@@ -164,6 +165,15 @@ export default function BriefPage() {
 
   const handleDelete = async (briefId: string) => {
     await deleteBrief(briefId);
+    setMenuOpen(null);
+    loadStaffList();
+  };
+
+  const handleTogglePrincipalVisible = async (
+    briefId: string,
+    current: boolean,
+  ) => {
+    await setBriefPrincipalVisible(briefId, !current);
     setMenuOpen(null);
     loadStaffList();
   };
@@ -347,6 +357,24 @@ export default function BriefPage() {
                               <Download className="h-3.5 w-3.5" />
                             )}
                             Download PDF
+                          </button>
+                          <button
+                            onClick={() =>
+                              handleTogglePrincipalVisible(
+                                brief.id,
+                                Boolean(brief.principal_visible),
+                              )
+                            }
+                            className="flex w-full items-center gap-2 px-3 py-2 text-sm text-foreground hover:bg-muted"
+                          >
+                            <span className={`inline-block w-3.5 h-3.5 rounded border ${brief.principal_visible ? 'bg-emerald-500 border-emerald-500' : 'border-white/30'}`}>
+                              {brief.principal_visible && (
+                                <svg viewBox="0 0 16 16" className="w-full h-full text-white" fill="none" stroke="currentColor" strokeWidth={3}>
+                                  <path d="M3 8l3 3 7-7" strokeLinecap="round" strokeLinejoin="round" />
+                                </svg>
+                              )}
+                            </span>
+                            Visible to principal
                           </button>
                           <button
                             onClick={() => handleDelete(brief.id)}

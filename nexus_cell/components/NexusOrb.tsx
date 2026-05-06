@@ -34,7 +34,6 @@ export default function NexusOrb({ size = 'large', onClick }: NexusOrbProps) {
         {/* Ring 2 */}
         <div className="absolute inset-0 m-auto w-[140px] h-[140px] rounded-full border border-teal-400/10 animate-nexus-ring-pulse" style={{ animationDelay: '1.5s' }} />
 
-        <span className="text-[9px] text-white/50 select-none relative z-10">AI</span>
       </button>
 
       {/* Hint text */}

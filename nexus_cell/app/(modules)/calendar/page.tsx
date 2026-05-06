@@ -1,51 +1,51 @@
-"use client";
+import { getAuthContext } from '@/lib/auth'
+import CalendarView from './CalendarView'
+import type { ExternalCalendar, ExternalCalendarEvent } from '@/lib/types'
 
-import { useEffect, useState } from "react";
-import { Loader2 } from "lucide-react";
-import { FiscalCalendar } from "@/components/calendar/FiscalCalendar";
-import {
-  fetchBillsForMonth,
-  fetchBillCategories,
-  type Bill,
-} from "@/lib/bill-service";
+export default async function CalendarPage() {
+  const { supabase, user, orgId } = await getAuthContext()
 
-export default function CalendarPage() {
-  const [bills, setBills] = useState<Bill[]>([]);
-  const [categories, setCategories] = useState<string[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  // Fetch external calendars + this user's per-calendar preferences. Events
+  // for the next 90 days are loaded once and filtered client-side as the user
+  // toggles calendars on/off (no extra round trips on toggle).
+  const now = new Date()
+  const horizonStart = new Date(now)
+  horizonStart.setDate(horizonStart.getDate() - 7) // small back-window so today's events appear if they started yesterday
+  const horizonEnd = new Date(now)
+  horizonEnd.setDate(horizonEnd.getDate() + 90)
 
-  useEffect(() => {
-    async function load() {
-      setIsLoading(true);
-      const now = new Date();
-      const [initialBills, cats] = await Promise.all([
-        fetchBillsForMonth(now.getFullYear(), now.getMonth() + 1),
-        fetchBillCategories(),
-      ]);
-      setBills(initialBills);
-      setCategories(cats);
-      setIsLoading(false);
-    }
-    load();
-  }, []);
+  const [calsRes, prefsRes, eventsRes] = await Promise.all([
+    supabase
+      .from('external_calendars')
+      .select('*')
+      .eq('organization_id', orgId)
+      .eq('archived', false)
+      .order('created_at', { ascending: true }),
+    supabase
+      .from('external_calendar_preferences')
+      .select('external_calendar_id, visible')
+      .eq('user_id', user.id),
+    // Subquery via the join: only events whose parent calendar is in this org and not archived
+    supabase
+      .from('external_calendar_events')
+      .select('*, external_calendars!inner(organization_id, archived)')
+      .eq('external_calendars.organization_id', orgId)
+      .eq('external_calendars.archived', false)
+      .gte('start_at', horizonStart.toISOString())
+      .lte('start_at', horizonEnd.toISOString())
+      .order('start_at', { ascending: true }),
+  ])
 
-  if (isLoading) {
-    return (
-      <div className="flex min-h-[60vh] items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
+  const calendars = (calsRes.data || []) as ExternalCalendar[]
+  const events = (eventsRes.data || []) as ExternalCalendarEvent[]
+  const prefs = prefsRes.data || []
+  const visibleByCalendar = new Map(prefs.map(p => [p.external_calendar_id, !!p.visible]))
 
-  return (
-    <div className="mx-auto max-w-6xl space-y-6 px-4 py-8 sm:px-6">
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">Bill Calendar</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Monthly view of bills by due date. Tap a day to see detail.
-        </p>
-      </div>
-      <FiscalCalendar initialBills={bills} categories={categories} />
-    </div>
-  );
+  // Default to visible=true for any calendar without an explicit preference row
+  const calendarsWithVisibility = calendars.map(c => ({
+    ...c,
+    visible: visibleByCalendar.has(c.id) ? !!visibleByCalendar.get(c.id) : true,
+  }))
+
+  return <CalendarView calendars={calendarsWithVisibility} events={events} />
 }

@@ -12,7 +12,7 @@ export default async function ProjectsPage() {
 
   return (
     <div>
-      <ProjectsList projects={projects || []} role={role} />
+      <ProjectsList projects={projects || []} role={role} orgId={orgId} />
     </div>
   )
 }

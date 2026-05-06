@@ -22,6 +22,7 @@ export interface Brief {
   cover_show_date?: boolean;
   cover_show_principal?: boolean;
   cover_accent_color?: string | null;
+  principal_visible?: boolean;
 }
 
 export interface BriefBlock {
@@ -256,6 +257,28 @@ export async function unpublishBrief(briefId: string): Promise<boolean> {
 
   if (error) {
     console.error("Error unpublishing brief:", error);
+    return false;
+  }
+  return true;
+}
+
+// EA toggles whether a brief surfaces in the principal's Briefings widget on
+// the executive view. Independent of publish status — a brief can be
+// published-but-hidden from the principal, or visible-but-still-draft (rare).
+export async function setBriefPrincipalVisible(
+  briefId: string,
+  visible: boolean,
+): Promise<boolean> {
+  const supabase = createClient();
+  const { error } = await supabase
+    .from("briefs")
+    .update({
+      principal_visible: visible,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", briefId);
+  if (error) {
+    console.error("Error toggling brief principal_visible:", error);
     return false;
   }
   return true;

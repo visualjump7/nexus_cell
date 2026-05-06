@@ -59,7 +59,7 @@ export default async function DashboardPage() {
     <div className="max-w-7xl space-y-6">
       <h1 className="text-2xl font-semibold text-slate-200">Dashboard</h1>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <Link href="/financial"><StatCard dot="bg-emerald-400" label="Total Outstanding" value={fmtCurrency(totalOutstanding)} /></Link>
         <Link href="/alerts"><StatCard dot="bg-blue-400" label="Pending Approvals" value={(approvalAlerts.count || 0).toString()} /></Link>
         <Link href="/travel"><StatCard dot="bg-purple-400" label="Active Trips" value={(tripsActive.count || 0).toString()} /></Link>

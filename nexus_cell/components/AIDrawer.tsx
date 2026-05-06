@@ -5,6 +5,14 @@ import { useState, useRef, useEffect } from 'react'
 interface AIDrawerProps {
   isOpen: boolean
   onClose: () => void
+  // When set, the drawer auto-sends this message on open. The parent should
+  // clear it via onInitialMessageConsumed so it doesn't re-fire next open.
+  initialMessage?: string
+  onInitialMessageConsumed?: () => void
+  // Jarvis-mode opener — server-derived assistant message that's already
+  // "in the room" when the drawer opens. Decorative; included in
+  // conversationHistory so the AI knows what it already said.
+  openingMessage?: string
 }
 
 interface ChatMessage {
@@ -20,17 +28,39 @@ const exampleQueries = [
   'Upcoming renewals',
 ]
 
-export default function AIDrawer({ isOpen, onClose }: AIDrawerProps) {
+export default function AIDrawer({ isOpen, onClose, initialMessage, onInitialMessageConsumed, openingMessage }: AIDrawerProps) {
   const [input, setInput] = useState('')
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [loading, setLoading] = useState(false)
   const [conversationHistory, setConversationHistory] = useState<ChatMessage[]>([])
+  const [openerShown, setOpenerShown] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     if (isOpen) inputRef.current?.focus()
   }, [isOpen])
+
+  // Render the Jarvis opener as the first assistant message the first time
+  // the drawer opens this session. Includes it in conversationHistory so
+  // follow-up replies have context.
+  useEffect(() => {
+    if (isOpen && openingMessage && !openerShown && messages.length === 0) {
+      const opener: ChatMessage = { role: 'assistant', content: openingMessage }
+      setMessages([opener])
+      setConversationHistory([opener])
+      setOpenerShown(true)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, openingMessage])
+
+  useEffect(() => {
+    if (isOpen && initialMessage && initialMessage.trim()) {
+      sendMessage(initialMessage)
+      onInitialMessageConsumed?.()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, initialMessage])
 
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight
@@ -53,6 +83,12 @@ export default function AIDrawer({ isOpen, onClose }: AIDrawerProps) {
       const aiMsg: ChatMessage = { role: 'assistant', content: data.response || 'Sorry, I couldn\'t process that.' }
       setMessages(prev => [...prev, aiMsg])
       setConversationHistory(data.conversationHistory || [])
+
+      // Easter egg: heart-eyes on the Nexus character when the AI lands a
+      // warm or celebratory response. Keyword scan on the assistant's text.
+      if (isPositive(aiMsg.content)) {
+        window.dispatchEvent(new CustomEvent('nexus:positive'))
+      }
     } catch {
       setMessages(prev => [...prev, { role: 'assistant', content: 'Nexus is unavailable right now. Please try again.' }])
     }
@@ -148,4 +184,17 @@ export default function AIDrawer({ isOpen, onClose }: AIDrawerProps) {
       </div>
     </div>
   )
+}
+
+// Loose keyword/emoji scan to fire the Easter-egg heart-eyes when the AI
+// lands something warm. Intentionally generous — better to occasionally
+// trigger than to miss obvious wins. Kept in this file so it's near the
+// AI response handling and easy to tweak.
+const POSITIVE_PATTERNS = [
+  /\b(great|amazing|wonderful|fantastic|congrats|congratulations|nicely done|well done|love|❤|💚|🎉|✨|🥳|nailed it)\b/i,
+]
+
+function isPositive(text: string): boolean {
+  if (!text) return false
+  return POSITIVE_PATTERNS.some(p => p.test(text))
 }

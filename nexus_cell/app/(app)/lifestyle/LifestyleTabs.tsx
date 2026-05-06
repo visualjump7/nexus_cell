@@ -11,6 +11,7 @@ const tabOptions = [
   { key: 'gifts', label: 'Gifts' },
   { key: 'subscriptions', label: 'Subscriptions' },
   { key: 'memberships', label: 'Memberships' },
+  { key: 'passwords', label: 'Passwords' },
 ]
 
 interface Props {
@@ -58,6 +59,25 @@ function LifestyleTabsInner({ gifts, subscriptions, memberships, role }: Props) 
       {activeTab === 'gifts' && <GiftsList gifts={gifts} role={role} />}
       {activeTab === 'subscriptions' && <SubscriptionsList subscriptions={subscriptions} role={role} />}
       {activeTab === 'memberships' && <MembershipsList memberships={memberships} role={role} />}
+      {activeTab === 'passwords' && <PasswordsPlaceholder />}
+    </div>
+  )
+}
+
+// Temporary placeholder — wired up so the tab is reachable. Replace with the
+// real password vault UI when that feature is built.
+function PasswordsPlaceholder() {
+  return (
+    <div className="bg-card rounded-xl shadow-lg shadow-black/20 p-12 text-center">
+      <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-white/5 flex items-center justify-center">
+        <svg className="w-6 h-6 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+        </svg>
+      </div>
+      <h2 className="text-lg font-semibold text-white mb-1">Passwords</h2>
+      <p className="text-sm text-gray-400 max-w-sm mx-auto">
+        Secure password vault is coming soon. Store and share credentials with the team here.
+      </p>
     </div>
   )
 }

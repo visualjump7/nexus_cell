@@ -2,9 +2,12 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import type { Bill, UserRole } from '@/lib/types'
+import type { Bill, UserRole, QuickBooksConnection } from '@/lib/types'
 import BillForm from '@/components/BillForm'
 import DeleteConfirm from '@/components/DeleteConfirm'
+import BillsImportModal from '@/components/BillsImportModal'
+import QuickBooksBanner from '@/components/QuickBooksBanner'
+import { exportBillsToXlsx } from '@/lib/billsExcel'
 
 const statusColors: Record<string, string> = {
   pending: 'bg-yellow-500/15 text-yellow-400',
@@ -25,9 +28,11 @@ interface Props {
   bills: Bill[]
   role: UserRole
   stats: { totalOutstanding: number; paidThisMonth: number; overdue: number }
+  qbConnection?: QuickBooksConnection | null
+  qbConfigured?: boolean
 }
 
-export default function CashFlowView({ bills, role, stats }: Props) {
+export default function CashFlowView({ bills, role, stats, qbConnection = null, qbConfigured = false }: Props) {
   const router = useRouter()
   const canWrite = ['ea', 'admin'].includes(role)
 
@@ -35,6 +40,7 @@ export default function CashFlowView({ bills, role, stats }: Props) {
   const [showForm, setShowForm] = useState(false)
   const [editingBill, setEditingBill] = useState<Bill | null>(null)
   const [deletingBill, setDeletingBill] = useState<Bill | null>(null)
+  const [showImport, setShowImport] = useState(false)
 
   const filtered = activeTab === 'all' ? bills : bills.filter(b => b.status === activeTab)
 
@@ -62,12 +68,40 @@ export default function CashFlowView({ bills, role, stats }: Props) {
     <div className="max-w-6xl">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Cash Flow</h1>
-        {canWrite && (
-          <button onClick={() => { setEditingBill(null); setShowForm(true) }} className="px-4 py-2 bg-emerald-500 hover:brightness-110 text-white font-medium rounded-lg text-sm transition-all">
-            + New Bill
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => exportBillsToXlsx(bills)}
+            disabled={bills.length === 0}
+            className="px-3 py-2 bg-white/5 hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed text-gray-300 text-sm rounded-lg transition-all flex items-center gap-1.5"
+            title="Export bills to Excel"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+            </svg>
+            Export
           </button>
-        )}
+          {canWrite && (
+            <button
+              onClick={() => setShowImport(true)}
+              className="px-3 py-2 bg-white/5 hover:bg-white/10 text-gray-300 text-sm rounded-lg transition-all flex items-center gap-1.5"
+              title="Import bills from Excel"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+              </svg>
+              Import
+            </button>
+          )}
+          {canWrite && (
+            <button onClick={() => { setEditingBill(null); setShowForm(true) }} className="px-4 py-2 bg-emerald-500 hover:brightness-110 text-white font-medium rounded-lg text-sm transition-all">
+              + New Bill
+            </button>
+          )}
+        </div>
       </div>
+
+      {/* QuickBooks Banner */}
+      <QuickBooksBanner connection={qbConnection} canWrite={canWrite} isConfigured={qbConfigured} />
 
       {/* Stat Cards */}
       <div className="grid grid-cols-3 gap-4 mb-6">
@@ -117,8 +151,8 @@ export default function CashFlowView({ bills, role, stats }: Props) {
           <p className="text-gray-500">No bills found.</p>
         </div>
       ) : (
-        <div className="bg-card rounded-xl shadow-lg shadow-black/20 overflow-hidden">
-          <table className="w-full text-sm">
+        <div className="bg-card rounded-xl shadow-lg shadow-black/20 overflow-x-auto">
+          <table className="w-full text-sm min-w-[640px]">
             <thead>
               <tr className="border-b border-white/5 text-gray-500 text-left">
                 <th className="px-5 py-3 font-medium">Vendor</th>
@@ -159,6 +193,7 @@ export default function CashFlowView({ bills, role, stats }: Props) {
 
       {showForm && <BillForm bill={editingBill} onClose={() => { setShowForm(false); setEditingBill(null) }} />}
       {deletingBill && <DeleteConfirm itemName={deletingBill.vendor} onConfirm={handleDelete} onCancel={() => setDeletingBill(null)} />}
+      {showImport && <BillsImportModal onClose={() => setShowImport(false)} existingBills={bills} />}
     </div>
   )
 }

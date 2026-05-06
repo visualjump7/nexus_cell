@@ -17,13 +17,6 @@ const priorityColors: Record<string, string> = {
   low: 'text-gray-500', normal: 'text-gray-400', high: 'text-orange-400', urgent: 'text-red-400',
 }
 
-const statusColors: Record<string, string> = {
-  open: 'bg-yellow-500/15 text-yellow-400 border-yellow-500/30',
-  acknowledged: 'bg-blue-500/15 text-blue-400 border-blue-500/30',
-  resolved: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
-  expired: 'bg-gray-500/15 text-gray-400 border-gray-500/30',
-}
-
 interface Props { alerts: Alert[]; role: UserRole; userId?: string }
 
 export default function AlertsList({ alerts, role }: Props) {
@@ -112,45 +105,45 @@ export default function AlertsList({ alerts, role }: Props) {
       ) : (
         <div className="space-y-3">
           {filtered.map(alert => (
-            <div key={alert.id} className={`bg-card rounded-xl shadow-lg shadow-black/20 p-5 ${alert.priority === 'urgent' ? 'border-red-500/20' : 'border-white/5'}`}>
-              <div className="flex items-start justify-between gap-4">
+            <div key={alert.id} className={`bg-card rounded-xl shadow-lg shadow-black/20 p-4 border-l-[3px] ${alert.priority === 'urgent' ? 'border-l-red-500' : alert.priority === 'high' ? 'border-l-orange-500' : 'border-l-transparent'}`}>
+              <div className="flex items-start justify-between gap-3">
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1 flex-wrap">
-                    <span className={`text-[11px] font-medium px-2 py-0.5 rounded border ${typeColors[alert.alert_type] || ''}`}>
+                  <h3 className="text-white font-medium">{alert.title}</h3>
+                  {alert.body && <p className="text-sm text-gray-400 mt-1 line-clamp-2">{alert.body}</p>}
+                  <div className="flex items-center gap-2 mt-2 flex-wrap">
+                    <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${typeColors[alert.alert_type] || ''}`}>
                       {alert.alert_type.replace('_', ' ')}
                     </span>
-                    <span className={`text-[11px] font-medium px-2 py-0.5 rounded border ${statusColors[alert.status] || ''}`}>
-                      {alert.status}
-                    </span>
-                    <span className={`text-xs ${priorityColors[alert.priority]}`}>{alert.priority} priority</span>
+                    <span className="text-[10px] text-gray-600">·</span>
+                    <span className={`text-[10px] font-medium ${priorityColors[alert.priority]}`}>{alert.priority}</span>
+                    <span className="text-[10px] text-gray-600">·</span>
+                    <span className="text-[10px] text-gray-500">{alert.status}</span>
+                    <span className="text-[10px] text-gray-600">·</span>
+                    <span className="text-[10px] text-gray-500">{timeAgo(alert.created_at)}</span>
                   </div>
-                  <h3 className="text-white font-medium mt-2">{alert.title}</h3>
-                  {alert.body && <p className="text-sm text-gray-400 mt-1">{alert.body}</p>}
-                  <p className="text-xs text-gray-600 mt-2">{timeAgo(alert.created_at)}</p>
                 </div>
 
-                <div className="flex items-center gap-2 shrink-0">
-                  {/* Approval buttons for approval-type alerts that are still open */}
+                <div className="flex items-center gap-1.5 shrink-0">
                   {canApprove && alert.alert_type === 'approval' && alert.status === 'open' && (
                     <>
                       <button
                         onClick={() => handleApproval(alert.id, 'approved')}
                         disabled={approvingId === alert.id}
-                        className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 disabled:bg-emerald-800 text-white text-xs font-medium rounded-lg transition-colors"
+                        className="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 disabled:bg-emerald-800 text-white text-xs font-medium rounded-lg transition-colors"
                       >
                         Approve
                       </button>
                       <button
                         onClick={() => handleApproval(alert.id, 'rejected')}
                         disabled={approvingId === alert.id}
-                        className="px-3 py-1.5 bg-red-600 hover:bg-red-500 disabled:bg-red-800 text-white text-xs font-medium rounded-lg transition-colors"
+                        className="px-2.5 py-1.5 bg-red-600 hover:bg-red-500 disabled:bg-red-800 text-white text-xs font-medium rounded-lg transition-colors"
                       >
                         Reject
                       </button>
                     </>
                   )}
                   {canWrite && (
-                    <button onClick={() => setDeletingAlert(alert)} className="text-gray-600 hover:text-red-400 text-xs transition-colors">Delete</button>
+                    <button onClick={() => setDeletingAlert(alert)} className="text-gray-600 hover:text-red-400 text-xs transition-colors px-2">Delete</button>
                   )}
                 </div>
               </div>

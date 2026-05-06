@@ -20,7 +20,7 @@ export default async function ProjectDetailPage({ params }: { params: { projectI
 
   return (
     <div>
-      <ProjectDetail project={project} budgets={budgetsRes.data || []} files={filesRes.data || []} role={role} />
+      <ProjectDetail project={project} budgets={budgetsRes.data || []} files={filesRes.data || []} role={role} orgId={orgId} />
 
       {/* Project Directory — Block System */}
       <div className="max-w-4xl mt-8">
