@@ -40,8 +40,8 @@ export default async function NextTripWidget({ orgId }: Props) {
 
   if (!trip) {
     return (
-      <WidgetCard title="Next Trip">
-        <WidgetEmpty message="No upcoming trips." />
+      <WidgetCard title="Next site visit">
+        <WidgetEmpty message="No site visits scheduled." />
       </WidgetCard>
     )
   }
@@ -58,7 +58,7 @@ export default async function NextTripWidget({ orgId }: Props) {
 
   return (
     <WidgetCard
-      title="Next Trip"
+      title="Next site visit"
       subtitle={formatRange(trip.start_date, trip.end_date)}
       trailing={
         days !== null && days > 0 ? (
@@ -70,12 +70,12 @@ export default async function NextTripWidget({ orgId }: Props) {
     >
       <p className="text-base text-white font-medium mb-3">{trip.title}</p>
       {segs.length === 0 ? (
-        <p className="text-xs text-gray-500 italic">Itinerary not yet built.</p>
+        <p className="text-xs text-[#6E7578]">Itinerary not yet built.</p>
       ) : (
         <ul className="space-y-1.5 m-0 p-0 list-none">
           {segs.map(s => (
             <li key={s.id} className="text-sm text-gray-300 flex items-center gap-2">
-              <span className="text-gray-600 w-16 text-xs uppercase tracking-wider">{s.segment_type.replace('_', ' ')}</span>
+              <span className="rp-eyebrow--muted w-16">{s.segment_type.replace('_', ' ')}</span>
               <span className="flex-1 truncate">
                 {s.from_location && s.to_location
                   ? `${s.from_location} → ${s.to_location}`

@@ -68,17 +68,20 @@ export default function AlertsList({ alerts, role }: Props) {
 
   return (
     <div className="max-w-4xl">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold">Alerts</h1>
-          <p className="text-sm text-gray-500 mt-1">{filtered.length} alert{filtered.length !== 1 ? 's' : ''}</p>
+      <header className="rp-head">
+        <div className="flex items-end justify-between gap-4 flex-wrap">
+        <div className="flex flex-col gap-2.5">
+          <span className="rp-eyebrow">Action required</span>
+          <h1 className="rp-title">Alerts</h1>
+          <p className="rp-caption">{filtered.length} alert{filtered.length !== 1 ? 's' : ''}</p>
         </div>
         {canWrite && (
-          <button onClick={() => setShowForm(true)} className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-medium rounded-lg text-sm transition-colors">
-            + New Alert
+          <button onClick={() => setShowForm(true)} className="rp-btn-solid">
+            New alert
           </button>
         )}
-      </div>
+        </div>
+      </header>
 
       <div className="flex gap-3 mb-6">
         <select className={selectClass} value={typeFilter} onChange={e => setTypeFilter(e.target.value)}>
@@ -99,13 +102,13 @@ export default function AlertsList({ alerts, role }: Props) {
       </div>
 
       {filtered.length === 0 ? (
-        <div className="bg-card rounded-xl shadow-lg shadow-black/20 p-12 text-center">
+        <div className="rp-panel p-12 text-center">
           <p className="text-gray-500">No alerts found.</p>
         </div>
       ) : (
         <div className="space-y-3">
           {filtered.map(alert => (
-            <div key={alert.id} className={`bg-card rounded-xl shadow-lg shadow-black/20 p-4 border-l-[3px] ${alert.priority === 'urgent' ? 'border-l-red-500' : alert.priority === 'high' ? 'border-l-orange-500' : 'border-l-transparent'}`}>
+            <div key={alert.id} className={`rp-panel p-4 border-l-[3px] ${alert.priority === 'urgent' ? 'border-l-red-500' : alert.priority === 'high' ? 'border-l-orange-500' : 'border-l-transparent'}`}>
               <div className="flex items-start justify-between gap-3">
                 <div className="flex-1 min-w-0">
                   <h3 className="text-white font-medium">{alert.title}</h3>
@@ -129,7 +132,7 @@ export default function AlertsList({ alerts, role }: Props) {
                       <button
                         onClick={() => handleApproval(alert.id, 'approved')}
                         disabled={approvingId === alert.id}
-                        className="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 disabled:bg-emerald-800 text-white text-xs font-medium rounded-lg transition-colors"
+                        className="rp-btn-solid"
                       >
                         Approve
                       </button>
@@ -189,15 +192,15 @@ function AlertFormModal({ onClose, inputClass }: { onClose: () => void; inputCla
 
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={onClose}>
-      <div className="bg-main rounded-xl shadow-2xl shadow-black/40 w-full max-w-lg" onClick={e => e.stopPropagation()}>
+      <div className="rp-panel w-full max-w-lg" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-white/5">
-          <h2 className="text-lg font-semibold text-white">New Alert</h2>
+          <h2 className="rp-eyebrow">New Alert</h2>
           <button onClick={onClose} className="text-gray-500 hover:text-white text-xl leading-none">&times;</button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div>
             <label className={labelClass}>Title *</label>
-            <input className={inputClass} value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))} placeholder="e.g. Invoice requires approval" required />
+            <input className={inputClass} value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))} placeholder="e.g. Paving change order needs sign-off" required />
           </div>
           <div>
             <label className={labelClass}>Body</label>
@@ -228,15 +231,15 @@ function AlertFormModal({ onClose, inputClass }: { onClose: () => void; inputCla
             <label className={labelClass}>Target Role</label>
             <select className={inputClass} value={form.target_role} onChange={e => setForm(p => ({ ...p, target_role: e.target.value }))}>
               <option value="">All</option>
-              <option value="principal">Principal</option>
-              <option value="ea">EA</option>
+              <option value="principal">Owner</option>
+              <option value="ea">Owner&apos;s Rep</option>
               <option value="cfo">CFO</option>
             </select>
           </div>
           {error && <p className="text-red-400 text-sm">{error}</p>}
           <div className="flex gap-3 pt-2">
-            <button type="button" onClick={onClose} className="flex-1 py-2 px-4 bg-white/10 hover:bg-white/15 text-gray-300 rounded-lg text-sm transition-colors">Cancel</button>
-            <button type="submit" disabled={saving} className="flex-1 py-2 px-4 bg-emerald-600 hover:bg-emerald-500 disabled:bg-emerald-800 disabled:cursor-not-allowed text-white font-medium rounded-lg text-sm transition-colors">
+            <button type="button" onClick={onClose} className="rp-btn-ghost flex-1 justify-center">Cancel</button>
+            <button type="submit" disabled={saving} className="rp-btn-solid flex-1 disabled:cursor-not-allowed justify-center">
               {saving ? 'Sending...' : 'Send Alert'}
             </button>
           </div>

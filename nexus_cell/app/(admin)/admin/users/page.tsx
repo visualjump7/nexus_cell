@@ -34,10 +34,13 @@ export default async function AdminUsersPage() {
 
   return (
     <div className="max-w-5xl">
-      <h1 className="text-2xl font-semibold text-slate-200 mb-1">Users</h1>
-      <p className="text-sm text-gray-500 mb-6">
-        Create accounts directly, review EA-proposed invites, reset passwords, and manage roles.
-      </p>
+      <header className="rp-head">
+        <span className="rp-eyebrow">Administrator</span>
+        <h1 className="rp-title">Users</h1>
+        <p className="rp-lede">
+          Create accounts directly, review invites proposed by the owner&apos;s rep, reset passwords, and manage roles.
+        </p>
+      </header>
       <UsersManager
         initialUsers={users}
         initialPending={(pendingRes.data || []) as PendingInvitation[]}

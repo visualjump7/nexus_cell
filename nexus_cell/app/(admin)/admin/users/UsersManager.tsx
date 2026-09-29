@@ -22,14 +22,14 @@ interface Props {
 
 const ROLE_OPTIONS: UserRole[] = ['admin', 'ea', 'cfo', 'principal', 'viewer']
 const ROLE_LABEL: Record<string, string> = {
-  admin: 'Admin', ea: 'EA', cfo: 'CFO', principal: 'Principal', viewer: 'Viewer',
+  admin: 'Administrator', ea: "Owner's Rep", cfo: 'CFO', principal: 'Owner', viewer: 'Viewer',
 }
 const ROLE_COLOR: Record<string, string> = {
   admin: 'bg-red-500/15 text-red-400',
-  ea: 'bg-blue-500/15 text-blue-400',
-  cfo: 'bg-purple-500/15 text-purple-400',
-  principal: 'bg-emerald-500/15 text-emerald-400',
-  viewer: 'bg-gray-500/15 text-gray-400',
+  ea: 'bg-[#3989CB]/15 text-[#3989CB]',
+  cfo: 'bg-[#A4CC5C]/15 text-[#A4CC5C]',
+  principal: 'bg-[#CDA14B]/15 text-[#CDA14B]',
+  viewer: 'bg-[#9AA0A4]/15 text-[#9AA0A4]',
 }
 
 export default function UsersManager({ initialUsers, initialPending, currentUserId }: Props) {
@@ -79,11 +79,11 @@ export default function UsersManager({ initialUsers, initialPending, currentUser
     <div className="space-y-6">
       {/* Pending invitations (top — needs admin attention) */}
       {pending.length > 0 && (
-        <section className="bg-card-dark rounded-xl p-5">
+        <section className="rp-panel p-5">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h2 className="text-sm font-medium text-white">Pending invitations</h2>
-              <p className="text-xs text-gray-500 mt-0.5">EA-proposed users waiting for your approval</p>
+              <h2 className="rp-eyebrow--muted">Pending invitations</h2>
+              <p className="text-xs text-gray-500 mt-0.5">Invites proposed by the owner&apos;s rep, waiting for your approval</p>
             </div>
             <span className="text-xs text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-1 rounded">
               {pending.length} pending
@@ -93,12 +93,12 @@ export default function UsersManager({ initialUsers, initialPending, currentUser
             {pending.map(inv => {
               const proposer = (inv as unknown as { proposed_by_profile: { full_name: string | null; email: string } | null }).proposed_by_profile
               return (
-                <li key={inv.id} className="bg-[#141520] border border-white/5 rounded-lg p-3">
+                <li key={inv.id} className="bg-[#141618] border border-white/5 rounded-lg p-3">
                   <div className="flex items-center gap-3 flex-wrap">
                     <div className="flex-1 min-w-0">
                       <p className="text-sm text-white font-medium truncate">{inv.full_name}</p>
                       <p className="text-xs text-gray-500 truncate">
-                        {inv.email} · <span className={`px-1.5 py-0.5 rounded text-[10px] ${ROLE_COLOR[inv.role] || ''}`}>{ROLE_LABEL[inv.role] || inv.role}</span>
+                        {inv.email} · <span className={`px-1.5 py-0.5 rounded-sm text-[10px] ${ROLE_COLOR[inv.role] || ''}`}>{ROLE_LABEL[inv.role] || inv.role}</span>
                         {proposer && <> · proposed by {proposer.full_name || proposer.email}</>}
                       </p>
                       {inv.notes && <p className="text-xs text-gray-600 mt-1 italic">&ldquo;{inv.notes}&rdquo;</p>}
@@ -106,13 +106,13 @@ export default function UsersManager({ initialUsers, initialPending, currentUser
                     <div className="flex items-center gap-2 shrink-0">
                       <button
                         onClick={() => setApproveTarget(inv)}
-                        className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium rounded-lg transition-colors"
+                        className="rp-btn-solid"
                       >
                         Approve
                       </button>
                       <button
                         onClick={() => rejectInvite(inv.id)}
-                        className="px-3 py-1.5 bg-white/5 hover:bg-white/10 text-gray-300 text-xs font-medium rounded-lg transition-colors"
+                        className="rp-btn-ghost"
                       >
                         Reject
                       </button>
@@ -126,9 +126,9 @@ export default function UsersManager({ initialUsers, initialPending, currentUser
       )}
 
       {/* Members table */}
-      <section className="bg-card-dark rounded-xl">
+      <section className="rp-panel">
         <div className="flex items-center justify-between px-5 py-4 border-b border-white/5">
-          <h2 className="text-sm font-medium text-white">Members</h2>
+          <h2 className="rp-eyebrow--muted">Members</h2>
           <button
             onClick={() => setCreateOpen(true)}
             className="px-3 py-1.5 bg-emerald-500 hover:brightness-110 text-white text-xs font-medium rounded-lg transition-all"
@@ -157,12 +157,12 @@ export default function UsersManager({ initialUsers, initialPending, currentUser
                     </td>
                     <td className="px-5 py-3">
                       {isSelf ? (
-                        <span className={`text-xs px-2 py-1 rounded ${ROLE_COLOR[u.role] || ''}`}>{ROLE_LABEL[u.role] || u.role} (you)</span>
+                        <span className={`text-xs px-2 py-1 rounded-sm ${ROLE_COLOR[u.role] || ''}`}>{ROLE_LABEL[u.role] || u.role} (you)</span>
                       ) : (
                         <select
                           value={u.role}
                           onChange={e => changeRole(u.user_id, e.target.value as UserRole)}
-                          className="bg-[#141520] border border-white/10 rounded px-2 py-1 text-xs text-white focus:outline-none focus:border-emerald-400/50"
+                          className="bg-[#141618] border border-white/10 rounded px-2 py-1 text-xs text-white focus:outline-none focus:border-emerald-400/50"
                         >
                           {ROLE_OPTIONS.map(r => <option key={r} value={r}>{ROLE_LABEL[r]}</option>)}
                         </select>
@@ -255,7 +255,7 @@ function CreateUserModal({ onClose, onCreated }: { onClose: () => void; onCreate
         </Field>
         {err && <p className="text-sm text-red-400">{err}</p>}
         <div className="flex gap-2 justify-end pt-2">
-          <button onClick={onClose} className="px-4 py-2 bg-white/5 hover:bg-white/10 text-gray-300 text-sm rounded-lg">Cancel</button>
+          <button onClick={onClose} className="rp-btn-ghost">Cancel</button>
           <button onClick={submit} disabled={submitting || !email || !fullName || password.length < 8} className="px-4 py-2 bg-emerald-500 hover:brightness-110 disabled:opacity-50 text-white font-medium text-sm rounded-lg">
             {submitting ? 'Creating…' : 'Create'}
           </button>
@@ -301,7 +301,7 @@ function ResetPasswordModal({ user, onClose, onReset }: { user: UserRow; onClose
         </Field>
         {err && <p className="text-sm text-red-400">{err}</p>}
         <div className="flex gap-2 justify-end pt-2">
-          <button onClick={onClose} className="px-4 py-2 bg-white/5 hover:bg-white/10 text-gray-300 text-sm rounded-lg">Cancel</button>
+          <button onClick={onClose} className="rp-btn-ghost">Cancel</button>
           <button onClick={submit} disabled={submitting || password.length < 8} className="px-4 py-2 bg-emerald-500 hover:brightness-110 disabled:opacity-50 text-white font-medium text-sm rounded-lg">
             {submitting ? 'Resetting…' : 'Reset'}
           </button>
@@ -350,7 +350,7 @@ function ApproveInviteModal({ invite, onClose, onApproved }: { invite: PendingIn
         </Field>
         {err && <p className="text-sm text-red-400">{err}</p>}
         <div className="flex gap-2 justify-end pt-2">
-          <button onClick={onClose} className="px-4 py-2 bg-white/5 hover:bg-white/10 text-gray-300 text-sm rounded-lg">Cancel</button>
+          <button onClick={onClose} className="rp-btn-ghost">Cancel</button>
           <button onClick={submit} disabled={submitting || password.length < 8} className="px-4 py-2 bg-emerald-500 hover:brightness-110 disabled:opacity-50 text-white font-medium text-sm rounded-lg">
             {submitting ? 'Creating…' : 'Approve & create'}
           </button>
@@ -362,7 +362,7 @@ function ApproveInviteModal({ invite, onClose, onApproved }: { invite: PendingIn
 
 // ───── Tiny shared bits ─────
 
-const inputCls = 'w-full bg-[#141520] border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-400/50'
+const inputCls = 'w-full bg-[#141618] border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-400/50'
 
 function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
   return (
@@ -377,7 +377,7 @@ function Field({ label, hint, children }: { label: string; hint?: string; childr
 function ModalShell({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
   return (
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4" onClick={onClose}>
-      <div className="bg-[#10131b] rounded-xl shadow-2xl shadow-black/40 w-full max-w-md p-6 border border-white/10" onClick={e => e.stopPropagation()}>
+      <div className="bg-[#0E0F11] rounded-xl shadow-2xl shadow-black/40 w-full max-w-md p-6 border border-white/10" onClick={e => e.stopPropagation()}>
         <h3 className="text-lg font-semibold text-white mb-4">{title}</h3>
         {children}
       </div>

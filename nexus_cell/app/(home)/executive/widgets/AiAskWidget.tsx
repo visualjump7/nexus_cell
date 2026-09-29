@@ -16,9 +16,9 @@ interface Props {
 }
 
 const FALLBACK_SUGGESTIONS = [
-  "What needs my approval today?",
-  "When's my next flight?",
-  "Anything urgent this week?",
+  "What needs my sign-off this week?",
+  "Where are we on the garage row?",
+  "What's the next milestone on the track?",
 ]
 
 export default function AiAskWidget({ openingMessage, suggestions }: Props) {
@@ -80,13 +80,12 @@ export default function AiAskWidget({ openingMessage, suggestions }: Props) {
           className="w-8 h-8 rounded-full shrink-0"
           style={{
             background: 'radial-gradient(circle, #E0BF7B 0%, #B0853A 50%, #4F3B20 100%)',
-            boxShadow: '0 0 20px rgba(94,234,212,0.2)',
           }}
           aria-hidden
         />
         <div>
-          <p className="text-sm font-semibold text-[#E0BF7B] leading-none">Ask Nexus</p>
-          <p className="text-[11px] text-gray-500 mt-1">Anything about your operations.</p>
+          <p className="rp-eyebrow leading-none">Ask Nexus</p>
+          <p className="text-[12px] text-[#9AA0A4] mt-1.5">Anything about the build, the budget or the calendar.</p>
         </div>
       </div>
 
@@ -97,14 +96,13 @@ export default function AiAskWidget({ openingMessage, suggestions }: Props) {
           onChange={e => setInput(e.target.value)}
           onKeyDown={handleKey}
           placeholder="Type or ask…"
-          className="flex-1 bg-[#141520] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-[#475569] focus:outline-none focus:border-[#E0BF7B]/50 transition-colors"
+          className="flex-1 bg-[#0E0F11] border border-[#26292C] rounded-sm px-4 py-2.5 text-sm text-white placeholder-[#6E7578] focus:outline-none focus:border-[#CDA14B] transition-colors"
           disabled={loading}
         />
         <button
           onClick={() => send(input)}
           disabled={!input.trim() || loading}
-          className="px-4 py-2.5 rounded-xl text-sm font-medium text-white disabled:opacity-30 transition-all hover:brightness-110"
-          style={{ background: 'linear-gradient(to right, #CDA14B, #B0853A)' }}
+          className="rp-btn-solid"
         >
           {loading ? '…' : 'Ask'}
         </button>
@@ -112,7 +110,7 @@ export default function AiAskWidget({ openingMessage, suggestions }: Props) {
 
       {showOpener && (
         <div className="mt-4 flex justify-start">
-          <div className="max-w-[90%] px-3.5 py-2.5 rounded-xl text-sm leading-relaxed bg-[#E0BF7B]/10 text-[#e2e8f0] border border-[#E0BF7B]/10">
+          <div className="max-w-[90%] px-3.5 py-2.5 rounded-sm text-sm leading-relaxed bg-[#CDA14B]/10 text-[#F5F5F5] border border-[#CDA14B]/20">
             <p className="whitespace-pre-wrap">{openingMessage}</p>
           </div>
         </div>
@@ -125,7 +123,7 @@ export default function AiAskWidget({ openingMessage, suggestions }: Props) {
               key={s}
               onClick={() => send(s)}
               disabled={loading}
-              className="bg-white/5 rounded-full px-3 py-1.5 text-xs text-[#94a3b8] hover:bg-white/10 hover:text-white transition-colors disabled:opacity-50"
+              className="rp-btn-ghost disabled:opacity-50"
             >
               {s}
             </button>
@@ -137,10 +135,10 @@ export default function AiAskWidget({ openingMessage, suggestions }: Props) {
         <div ref={scrollRef} className="mt-4 max-h-72 overflow-y-auto space-y-3 pr-1">
           {messages.map((msg, i) => (
             <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-              <div className={`max-w-[85%] px-3.5 py-2.5 rounded-xl text-sm leading-relaxed ${
+              <div className={`max-w-[85%] px-3.5 py-2.5 rounded-sm text-sm leading-relaxed ${
                 msg.role === 'user'
-                  ? 'bg-[#141520] text-[#e2e8f0]'
-                  : 'bg-[#E0BF7B]/10 text-[#e2e8f0] border border-[#E0BF7B]/10'
+                  ? 'bg-[#141618] text-[#F5F5F5] border border-[#1F1F1F]'
+                  : 'bg-[#CDA14B]/10 text-[#F5F5F5] border border-[#CDA14B]/20'
               }`}>
                 <p className="whitespace-pre-wrap">{msg.content}</p>
               </div>
@@ -148,10 +146,10 @@ export default function AiAskWidget({ openingMessage, suggestions }: Props) {
           ))}
           {loading && (
             <div className="flex justify-start">
-              <div className="bg-[#E0BF7B]/10 border border-[#E0BF7B]/10 px-4 py-3 rounded-xl flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 bg-[#E0BF7B] rounded-full animate-pulse" />
-                <span className="w-1.5 h-1.5 bg-[#E0BF7B] rounded-full animate-pulse" style={{ animationDelay: '150ms' }} />
-                <span className="w-1.5 h-1.5 bg-[#E0BF7B] rounded-full animate-pulse" style={{ animationDelay: '300ms' }} />
+              <div className="bg-[#CDA14B]/10 border border-[#CDA14B]/20 px-4 py-3 rounded-sm flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 bg-[#CDA14B] rounded-full animate-pulse" />
+                <span className="w-1.5 h-1.5 bg-[#CDA14B] rounded-full animate-pulse" style={{ animationDelay: '150ms' }} />
+                <span className="w-1.5 h-1.5 bg-[#CDA14B] rounded-full animate-pulse" style={{ animationDelay: '300ms' }} />
               </div>
             </div>
           )}

@@ -138,7 +138,7 @@ export default async function TodaysScheduleWidget({ orgId, principalUserId }: P
                 >
                   <span
                     className="w-2 h-2 rounded-full"
-                    style={{ background: item.color || '#94a3b8' }}
+                    style={{ background: item.color || '#9AA0A4' }}
                   />
                 </span>
               ) : (

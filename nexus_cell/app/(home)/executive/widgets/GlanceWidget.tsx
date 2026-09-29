@@ -23,9 +23,9 @@ export default async function GlanceWidget({ orgId }: Props) {
   const tripsCount = trips.count || 0
 
   const stats = [
-    { label: 'Outstanding', value: fmtCurrency(totalOutstanding), dot: 'bg-emerald-400' },
-    { label: 'Approvals', value: approvalsCount.toString(), dot: 'bg-amber-400' },
-    { label: 'Active trips', value: tripsCount.toString(), dot: 'bg-purple-400' },
+    { label: 'Outstanding', value: fmtCurrency(totalOutstanding), dot: 'bg-[#CDA14B]' },
+    { label: 'Approvals', value: approvalsCount.toString(), dot: 'bg-[#3989CB]' },
+    { label: 'Site visits', value: tripsCount.toString(), dot: 'bg-[#A4CC5C]' },
   ]
 
   return (
@@ -34,10 +34,10 @@ export default async function GlanceWidget({ orgId }: Props) {
         {stats.map(s => (
           <div key={s.label}>
             <div className="flex items-center gap-1.5 mb-1.5">
-              <div className={`w-1.5 h-1.5 rounded-full ${s.dot}`} />
-              <p className="text-[11px] text-gray-500 uppercase tracking-wider">{s.label}</p>
+              <div className={`w-1.5 h-1.5 ${s.dot}`} />
+              <p className="rp-eyebrow--muted">{s.label}</p>
             </div>
-            <p className="text-xl font-semibold text-white">{s.value}</p>
+            <p className="rp-stat-value text-white">{s.value}</p>
           </div>
         ))}
       </div>

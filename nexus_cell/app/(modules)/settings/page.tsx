@@ -18,8 +18,11 @@ export default async function SettingsPage() {
 
   return (
     <div className="max-w-2xl">
-      <h1 className="text-2xl font-semibold text-slate-200 mb-1">Settings</h1>
-      <p className="text-sm text-gray-500 mb-6">Manage your profile and password.</p>
+      <header className="rp-head">
+        <span className="rp-eyebrow">Account</span>
+        <h1 className="rp-title">Settings</h1>
+        <p className="rp-lede">Manage your profile and password.</p>
+      </header>
       <SettingsTabs
         initialFullName={profile?.full_name || ''}
         email={profile?.email || user.email || ''}

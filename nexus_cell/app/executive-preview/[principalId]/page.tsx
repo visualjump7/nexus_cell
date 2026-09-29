@@ -26,7 +26,7 @@ export default async function ExecutiveViewPreviewPage({
   if (!target || target.role !== 'principal') notFound()
 
   const profile = target.profiles as unknown as { full_name: string | null; email: string } | null
-  const fullName = profile?.full_name || profile?.email || 'Principal'
+  const fullName = profile?.full_name || profile?.email || 'Owner'
   const firstName = fullName.split(' ')[0]
 
   return <ExecutiveView firstName={firstName} orgId={orgId} principalId={params.principalId} />

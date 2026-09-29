@@ -46,14 +46,14 @@ export default function ApprovalsList({ approvals }: Props) {
             <button
               onClick={() => decide(alert.id, 'approved')}
               disabled={pendingId === alert.id}
-              className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 disabled:bg-emerald-800 text-white text-xs font-medium rounded-lg transition-colors"
+              className="rp-btn-solid"
             >
               Approve
             </button>
             <button
               onClick={() => decide(alert.id, 'rejected')}
               disabled={pendingId === alert.id}
-              className="px-3 py-1.5 bg-white/5 hover:bg-white/10 disabled:opacity-50 text-gray-300 text-xs font-medium rounded-lg transition-colors"
+              className="rp-btn-ghost disabled:opacity-50"
             >
               Reject
             </button>

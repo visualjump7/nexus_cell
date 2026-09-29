@@ -73,7 +73,7 @@ export default async function HomePage() {
 
   // Travel hint: prefer "City · Day" if we can extract a city from the trip title;
   // otherwise show the formatted start date.
-  let travelHint = 'No upcoming'
+  let travelHint = 'No site visits'
   let nextTripCity: string | null = null
   let nextTripDaysUntil: number | null = null
   const nextTripRow = nextTripRes.data?.[0]
@@ -91,7 +91,7 @@ export default async function HomePage() {
   }
 
   const metrics: Record<string, SectionMetrics> = {
-    projects: { hint: projectN > 0 ? `${projectN} active` : 'None active' },
+    projects: { hint: projectN > 0 ? `${projectN} in build` : 'None in build' },
     travel:   { hint: travelHint },
     calendar: { hint: billsTodayN > 0 ? `${billsTodayN} due today` : 'Today' },
     tasks:    { hint: taskN > 0 ? `${taskN} due` : 'All clear', badge: taskN },

@@ -52,17 +52,20 @@ export default function MembershipsList({ memberships, role }: Props) {
 
   return (
     <div className="max-w-6xl">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold">Memberships</h1>
-          <p className="text-sm text-gray-500 mt-1">{filtered.length} membership{filtered.length !== 1 ? 's' : ''}</p>
+      <header className="rp-head">
+        <div className="flex items-end justify-between gap-4 flex-wrap">
+        <div className="flex flex-col gap-2.5">
+          <span className="rp-eyebrow">Club Life</span>
+          <h1 className="rp-title">Memberships</h1>
+          <p className="rp-caption">{filtered.length} membership{filtered.length !== 1 ? 's' : ''}</p>
         </div>
         {canWrite && (
-          <button onClick={() => { setEditingMem(null); setShowForm(true) }} className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-medium rounded-lg text-sm transition-colors">
-            + New Membership
+          <button onClick={() => { setEditingMem(null); setShowForm(true) }} className="rp-btn-solid">
+            New membership
           </button>
         )}
-      </div>
+        </div>
+      </header>
 
       <div className="flex gap-3 mb-6">
         <select className={selectClass} value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
@@ -74,14 +77,14 @@ export default function MembershipsList({ memberships, role }: Props) {
       </div>
 
       {filtered.length === 0 ? (
-        <div className="bg-card rounded-xl shadow-lg shadow-black/20 p-12 text-center">
+        <div className="rp-panel p-12 text-center">
           <p className="text-gray-500">No memberships found.</p>
         </div>
       ) : (
-        <div className="bg-card rounded-xl shadow-lg shadow-black/20 overflow-hidden">
+        <div className="rp-panel overflow-hidden">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-white/5 text-gray-500 text-left">
+              <tr className="border-b border-[#1F1F1F] text-left rp-eyebrow--muted">
                 <th className="px-4 py-3 font-medium">Name</th>
                 <th className="px-4 py-3 font-medium">Organization</th>
                 <th className="px-4 py-3 font-medium">Tier</th>
@@ -93,7 +96,7 @@ export default function MembershipsList({ memberships, role }: Props) {
             </thead>
             <tbody>
               {filtered.map(mem => (
-                <tr key={mem.id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
+                <tr key={mem.id} className="border-b border-[#1F1F1F] hover:bg-[#141618] transition-colors">
                   <td className="px-4 py-3">
                     <p className="text-white font-medium">{mem.name}</p>
                     {mem.member_id && <p className="text-xs text-gray-600 font-mono">#{mem.member_id}</p>}
@@ -176,20 +179,20 @@ function MemFormModal({ mem, onClose, inputClass }: { mem: Membership | null; on
 
   return (
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4" onClick={onClose}>
-      <div className="bg-main rounded-xl shadow-2xl shadow-black/40 w-full max-w-lg max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+      <div className="rp-panel w-full max-w-lg max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-white/5">
-          <h2 className="text-lg font-semibold text-white">{isEditing ? 'Edit Membership' : 'New Membership'}</h2>
+          <h2 className="rp-eyebrow">{isEditing ? 'Edit Membership' : 'New Membership'}</h2>
           <button onClick={onClose} className="text-gray-500 hover:text-white text-xl leading-none">&times;</button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          <div><label className={labelClass}>Name *</label><input className={inputClass} value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} placeholder="e.g. Augusta National" required /></div>
+          <div><label className={labelClass}>Name *</label><input className={inputClass} value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} placeholder="e.g. SCCA" required /></div>
           <div className="grid grid-cols-2 gap-4">
-            <div><label className={labelClass}>Organization</label><input className={inputClass} value={form.organization_name} onChange={e => setForm(p => ({ ...p, organization_name: e.target.value }))} placeholder="Club / org name" /></div>
+            <div><label className={labelClass}>Organization</label><input className={inputClass} value={form.organization_name} onChange={e => setForm(p => ({ ...p, organization_name: e.target.value }))} placeholder="Club or sanctioning body" /></div>
             <div><label className={labelClass}>Member ID</label><input className={inputClass} value={form.member_id} onChange={e => setForm(p => ({ ...p, member_id: e.target.value }))} /></div>
           </div>
           <div className="grid grid-cols-2 gap-4">
-            <div><label className={labelClass}>Tier</label><input className={inputClass} value={form.tier} onChange={e => setForm(p => ({ ...p, tier: e.target.value }))} placeholder="e.g. Platinum" /></div>
-            <div><label className={labelClass}>Category</label><input className={inputClass} value={form.category} onChange={e => setForm(p => ({ ...p, category: e.target.value }))} placeholder="e.g. Country Club" /></div>
+            <div><label className={labelClass}>Tier</label><input className={inputClass} value={form.tier} onChange={e => setForm(p => ({ ...p, tier: e.target.value }))} placeholder="e.g. Founding" /></div>
+            <div><label className={labelClass}>Category</label><input className={inputClass} value={form.category} onChange={e => setForm(p => ({ ...p, category: e.target.value }))} placeholder="e.g. Motorsport" /></div>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div><label className={labelClass}>Expiry Date</label><input className={inputClass} type="date" value={form.expiry_date} onChange={e => setForm(p => ({ ...p, expiry_date: e.target.value }))} /></div>
@@ -204,8 +207,8 @@ function MemFormModal({ mem, onClose, inputClass }: { mem: Membership | null; on
           <div><label className={labelClass}>Notes</label><textarea className={`${inputClass} resize-none`} rows={2} value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} /></div>
           {error && <p className="text-red-400 text-sm">{error}</p>}
           <div className="flex gap-3 pt-2">
-            <button type="button" onClick={onClose} className="flex-1 py-2 px-4 bg-white/10 hover:bg-white/15 text-gray-300 rounded-lg text-sm transition-colors">Cancel</button>
-            <button type="submit" disabled={saving} className="flex-1 py-2 px-4 bg-emerald-600 hover:bg-emerald-500 disabled:bg-emerald-800 disabled:cursor-not-allowed text-white font-medium rounded-lg text-sm transition-colors">
+            <button type="button" onClick={onClose} className="rp-btn-ghost flex-1 justify-center">Cancel</button>
+            <button type="submit" disabled={saving} className="rp-btn-solid flex-1 disabled:cursor-not-allowed justify-center">
               {saving ? 'Saving...' : isEditing ? 'Update' : 'Create'}
             </button>
           </div>

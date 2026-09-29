@@ -68,10 +68,12 @@ export default function BillsList({ bills, role }: BillsListProps) {
   return (
     <div className="max-w-6xl">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold">Bills</h1>
-          <p className="text-sm text-gray-500 mt-1">
+      <header className="rp-head">
+        <div className="flex items-end justify-between gap-4 flex-wrap">
+        <div className="flex flex-col gap-2.5">
+          <span className="rp-eyebrow">Payables</span>
+          <h1 className="rp-title">Bills</h1>
+          <p className="rp-caption">
             {filtered.length} bill{filtered.length !== 1 ? 's' : ''}
             {statusFilter !== 'all' && ` · ${statusFilter}`}
           </p>
@@ -79,12 +81,13 @@ export default function BillsList({ bills, role }: BillsListProps) {
         {canWrite && (
           <button
             onClick={() => { setEditingBill(null); setShowForm(true) }}
-            className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-medium rounded-lg text-sm transition-colors"
+            className="rp-btn-solid"
           >
-            + New Bill
+            New bill
           </button>
         )}
-      </div>
+        </div>
+      </header>
 
       {/* Filters */}
       <div className="flex gap-3 mb-6">
@@ -105,15 +108,15 @@ export default function BillsList({ bills, role }: BillsListProps) {
 
       {/* Table */}
       {filtered.length === 0 ? (
-        <div className="bg-card rounded-xl shadow-lg shadow-black/20 p-12 text-center">
+        <div className="rp-panel p-12 text-center">
           <p className="text-gray-500">No bills found.</p>
         </div>
       ) : (
-        <div className="bg-card rounded-xl shadow-lg shadow-black/20 overflow-hidden">
+        <div className="rp-panel overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-white/5 text-gray-500 text-left">
+                <tr className="border-b border-[#1F1F1F] text-left rp-eyebrow--muted">
                   <th className="px-4 py-3 font-medium">Vendor</th>
                   <th className="px-4 py-3 font-medium">Amount</th>
                   <th className="px-4 py-3 font-medium">Category</th>
@@ -124,7 +127,7 @@ export default function BillsList({ bills, role }: BillsListProps) {
               </thead>
               <tbody>
                 {filtered.map(bill => (
-                  <tr key={bill.id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
+                  <tr key={bill.id} className="border-b border-[#1F1F1F] hover:bg-[#141618] transition-colors">
                     <td className="px-4 py-3">
                       <div>
                         <p className="text-white font-medium">{bill.vendor}</p>

@@ -63,7 +63,7 @@ export async function POST(request: Request) {
     .single()
 
   if (!targetMember || targetMember.role !== 'principal') {
-    return NextResponse.json({ error: 'Target user is not a principal in this organization' }, { status: 400 })
+    return NextResponse.json({ error: 'Target user is not an owner in this organization' }, { status: 400 })
   }
 
   const greeting = ['none', 'time_of_day', 'custom'].includes(greeting_style) ? greeting_style : 'time_of_day'

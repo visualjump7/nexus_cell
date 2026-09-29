@@ -2,7 +2,8 @@
 
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
 
-const COLORS = ['#CDA14B', '#60a5fa', '#a78bfa', '#fbbf24', '#f87171']
+// Roaring Pines categorical order: gold, blue, green, light gold, light blue, steel.
+const COLORS = ['#CDA14B', '#3989CB', '#A4CC5C', '#E0BF7B', '#7FB3DE', '#9AA0A4']
 
 const monthlyData = [
   { month: 'Jan', amount: 42000 },
@@ -34,40 +35,40 @@ export default function DashboardCharts({ categoryData }: Props) {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
       {/* Area Chart — Activity Overview */}
-      <div className="lg:col-span-3 bg-card rounded-xl shadow-lg shadow-black/20 p-5">
-        <h3 className="text-sm font-medium text-gray-400 mb-4">Activity Overview</h3>
+      <div className="lg:col-span-3 rp-panel p-5">
+        <h3 className="rp-eyebrow--muted mb-4">Monthly spend</h3>
         <ResponsiveContainer width="100%" height={240}>
           <AreaChart data={monthlyData}>
             <defs>
-              <linearGradient id="greenGradient" x1="0" y1="0" x2="0" y2="1">
+              <linearGradient id="goldGradient" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stopColor="#CDA14B" stopOpacity={0.3} />
                 <stop offset="100%" stopColor="#CDA14B" stopOpacity={0} />
               </linearGradient>
             </defs>
             <XAxis
               dataKey="month"
-              tick={{ fill: '#6b7280', fontSize: 11 }}
+              tick={{ fill: '#6E7578', fontSize: 11 }}
               axisLine={false}
               tickLine={false}
             />
             <YAxis
-              tick={{ fill: '#6b7280', fontSize: 11 }}
+              tick={{ fill: '#6E7578', fontSize: 11 }}
               axisLine={false}
               tickLine={false}
               tickFormatter={v => `$${(v as number / 1000).toFixed(0)}k`}
               width={50}
             />
             <Tooltip
-              contentStyle={{ background: '#1a1b2e', border: 'none', borderRadius: 8, boxShadow: '0 4px 20px rgba(0,0,0,0.4)' }}
-              labelStyle={{ color: '#9ca3af' }}
-              itemStyle={{ color: '#CDA14B' }}
-              formatter={(value) => [`$${Number(value).toLocaleString()}`, 'Spending']}
+contentStyle={{ background: '#141618', border: '1px solid #26292C', borderRadius: 2, boxShadow: 'none' }}
+              labelStyle={{ color: '#9AA0A4' }}
+              itemStyle={{ color: '#F5F5F5' }}
+              formatter={(value) => [`$${Number(value).toLocaleString()}`, 'Spend']}
             />
             <Area
               type="monotone"
               dataKey="amount"
               stroke="#CDA14B"
-              fill="url(#greenGradient)"
+              fill="url(#goldGradient)"
               strokeWidth={2}
             />
           </AreaChart>
@@ -75,11 +76,11 @@ export default function DashboardCharts({ categoryData }: Props) {
       </div>
 
       {/* Donut Chart — Breakdown */}
-      <div className="lg:col-span-2 bg-card rounded-xl shadow-lg shadow-black/20 p-5">
-        <h3 className="text-sm font-medium text-gray-400 mb-4">Breakdown</h3>
+      <div className="lg:col-span-2 rp-panel p-5">
+        <h3 className="rp-eyebrow--muted mb-4">Spend by category</h3>
         {categoryData.length === 0 ? (
           <div className="flex items-center justify-center h-[240px]">
-            <p className="text-gray-600 text-sm">No bill data yet</p>
+            <p className="text-gray-600 text-sm">No bills recorded yet</p>
           </div>
         ) : (
           <>
@@ -98,7 +99,9 @@ export default function DashboardCharts({ categoryData }: Props) {
                   ))}
                 </Pie>
                 <Tooltip
-                  contentStyle={{ background: '#1a1b2e', border: 'none', borderRadius: 8, boxShadow: '0 4px 20px rgba(0,0,0,0.4)' }}
+                  contentStyle={{ background: '#141618', border: '1px solid #26292C', borderRadius: 2, boxShadow: 'none' }}
+                  labelStyle={{ color: '#9AA0A4' }}
+                  itemStyle={{ color: '#F5F5F5' }}
                   formatter={(value) => [`$${Number(value).toLocaleString()}`, '']}
                 />
               </PieChart>
@@ -106,9 +109,9 @@ export default function DashboardCharts({ categoryData }: Props) {
             <div className="flex flex-wrap gap-x-4 gap-y-1.5 mt-2">
               {categoryData.map((item, i) => (
                 <div key={item.name} className="flex items-center gap-1.5 text-xs text-gray-400">
-                  <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
+                  <div className="w-2 h-2 shrink-0" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
                   <span className="truncate">{item.name}</span>
-                  <span className="text-gray-600">{total > 0 ? Math.round((item.value / total) * 100) : 0}%</span>
+                  <span className="text-[#6E7578]">{total > 0 ? Math.round((item.value / total) * 100) : 0}%</span>
                 </div>
               ))}
             </div>

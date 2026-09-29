@@ -32,10 +32,13 @@ export default async function ExecutiveViewSettingsPage({
 
   return (
     <div className="max-w-5xl">
-      <h1 className="text-2xl font-semibold text-slate-200 mb-1">Executive views</h1>
-      <p className="text-sm text-gray-500 mb-6">
-        Choose what each principal sees on their command screen.
-      </p>
+      <header className="rp-head">
+        <span className="rp-eyebrow">Administrator</span>
+        <h1 className="rp-title">Owner views</h1>
+        <p className="rp-lede">
+          Choose what each owner sees on their home screen.
+        </p>
+      </header>
       <ExecutiveViewConfig principals={principals} initialPrincipalId={initialPrincipalId} />
     </div>
   )

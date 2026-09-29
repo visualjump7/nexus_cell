@@ -59,7 +59,7 @@ export default function CalendarView({ calendars: initialCalendars, events }: Pr
   }, [])
 
   function colorFor(calendarId: string): string {
-    return calendars.find(c => c.id === calendarId)?.color || '#94a3b8'
+    return calendars.find(c => c.id === calendarId)?.color || '#9AA0A4'
   }
 
   function nameFor(calendarId: string): string {
@@ -104,32 +104,33 @@ export default function CalendarView({ calendars: initialCalendars, events }: Pr
 
   return (
     <div className="mx-auto max-w-6xl space-y-8 px-4 py-8 sm:px-6">
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">Calendar</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
+      <header className="rp-head !mb-0">
+        <span className="rp-eyebrow">Schedule</span>
+        <h1 className="rp-title">Calendar</h1>
+        <p className="rp-lede">
           Bills, plus any external calendars your team has subscribed to.
         </p>
-      </div>
+      </header>
 
       {/* External calendars panel */}
-      <section className="bg-card-dark rounded-xl p-5">
+      <section className="rp-panel p-5">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-sm font-medium text-white">External calendars</h2>
-          <Link href="/admin/calendars" className="text-xs text-emerald-400 hover:underline">
+          <h2 className="rp-eyebrow--muted">External calendars</h2>
+          <Link href="/admin/calendars" className="text-xs text-[#CDA14B] hover:underline">
             Manage →
           </Link>
         </div>
 
         {calendars.length === 0 ? (
           <p className="text-sm text-gray-500 italic">
-            No external calendars subscribed yet. An admin can add one in <Link href="/admin/calendars" className="text-emerald-400 hover:underline">Admin → Calendars</Link>.
+            No external calendars subscribed yet. An admin can add one in <Link href="/admin/calendars" className="text-[#CDA14B] hover:underline">Admin → Calendars</Link>.
           </p>
         ) : (
           <>
             <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2 m-0 p-0 list-none mb-5">
               {calendars.map(c => (
                 <li key={c.id}>
-                  <label className="flex items-center gap-3 px-3 py-2 rounded-lg bg-[#141520] border border-white/5 cursor-pointer hover:bg-white/[0.02] transition-colors">
+                  <label className="flex items-center gap-3 px-3 py-2 rounded-lg bg-[#141618] border border-white/5 cursor-pointer hover:bg-white/[0.02] transition-colors">
                     <input
                       type="checkbox"
                       checked={c.visible}
@@ -191,7 +192,7 @@ export default function CalendarView({ calendars: initialCalendars, events }: Pr
 
       {/* Bill calendar (existing) */}
       <section>
-        <h2 className="text-sm font-medium text-white mb-3">Bills</h2>
+        <h2 className="rp-eyebrow--muted mb-3">Bills</h2>
         {billsLoading ? (
           <div className="flex min-h-[40vh] items-center justify-center">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />

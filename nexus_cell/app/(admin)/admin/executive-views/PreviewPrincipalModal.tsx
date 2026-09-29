@@ -56,13 +56,13 @@ export default function PreviewPrincipalModal({ principalId, principalName, conf
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
 
       <div
-        className="relative w-full sm:w-[min(92vw,440px)] sm:max-w-[440px] sm:rounded-2xl bg-nexus shadow-2xl shadow-black/40 border border-white/10 flex flex-col h-full sm:max-h-[90vh]"
-        style={{ background: '#10131b' }}
+        className="relative w-full sm:w-[min(92vw,440px)] sm:max-w-[440px] sm:rounded-sm bg-nexus border border-[#26292C] flex flex-col h-full sm:max-h-[90vh]"
+        style={{ background: '#0E0F11' }}
         onClick={e => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between gap-3 px-5 py-3 border-b border-white/5 shrink-0">
+        <div className="flex items-center justify-between gap-3 px-5 py-3 border-b border-[#1F1F1F] shrink-0">
           <div>
-            <h2 className="text-sm font-medium text-white">Preview as principal</h2>
+            <h2 className="rp-eyebrow">Preview as owner</h2>
             <p className="text-[11px] text-gray-500 mt-0.5">{principalName}</p>
           </div>
           <button
@@ -76,11 +76,11 @@ export default function PreviewPrincipalModal({ principalId, principalName, conf
           </button>
         </div>
 
-        <div className="px-5 py-4 border-b border-white/5 bg-white/[0.02] shrink-0">
+        <div className="px-5 py-4 border-b border-[#1F1F1F] bg-white/[0.02] shrink-0">
           <p className="text-[11px] text-amber-400 uppercase tracking-wider mb-1">Heads up</p>
           <p className="text-xs text-gray-400 leading-relaxed">
             This preview reflects the <span className="text-white">last saved</span> config.
-            Save your changes first to see them live here. The principal&apos;s view always uses the saved version.
+            Save your changes first to see them live here. The owner&apos;s view always uses the saved version.
           </p>
           {widgetSummary && (
             <div className="mt-3">
@@ -93,7 +93,7 @@ export default function PreviewPrincipalModal({ principalId, principalName, conf
         <div className="flex-1 overflow-hidden bg-[#0a0c12]">
           <iframe
             src={`/executive-preview/${principalId}`}
-            title="Principal view preview"
+            title="Owner view preview"
             className="w-full h-full border-0"
             sandbox="allow-same-origin allow-scripts allow-forms"
           />

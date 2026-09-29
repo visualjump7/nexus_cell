@@ -12,7 +12,7 @@ export default async function LifestyleOverlay() {
   ])
 
   return (
-    <SectionOverlay title="Lifestyle" fullPageHref="/lifestyle">
+    <SectionOverlay title="Club Life" fullPageHref="/lifestyle">
       <LifestyleTabs gifts={giftsRes.data || []} subscriptions={subsRes.data || []} memberships={memsRes.data || []} role={role} />
     </SectionOverlay>
   )

@@ -48,17 +48,20 @@ export default function GiftsList({ gifts, role }: Props) {
 
   return (
     <div className="max-w-6xl">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold">Gifts</h1>
-          <p className="text-sm text-gray-500 mt-1">{filtered.length} gift{filtered.length !== 1 ? 's' : ''}</p>
+      <header className="rp-head">
+        <div className="flex items-end justify-between gap-4 flex-wrap">
+        <div className="flex flex-col gap-2.5">
+          <span className="rp-eyebrow">Club Life</span>
+          <h1 className="rp-title">Gifts</h1>
+          <p className="rp-caption">{filtered.length} gift{filtered.length !== 1 ? 's' : ''}</p>
         </div>
         {canWrite && (
-          <button onClick={() => { setEditingGift(null); setShowForm(true) }} className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-medium rounded-lg text-sm transition-colors">
-            + New Gift
+          <button onClick={() => { setEditingGift(null); setShowForm(true) }} className="rp-btn-solid">
+            New gift
           </button>
         )}
-      </div>
+        </div>
+      </header>
 
       <div className="flex gap-3 mb-6">
         <select className={selectClass} value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
@@ -72,14 +75,14 @@ export default function GiftsList({ gifts, role }: Props) {
       </div>
 
       {filtered.length === 0 ? (
-        <div className="bg-card rounded-xl shadow-lg shadow-black/20 p-12 text-center">
+        <div className="rp-panel p-12 text-center">
           <p className="text-gray-500">No gifts found.</p>
         </div>
       ) : (
-        <div className="bg-card rounded-xl shadow-lg shadow-black/20 overflow-hidden">
+        <div className="rp-panel overflow-hidden">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-white/5 text-gray-500 text-left">
+              <tr className="border-b border-[#1F1F1F] text-left rp-eyebrow--muted">
                 <th className="px-4 py-3 font-medium">Recipient</th>
                 <th className="px-4 py-3 font-medium">Occasion</th>
                 <th className="px-4 py-3 font-medium">Description</th>
@@ -91,7 +94,7 @@ export default function GiftsList({ gifts, role }: Props) {
             </thead>
             <tbody>
               {filtered.map(gift => (
-                <tr key={gift.id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
+                <tr key={gift.id} className="border-b border-[#1F1F1F] hover:bg-[#141618] transition-colors">
                   <td className="px-4 py-3 text-white font-medium">{gift.recipient}</td>
                   <td className="px-4 py-3 text-gray-400">{gift.occasion || '—'}</td>
                   <td className="px-4 py-3 text-gray-400 max-w-[200px] truncate">{gift.description || '—'}</td>
@@ -163,18 +166,18 @@ function GiftFormModal({ gift, onClose, inputClass }: { gift: Gift | null; onClo
 
   return (
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4" onClick={onClose}>
-      <div className="bg-main rounded-xl shadow-2xl shadow-black/40 w-full max-w-lg max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+      <div className="rp-panel w-full max-w-lg max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-white/5">
-          <h2 className="text-lg font-semibold text-white">{isEditing ? 'Edit Gift' : 'New Gift'}</h2>
+          <h2 className="rp-eyebrow">{isEditing ? 'Edit Gift' : 'New Gift'}</h2>
           <button onClick={onClose} className="text-gray-500 hover:text-white text-xl leading-none">&times;</button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          <div><label className={labelClass}>Recipient *</label><input className={inputClass} value={form.recipient} onChange={e => setForm(p => ({ ...p, recipient: e.target.value }))} placeholder="e.g. John Smith" required /></div>
+          <div><label className={labelClass}>Recipient *</label><input className={inputClass} value={form.recipient} onChange={e => setForm(p => ({ ...p, recipient: e.target.value }))} placeholder="e.g. Lead architect" required /></div>
           <div className="grid grid-cols-2 gap-4">
-            <div><label className={labelClass}>Occasion</label><input className={inputClass} value={form.occasion} onChange={e => setForm(p => ({ ...p, occasion: e.target.value }))} placeholder="e.g. Birthday" /></div>
+            <div><label className={labelClass}>Occasion</label><input className={inputClass} value={form.occasion} onChange={e => setForm(p => ({ ...p, occasion: e.target.value }))} placeholder="e.g. Topping-out" /></div>
             <div><label className={labelClass}>Date</label><input className={inputClass} type="date" value={form.date} onChange={e => setForm(p => ({ ...p, date: e.target.value }))} /></div>
           </div>
-          <div><label className={labelClass}>Description</label><input className={inputClass} value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} placeholder="e.g. Hermès tie" /></div>
+          <div><label className={labelClass}>Description</label><input className={inputClass} value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} placeholder="e.g. Club jacket, satin silver" /></div>
           <div className="grid grid-cols-2 gap-4">
             <div><label className={labelClass}>Amount</label><input className={inputClass} type="number" step="0.01" min="0" value={form.amount} onChange={e => setForm(p => ({ ...p, amount: e.target.value }))} placeholder="0.00" /></div>
             <div>
@@ -191,8 +194,8 @@ function GiftFormModal({ gift, onClose, inputClass }: { gift: Gift | null; onClo
           <div><label className={labelClass}>Notes</label><textarea className={`${inputClass} resize-none`} rows={2} value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} /></div>
           {error && <p className="text-red-400 text-sm">{error}</p>}
           <div className="flex gap-3 pt-2">
-            <button type="button" onClick={onClose} className="flex-1 py-2 px-4 bg-white/10 hover:bg-white/15 text-gray-300 rounded-lg text-sm transition-colors">Cancel</button>
-            <button type="submit" disabled={saving} className="flex-1 py-2 px-4 bg-emerald-600 hover:bg-emerald-500 disabled:bg-emerald-800 disabled:cursor-not-allowed text-white font-medium rounded-lg text-sm transition-colors">
+            <button type="button" onClick={onClose} className="rp-btn-ghost flex-1 justify-center">Cancel</button>
+            <button type="submit" disabled={saving} className="rp-btn-solid flex-1 disabled:cursor-not-allowed justify-center">
               {saving ? 'Saving...' : isEditing ? 'Update' : 'Create Gift'}
             </button>
           </div>

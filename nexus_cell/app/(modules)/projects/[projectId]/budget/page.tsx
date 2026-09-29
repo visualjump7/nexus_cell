@@ -145,38 +145,39 @@ export default function ProjectBudgetPage() {
         )}
       </div>
 
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">
-          {project.name} · Budget
+      <header className="rp-head !mb-0">
+        <span className="rp-eyebrow">Budget</span>
+        <h1 className="rp-title">
+          {project.name}
         </h1>
-        <p className="mt-1 text-sm text-muted-foreground">
+        <p className="rp-lede">
           Budget by category. Monthly breakdown preserved when imported from
           Excel with monthly columns.
         </p>
-      </div>
+      </header>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <Card>
           <CardContent className="p-4">
-            <p className="text-xs text-muted-foreground">Total Budgeted</p>
-            <p className="mt-1 text-2xl font-bold text-foreground tabular-nums">
+            <p className="rp-eyebrow--muted">Total Budgeted</p>
+            <p className="mt-1 rp-stat-value text-foreground">
               {formatCurrency(totalBudgeted)}
             </p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4">
-            <p className="text-xs text-muted-foreground">Total Actual</p>
-            <p className="mt-1 text-2xl font-bold text-foreground tabular-nums">
+            <p className="rp-eyebrow--muted">Total Actual</p>
+            <p className="mt-1 rp-stat-value text-foreground">
               {formatCurrency(totalActual)}
             </p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4">
-            <p className="text-xs text-muted-foreground">Variance</p>
+            <p className="rp-eyebrow--muted">Variance</p>
             <p
-              className={`mt-1 text-2xl font-bold tabular-nums ${
+              className={`mt-1 rp-stat-value ${
                 totalActual <= totalBudgeted
                   ? "text-emerald-400"
                   : "text-red-400"
@@ -218,7 +219,7 @@ export default function ProjectBudgetPage() {
               <Card key={category}>
                 <CardContent className="p-4">
                   <div className="mb-3 flex items-center justify-between">
-                    <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+                    <h2 className="rp-eyebrow--muted">
                       {category}
                     </h2>
                     <p className="text-sm font-semibold text-foreground tabular-nums">
@@ -278,7 +279,7 @@ export default function ProjectBudgetPage() {
 
       {canReadImports && versions.length > 0 && (
         <section className="border-t border-border pt-6">
-          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+          <h2 className="mb-3 rp-eyebrow--muted">
             Import history
           </h2>
           <div className="space-y-2">

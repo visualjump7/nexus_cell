@@ -78,28 +78,41 @@ export default async function ExecutiveView({ firstName, orgId, principalId }: P
 
   return (
     <main
-      className="min-h-screen w-full"
-      style={{ background: 'var(--nx-bg)', color: 'var(--nx-text)', fontFamily: 'var(--font-body), system-ui, sans-serif', fontFeatureSettings: '"ss01", "cv11"' }}
+      className="relative min-h-screen w-full overflow-hidden"
+      style={{ background: 'var(--nx-bg)', color: 'var(--nx-text)', fontFamily: 'var(--font-body), system-ui, sans-serif', isolation: 'isolate' }}
     >
+      {/* Quiet pine silhouettes behind the greeting */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={BRAND.pines} alt="" aria-hidden className="rp-pines rp-pines--hero" />
+
       {/* Top bar — brand only, no nav. The principal can't navigate. */}
       <header className="flex items-center" style={{ padding: '20px 32px' }}>
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-3">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={BRAND.mark} alt="" aria-hidden className="h-[26px] w-auto" />
-          <span
-            className="uppercase font-display"
-            style={{ fontSize: 14, letterSpacing: '0.22em', color: 'var(--nx-text-dim)' }}
-          >
-            {BRAND.fullName}
+          <img src={BRAND.badge} alt={BRAND.fullName} className="h-[38px] w-auto" />
+          <span className="flex flex-col" style={{ lineHeight: 1.15 }}>
+            <span
+              className="uppercase font-display"
+              style={{ fontSize: 15, letterSpacing: '0.12em', color: 'var(--rp-text)' }}
+            >
+              Roaring Pines
+            </span>
+            <span
+              className="uppercase"
+              style={{ fontSize: 11, letterSpacing: '0.18em', color: 'var(--rp-muted)' }}
+            >
+              Motor Club
+            </span>
           </span>
         </div>
       </header>
 
       <div className="max-w-2xl mx-auto px-5 sm:px-8 pb-16">
         {greeting && (
-          <h1 className="text-3xl sm:text-4xl font-light text-white mt-6 mb-8 tracking-tight">
-            {greeting}
-          </h1>
+          <div className="mt-6 mb-8 flex flex-col gap-2.5">
+            <span className="rp-eyebrow">Owner&apos;s view</span>
+            <h1 className="rp-title m-0">{greeting}</h1>
+          </div>
         )}
 
         <div className="space-y-4">

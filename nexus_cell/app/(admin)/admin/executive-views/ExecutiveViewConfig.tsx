@@ -140,7 +140,7 @@ export default function ExecutiveViewConfig({
       })
       const data = await res.json()
       if (res.ok) {
-        toast('Executive view saved', 'success')
+        toast('Owner view saved', 'success')
       } else {
         toast(data.error || 'Failed to save', 'error')
       }
@@ -153,9 +153,9 @@ export default function ExecutiveViewConfig({
 
   if (principals.length === 0) {
     return (
-      <div className="bg-card-dark rounded-xl p-8 text-center">
-        <p className="text-gray-400">No principals in this organization yet.</p>
-        <p className="text-xs text-gray-600 mt-1">Invite a principal first, then come back here to configure their view.</p>
+      <div className="rp-panel p-8 text-center">
+        <p className="text-gray-400">No owners in this organization yet.</p>
+        <p className="text-xs text-gray-600 mt-1">Invite an owner first, then come back here to configure their view.</p>
       </div>
     )
   }
@@ -163,12 +163,12 @@ export default function ExecutiveViewConfig({
   return (
     <div className="space-y-6">
       {/* Principal selector + actions */}
-      <div className="bg-card-dark rounded-xl p-4 flex flex-wrap items-center gap-3">
+      <div className="rp-panel p-4 flex flex-wrap items-center gap-3">
         <label className="text-xs text-gray-500 uppercase tracking-wider">Configuring for</label>
         <select
           value={selectedPrincipalId}
           onChange={e => setSelectedPrincipalId(e.target.value)}
-          className="bg-[#141520] border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-400/50"
+          className="bg-[#141618] border border-[#26292C] rounded-sm px-3 py-2 text-sm text-white focus:outline-none focus:border-[#CDA14B]"
         >
           {principals.map(p => (
             <option key={p.user_id} value={p.user_id}>{p.name}</option>
@@ -177,14 +177,14 @@ export default function ExecutiveViewConfig({
         <div className="flex-1" />
         <button
           onClick={() => setPreviewOpen(true)}
-          className="px-3 py-2 bg-white/5 hover:bg-white/10 text-gray-300 text-sm rounded-lg transition-all"
+          className="rp-btn-ghost"
         >
-          Preview as principal
+          Preview as owner
         </button>
         <button
           onClick={save}
           disabled={saving || loading}
-          className="px-4 py-2 bg-emerald-500 hover:brightness-110 disabled:opacity-50 text-white font-medium rounded-lg text-sm transition-all"
+          className="rp-btn-solid"
         >
           {saving ? 'Saving…' : 'Save'}
         </button>
@@ -192,16 +192,16 @@ export default function ExecutiveViewConfig({
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Enabled widgets — ordered list */}
-        <section className="bg-card-dark rounded-xl p-5">
+        <section className="rp-panel p-5">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-sm font-medium text-white">Principal sees</h2>
+            <h2 className="rp-eyebrow--muted">Owner sees</h2>
             <span className="text-xs text-gray-500">{config.widgets.length} widget{config.widgets.length !== 1 ? 's' : ''}</span>
           </div>
 
           {loading ? (
             <p className="text-sm text-gray-500 py-8 text-center">Loading…</p>
           ) : config.widgets.length === 0 ? (
-            <p className="text-sm text-gray-500 py-8 text-center italic">
+            <p className="text-sm text-gray-500 py-8 text-center">
               No widgets enabled. Add one from the catalog.
             </p>
           ) : (
@@ -216,7 +216,7 @@ export default function ExecutiveViewConfig({
                     onDragStart={() => handleDragStart(i)}
                     onDragOver={e => handleDragOver(e, i)}
                     onDragEnd={handleDragEnd}
-                    className={`bg-[#141520] border border-white/5 rounded-lg p-3 ${dragIndex === i ? 'opacity-50' : ''}`}
+                    className={`bg-[#141618] border border-[#1F1F1F] p-3 ${dragIndex === i ? 'opacity-50' : ''}`}
                   >
                     <div className="flex items-center gap-3">
                       <span className="text-gray-600 cursor-grab select-none" aria-hidden>⋮⋮</span>
@@ -244,7 +244,7 @@ export default function ExecutiveViewConfig({
                         <select
                           value={(w.settings?.window as string) || '7d'}
                           onChange={e => updateSettings(i, { ...w.settings, window: e.target.value })}
-                          className="bg-[#1a1b2e] border border-white/10 rounded px-2 py-1 text-xs text-white focus:outline-none"
+                          className="bg-[#141618] border border-white/10 rounded px-2 py-1 text-xs text-white focus:outline-none"
                         >
                           <option value="today">Today only</option>
                           <option value="7d">Next 7 days</option>
@@ -258,14 +258,14 @@ export default function ExecutiveViewConfig({
                         <select
                           value={String((w.settings?.limit as number) || 3)}
                           onChange={e => updateSettings(i, { ...w.settings, limit: parseInt(e.target.value, 10) })}
-                          className="bg-[#1a1b2e] border border-white/10 rounded px-2 py-1 text-xs text-white focus:outline-none"
+                          className="bg-[#141618] border border-white/10 rounded px-2 py-1 text-xs text-white focus:outline-none"
                         >
                           <option value="1">1</option>
                           <option value="3">3</option>
                           <option value="5">5</option>
                           <option value="10">10</option>
                         </select>
-                        <span className="text-xs text-gray-600">briefs marked &ldquo;visible to principal&rdquo;</span>
+                        <span className="text-xs text-gray-600">briefs marked &ldquo;visible to owner&rdquo;</span>
                       </div>
                     )}
                   </li>
@@ -276,27 +276,27 @@ export default function ExecutiveViewConfig({
         </section>
 
         {/* Available catalog */}
-        <section className="bg-card-dark rounded-xl p-5">
+        <section className="rp-panel p-5">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-sm font-medium text-white">Add a widget</h2>
+            <h2 className="rp-eyebrow--muted">Add a widget</h2>
             <span className="text-xs text-gray-500">{availableWidgets.length} available</span>
           </div>
 
           {availableWidgets.length === 0 ? (
-            <p className="text-sm text-gray-500 py-8 text-center italic">
+            <p className="text-sm text-gray-500 py-8 text-center">
               All widgets are already enabled.
             </p>
           ) : (
             <ul className="space-y-2 m-0 p-0 list-none">
               {availableWidgets.map(w => (
-                <li key={w.id} className="bg-[#141520] border border-white/5 rounded-lg p-3 flex items-start gap-3">
+                <li key={w.id} className="bg-[#141618] border border-[#1F1F1F] p-3 flex items-start gap-3">
                   <div className="flex-1 min-w-0">
                     <p className="text-sm text-white font-medium">{w.label}</p>
                     <p className="text-xs text-gray-500 mt-0.5">{w.description}</p>
                   </div>
                   <button
                     onClick={() => addWidget(w.id)}
-                    className="px-2.5 py-1 bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 text-xs font-medium rounded transition-colors shrink-0"
+                    className="rp-btn-ghost shrink-0"
                   >
                     Add
                   </button>
@@ -308,13 +308,13 @@ export default function ExecutiveViewConfig({
       </div>
 
       {/* Greeting */}
-      <section className="bg-card-dark rounded-xl p-5">
-        <h2 className="text-sm font-medium text-white mb-3">Greeting</h2>
+      <section className="rp-panel p-5">
+        <h2 className="rp-eyebrow--muted mb-3">Greeting</h2>
         <div className="flex flex-wrap items-center gap-3">
           <select
             value={config.greeting_style}
             onChange={e => setConfig(c => ({ ...c, greeting_style: e.target.value as SavedConfig['greeting_style'] }))}
-            className="bg-[#141520] border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-400/50"
+            className="bg-[#141618] border border-[#26292C] rounded-sm px-3 py-2 text-sm text-white focus:outline-none focus:border-[#CDA14B]"
           >
             <option value="time_of_day">Time of day (e.g. Good morning, Sarah)</option>
             <option value="custom">Custom message</option>
@@ -326,7 +326,7 @@ export default function ExecutiveViewConfig({
               value={config.custom_greeting || ''}
               onChange={e => setConfig(c => ({ ...c, custom_greeting: e.target.value }))}
               placeholder="e.g. Welcome back."
-              className="flex-1 min-w-[200px] bg-[#141520] border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-400/50"
+              className="flex-1 min-w-[200px] bg-[#141618] border border-[#26292C] rounded-sm px-3 py-2 text-sm text-white focus:outline-none focus:border-[#CDA14B]"
             />
           )}
         </div>
@@ -335,7 +335,7 @@ export default function ExecutiveViewConfig({
       {previewOpen && (
         <PreviewPrincipalModal
           principalId={selectedPrincipalId}
-          principalName={principals.find(p => p.user_id === selectedPrincipalId)?.name || 'Principal'}
+          principalName={principals.find(p => p.user_id === selectedPrincipalId)?.name || 'Owner'}
           config={config}
           onClose={() => setPreviewOpen(false)}
         />

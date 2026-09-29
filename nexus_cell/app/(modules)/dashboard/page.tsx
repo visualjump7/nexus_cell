@@ -4,6 +4,7 @@ import DashboardCharts from '@/app/(app)/DashboardCharts'
 import DashboardActivity from '@/app/(app)/DashboardActivity'
 import DashboardUpcoming from '@/app/(app)/DashboardUpcoming'
 import type { Alert, Trip, TripSegment } from '@/lib/types'
+import { BRAND } from '@/lib/brand'
 
 export default async function DashboardPage() {
   const { supabase, orgId, role } = await getAuthContext()
@@ -57,13 +58,19 @@ export default async function DashboardPage() {
 
   return (
     <div className="max-w-7xl space-y-6">
-      <h1 className="text-2xl font-semibold text-slate-200">Dashboard</h1>
+      <header className="rp-head !mb-0">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={BRAND.pines} alt="" aria-hidden className="rp-pines rp-pines--head" />
+        <span className="rp-eyebrow">{BRAND.fullName}</span>
+        <h1 className="rp-title">Dashboard</h1>
+        <p className="rp-lede">Where the build stands today.</p>
+      </header>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <Link href="/financial"><StatCard dot="bg-emerald-400" label="Total Outstanding" value={fmtCurrency(totalOutstanding)} /></Link>
-        <Link href="/alerts"><StatCard dot="bg-blue-400" label="Pending Approvals" value={(approvalAlerts.count || 0).toString()} /></Link>
-        <Link href="/travel"><StatCard dot="bg-purple-400" label="Active Trips" value={(tripsActive.count || 0).toString()} /></Link>
-        <Link href="/tasks"><StatCard dot="bg-amber-400" label="Open Tasks" value={(tasksOpen.count || 0).toString()} /></Link>
+        <Link href="/financial"><StatCard dot="bg-[#CDA14B]" label="Outstanding" value={fmtCurrency(totalOutstanding)} /></Link>
+        <Link href="/alerts"><StatCard dot="bg-[#3989CB]" label="Awaiting sign-off" value={(approvalAlerts.count || 0).toString()} /></Link>
+        <Link href="/travel"><StatCard dot="bg-[#A4CC5C]" label="Site visits" value={(tripsActive.count || 0).toString()} /></Link>
+        <Link href="/tasks"><StatCard dot="bg-[#9AA0A4]" label="Open items" value={(tasksOpen.count || 0).toString()} /></Link>
       </div>
 
       <DashboardCharts categoryData={categoryData} />
@@ -73,30 +80,28 @@ export default async function DashboardPage() {
         <DashboardUpcoming approvals={(pendingApprovals.data || []) as Alert[]} nextTrip={nextTrip} role={role} />
       </div>
 
-      <div className="bg-card-dark rounded-xl shadow-lg shadow-black/20 aspect-video flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center mx-auto mb-3">
-            <svg className="w-5 h-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
-              <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
-            </svg>
-          </div>
-          <p className="text-sm text-gray-500 font-medium">Map View</p>
-          <p className="text-xs text-gray-600 mt-0.5">Coming Soon</p>
+      <figure className="m-0">
+        <div className="rp-frame aspect-video">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/demo/plans/masterplan-v5.jpg" alt="Roaring Pines masterplan v5" className="w-full h-full object-cover" />
         </div>
-      </div>
+        <figcaption className="flex items-center justify-between gap-3 mt-2.5">
+          <span className="rp-caption"><span className="rp-num">01</span> Masterplan v5 · site layout</span>
+          <span className="rp-tag rp-tag--accent">Interactive map soon</span>
+        </figcaption>
+      </figure>
     </div>
   )
 }
 
 function StatCard({ dot, label, value }: { dot: string; label: string; value: string }) {
   return (
-    <div className="bg-card-dark rounded-xl shadow-lg shadow-black/20 p-5 hover:brightness-110 transition-all">
+    <div className="rp-panel p-5 hover:border-[#3A3E42] transition-colors">
       <div className="flex items-center gap-2 mb-2">
-        <div className={`w-2 h-2 rounded-full ${dot}`} />
-        <p className="text-xs text-gray-400">{label}</p>
+        <div className={`w-1.5 h-1.5 ${dot}`} />
+        <p className="rp-eyebrow--muted">{label}</p>
       </div>
-      <p className="text-2xl font-bold">{value}</p>
+      <p className="rp-stat-value">{value}</p>
     </div>
   )
 }

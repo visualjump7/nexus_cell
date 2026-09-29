@@ -114,7 +114,7 @@ export default function LoginPage() {
         </form>
 
         <p className="mt-10 font-display text-[10px] uppercase tracking-[0.22em] text-[#6E7578]">
-          Powered by Nexus Cell
+          Private members portal
         </p>
       </div>
     </div>

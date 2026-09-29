@@ -368,8 +368,8 @@ export default function BriefDetailPage() {
                   type="text"
                   value={brief.title}
                   onChange={(e) => handleTitleChange(e.target.value)}
-                  className="flex-1 bg-transparent text-xl font-bold text-foreground outline-none placeholder:text-muted-foreground"
-                  placeholder="Brief title..."
+                  className="flex-1 bg-transparent font-display text-xl font-medium uppercase tracking-[0.02em] text-foreground outline-none placeholder:text-muted-foreground"
+                  placeholder="e.g. Weekly build update"
                 />
                 <Badge
                   variant="outline"
@@ -379,7 +379,7 @@ export default function BriefDetailPage() {
                 </Badge>
               </div>
               <div className="flex items-center gap-2">
-                <label className="text-sm text-muted-foreground">Date:</label>
+                <label className="rp-eyebrow--muted">Date</label>
                 <input
                   type="date"
                   value={brief.brief_date}
@@ -501,7 +501,7 @@ export default function BriefDetailPage() {
             <Card>
               <CardContent className="p-0">
                 <div className="border-b border-border px-4 py-3">
-                  <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                  <p className="rp-eyebrow--muted">
                     Live Preview
                   </p>
                 </div>

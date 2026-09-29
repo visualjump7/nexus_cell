@@ -52,17 +52,20 @@ export default function SubscriptionsList({ subscriptions, role }: Props) {
 
   return (
     <div className="max-w-6xl">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold">Subscriptions</h1>
-          <p className="text-sm text-gray-500 mt-1">{filtered.length} subscription{filtered.length !== 1 ? 's' : ''}</p>
+      <header className="rp-head">
+        <div className="flex items-end justify-between gap-4 flex-wrap">
+        <div className="flex flex-col gap-2.5">
+          <span className="rp-eyebrow">Club Life</span>
+          <h1 className="rp-title">Software &amp; services</h1>
+          <p className="rp-caption">{filtered.length} subscription{filtered.length !== 1 ? 's' : ''}</p>
         </div>
         {canWrite && (
-          <button onClick={() => { setEditingSub(null); setShowForm(true) }} className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-medium rounded-lg text-sm transition-colors">
-            + New Subscription
+          <button onClick={() => { setEditingSub(null); setShowForm(true) }} className="rp-btn-solid">
+            New subscription
           </button>
         )}
-      </div>
+        </div>
+      </header>
 
       <div className="flex gap-3 mb-6">
         <select className={selectClass} value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
@@ -74,14 +77,14 @@ export default function SubscriptionsList({ subscriptions, role }: Props) {
       </div>
 
       {filtered.length === 0 ? (
-        <div className="bg-card rounded-xl shadow-lg shadow-black/20 p-12 text-center">
+        <div className="rp-panel p-12 text-center">
           <p className="text-gray-500">No subscriptions found.</p>
         </div>
       ) : (
-        <div className="bg-card rounded-xl shadow-lg shadow-black/20 overflow-hidden">
+        <div className="rp-panel overflow-hidden">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-white/5 text-gray-500 text-left">
+              <tr className="border-b border-[#1F1F1F] text-left rp-eyebrow--muted">
                 <th className="px-4 py-3 font-medium">Name</th>
                 <th className="px-4 py-3 font-medium">Provider</th>
                 <th className="px-4 py-3 font-medium">Amount</th>
@@ -93,7 +96,7 @@ export default function SubscriptionsList({ subscriptions, role }: Props) {
             </thead>
             <tbody>
               {filtered.map(sub => (
-                <tr key={sub.id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
+                <tr key={sub.id} className="border-b border-[#1F1F1F] hover:bg-[#141618] transition-colors">
                   <td className="px-4 py-3">
                     <p className="text-white font-medium">{sub.name}</p>
                     {sub.category && <p className="text-xs text-gray-500">{sub.category}</p>}
@@ -177,16 +180,16 @@ function SubFormModal({ sub, onClose, inputClass }: { sub: Subscription | null; 
 
   return (
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4" onClick={onClose}>
-      <div className="bg-main rounded-xl shadow-2xl shadow-black/40 w-full max-w-lg max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+      <div className="rp-panel w-full max-w-lg max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-white/5">
-          <h2 className="text-lg font-semibold text-white">{isEditing ? 'Edit Subscription' : 'New Subscription'}</h2>
+          <h2 className="rp-eyebrow">{isEditing ? 'Edit Subscription' : 'New Subscription'}</h2>
           <button onClick={onClose} className="text-gray-500 hover:text-white text-xl leading-none">&times;</button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          <div><label className={labelClass}>Name *</label><input className={inputClass} value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} placeholder="e.g. Wine Club" required /></div>
+          <div><label className={labelClass}>Name *</label><input className={inputClass} value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} placeholder="e.g. Procore" required /></div>
           <div className="grid grid-cols-2 gap-4">
-            <div><label className={labelClass}>Provider</label><input className={inputClass} value={form.provider} onChange={e => setForm(p => ({ ...p, provider: e.target.value }))} placeholder="e.g. Opus One" /></div>
-            <div><label className={labelClass}>Category</label><input className={inputClass} value={form.category} onChange={e => setForm(p => ({ ...p, category: e.target.value }))} placeholder="e.g. Wine & Spirits" /></div>
+            <div><label className={labelClass}>Provider</label><input className={inputClass} value={form.provider} onChange={e => setForm(p => ({ ...p, provider: e.target.value }))} placeholder="e.g. Procore Technologies" /></div>
+            <div><label className={labelClass}>Category</label><input className={inputClass} value={form.category} onChange={e => setForm(p => ({ ...p, category: e.target.value }))} placeholder="e.g. Project software" /></div>
           </div>
           <div className="grid grid-cols-3 gap-4">
             <div><label className={labelClass}>Amount</label><input className={inputClass} type="number" step="0.01" min="0" value={form.amount} onChange={e => setForm(p => ({ ...p, amount: e.target.value }))} placeholder="0.00" /></div>
@@ -220,8 +223,8 @@ function SubFormModal({ sub, onClose, inputClass }: { sub: Subscription | null; 
           </div>
           {error && <p className="text-red-400 text-sm">{error}</p>}
           <div className="flex gap-3 pt-2">
-            <button type="button" onClick={onClose} className="flex-1 py-2 px-4 bg-white/10 hover:bg-white/15 text-gray-300 rounded-lg text-sm transition-colors">Cancel</button>
-            <button type="submit" disabled={saving} className="flex-1 py-2 px-4 bg-emerald-600 hover:bg-emerald-500 disabled:bg-emerald-800 disabled:cursor-not-allowed text-white font-medium rounded-lg text-sm transition-colors">
+            <button type="button" onClick={onClose} className="rp-btn-ghost flex-1 justify-center">Cancel</button>
+            <button type="submit" disabled={saving} className="rp-btn-solid flex-1 disabled:cursor-not-allowed justify-center">
               {saving ? 'Saving...' : isEditing ? 'Update' : 'Create'}
             </button>
           </div>

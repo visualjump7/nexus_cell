@@ -15,17 +15,17 @@ interface Props {
 export default function WidgetCard({ title, subtitle, trailing, children, prominent }: Props) {
   return (
     <section
-      className={`rounded-2xl border border-white/[0.06] ${prominent ? 'bg-[#161a25]' : 'bg-[#10131b]'}`}
+      className={prominent ? 'rp-surface' : 'rp-panel'}
       style={{ padding: '20px 22px' }}
     >
       {(title || trailing) && (
         <header className="flex items-center justify-between gap-3 mb-4">
           <div className="min-w-0">
             {title && (
-              <h3 className="text-sm font-medium text-white tracking-wide">{title}</h3>
+              <h3 className={prominent ? 'rp-eyebrow' : 'rp-eyebrow--muted'}>{title}</h3>
             )}
             {subtitle && (
-              <p className="text-xs text-gray-500 mt-0.5">{subtitle}</p>
+              <p className="text-xs text-[#6E7578] mt-1">{subtitle}</p>
             )}
           </div>
           {trailing && <div className="shrink-0">{trailing}</div>}
@@ -39,6 +39,6 @@ export default function WidgetCard({ title, subtitle, trailing, children, promin
 // Empty state used by widgets when there's nothing to show.
 export function WidgetEmpty({ message }: { message: string }) {
   return (
-    <p className="text-sm text-gray-500 italic">{message}</p>
+    <p className="text-sm text-[#6E7578]">{message}</p>
   )
 }

@@ -30,11 +30,14 @@ export default async function AdminCalendarsPage() {
 
   return (
     <div className="max-w-5xl">
-      <h1 className="text-2xl font-semibold text-slate-200 mb-1">Calendars</h1>
-      <p className="text-sm text-gray-500 mb-6">
+      <header className="rp-head">
+        <span className="rp-eyebrow">Administrator</span>
+        <h1 className="rp-title">Calendars</h1>
+        <p className="rp-lede">
         Subscribe to external calendars (Apple, Outlook, Google) so the team can see them alongside club events.
         Each user can toggle which calendars they see on the Calendar page.
-      </p>
+        </p>
+      </header>
       <CalendarsManager initialCalendars={calendars} />
     </div>
   )

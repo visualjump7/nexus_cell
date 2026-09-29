@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import type { Trip, UserRole } from '@/lib/types'
 import DeleteConfirm from '@/components/DeleteConfirm'
+import { BRAND } from '@/lib/brand'
 
 const statusColors: Record<string, string> = {
   planning: 'bg-yellow-500/15 text-yellow-400 border-yellow-500/30',
@@ -44,17 +45,22 @@ export default function TripsList({ trips, role }: Props) {
 
   return (
     <div className="max-w-6xl">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold">Travel</h1>
-          <p className="text-sm text-gray-500 mt-1">{filtered.length} trip{filtered.length !== 1 ? 's' : ''}</p>
+      <header className="rp-head">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={BRAND.pines} alt="" aria-hidden className="rp-pines rp-pines--head" />
+        <div className="flex items-end justify-between gap-4 flex-wrap">
+        <div className="flex flex-col gap-2.5">
+          <span className="rp-eyebrow">Site visits &amp; travel</span>
+          <h1 className="rp-title">Travel</h1>
+          <p className="rp-caption">{filtered.length} trip{filtered.length !== 1 ? 's' : ''}</p>
         </div>
         {canWrite && (
-          <button onClick={() => { setEditingTrip(null); setShowForm(true) }} className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-medium rounded-lg text-sm transition-colors">
-            + New Trip
+          <button onClick={() => { setEditingTrip(null); setShowForm(true) }} className="rp-btn-solid">
+            New trip
           </button>
         )}
-      </div>
+        </div>
+      </header>
 
       <div className="flex gap-3 mb-6">
         <select className={selectClass} value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
@@ -68,13 +74,13 @@ export default function TripsList({ trips, role }: Props) {
       </div>
 
       {filtered.length === 0 ? (
-        <div className="bg-card rounded-xl shadow-lg shadow-black/20 p-12 text-center">
-          <p className="text-gray-500">No trips found.</p>
+        <div className="rp-panel p-12 text-center">
+          <p className="text-gray-500">No trips planned.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filtered.map(trip => (
-            <Link key={trip.id} href={`/travel/${trip.id}`} className="bg-card rounded-xl shadow-lg shadow-black/20 p-5 hover:brightness-110 transition-colors block">
+            <Link key={trip.id} href={`/travel/${trip.id}`} className="rp-panel p-5 hover:border-[#3A3E42] transition-colors block">
               <div className="flex items-start justify-between mb-3">
                 <h3 className="text-white font-medium">{trip.title}</h3>
                 <span className={`text-[11px] font-medium px-2 py-0.5 rounded border ${statusColors[trip.status] || ''}`}>
@@ -140,15 +146,15 @@ function TripFormModal({ trip, onClose, inputClass }: { trip: Trip | null; onClo
 
   return (
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4" onClick={onClose}>
-      <div className="bg-main rounded-xl shadow-2xl shadow-black/40 w-full max-w-lg" onClick={e => e.stopPropagation()}>
+      <div className="rp-panel w-full max-w-lg" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-white/5">
-          <h2 className="text-lg font-semibold text-white">{isEditing ? 'Edit Trip' : 'New Trip'}</h2>
+          <h2 className="rp-eyebrow">{isEditing ? 'Edit Trip' : 'New Trip'}</h2>
           <button onClick={onClose} className="text-gray-500 hover:text-white text-xl leading-none">&times;</button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div>
             <label className={labelClass}>Title *</label>
-            <input className={inputClass} value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))} placeholder="e.g. Miami Weekend" required />
+            <input className={inputClass} value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))} placeholder="e.g. Site walk with the GC" required />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
@@ -176,8 +182,8 @@ function TripFormModal({ trip, onClose, inputClass }: { trip: Trip | null; onClo
           </div>
           {error && <p className="text-red-400 text-sm">{error}</p>}
           <div className="flex gap-3 pt-2">
-            <button type="button" onClick={onClose} className="flex-1 py-2 px-4 bg-white/10 hover:bg-white/15 text-gray-300 rounded-lg text-sm transition-colors">Cancel</button>
-            <button type="submit" disabled={saving} className="flex-1 py-2 px-4 bg-emerald-600 hover:bg-emerald-500 disabled:bg-emerald-800 disabled:cursor-not-allowed text-white font-medium rounded-lg text-sm transition-colors">
+            <button type="button" onClick={onClose} className="rp-btn-ghost flex-1 justify-center">Cancel</button>
+            <button type="submit" disabled={saving} className="rp-btn-solid flex-1 disabled:cursor-not-allowed justify-center">
               {saving ? 'Saving...' : isEditing ? 'Update' : 'Create Trip'}
             </button>
           </div>

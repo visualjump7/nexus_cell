@@ -103,9 +103,9 @@ export default function CalendarsManager({ initialCalendars }: Props) {
       </div>
 
       {/* Active calendars */}
-      <section className="bg-card-dark rounded-xl">
+      <section className="rp-panel">
         <div className="px-5 py-3 border-b border-white/5">
-          <h2 className="text-sm font-medium text-white">Active</h2>
+          <h2 className="rp-eyebrow--muted">Active</h2>
         </div>
         {active.length === 0 ? (
           <p className="text-sm text-gray-500 italic px-5 py-8 text-center">
@@ -129,9 +129,9 @@ export default function CalendarsManager({ initialCalendars }: Props) {
 
       {/* Archived */}
       {archived.length > 0 && (
-        <section className="bg-card-dark rounded-xl">
+        <section className="rp-panel">
           <div className="px-5 py-3 border-b border-white/5 flex items-center justify-between">
-            <h2 className="text-sm font-medium text-gray-400">Archived</h2>
+            <h2 className="rp-eyebrow--muted">Archived</h2>
             <span className="text-xs text-gray-600">{archived.length}</span>
           </div>
           <ul className="divide-y divide-white/5 m-0 p-0 list-none">
@@ -238,7 +238,7 @@ function CalendarFormModal({
   const [provider, setProvider] = useState<'apple' | 'outlook' | 'google' | 'ics'>(
     (calendar?.provider as 'apple' | 'outlook' | 'google' | 'ics') || 'apple',
   )
-  const [color, setColor] = useState(calendar?.color || '#3b82f6')
+  const [color, setColor] = useState(calendar?.color || '#3989CB')
   const [testing, setTesting] = useState(false)
   const [testResult, setTestResult] = useState<{ ok: boolean; msg: string } | null>(null)
   const [saving, setSaving] = useState(false)
@@ -289,13 +289,13 @@ function CalendarFormModal({
     setSaving(false)
   }
 
-  const inputCls = 'w-full bg-[#141520] border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-400/50'
-  const COLORS = ['#3b82f6', '#a855f7', '#22d3ee', '#f59e0b', '#ec4899', '#84cc16', '#eab308', '#6366f1']
+  const inputCls = 'w-full bg-[#141618] border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-400/50'
+  const COLORS = ['#CDA14B', '#3989CB', '#A4CC5C', '#E0BF7B', '#7FB3DE', '#9AA0A4', '#C8DE9A', '#8C6830']
 
   return (
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4" onClick={onClose}>
-      <div className="bg-[#10131b] rounded-xl shadow-2xl shadow-black/40 w-full max-w-md p-6 border border-white/10" onClick={e => e.stopPropagation()}>
-        <h3 className="text-lg font-semibold text-white mb-4">
+      <div className="bg-[#0E0F11] border-[#26292C] rounded-sm w-full max-w-md p-6 border" onClick={e => e.stopPropagation()}>
+        <h3 className="rp-eyebrow mb-4">
           {isEditing ? 'Edit calendar' : 'Add a calendar'}
         </h3>
 
@@ -351,7 +351,7 @@ function CalendarFormModal({
                 <button
                   key={c}
                   onClick={() => setColor(c)}
-                  className={`w-6 h-6 rounded-full transition-transform ${color === c ? 'ring-2 ring-white ring-offset-2 ring-offset-[#10131b] scale-110' : 'hover:scale-110'}`}
+                  className={`w-6 h-6 rounded-full transition-transform ${color === c ? 'ring-2 ring-white ring-offset-2 ring-offset-[#0E0F11] scale-110' : 'hover:scale-110'}`}
                   style={{ background: c }}
                   aria-label={`Color ${c}`}
                 />
@@ -362,7 +362,7 @@ function CalendarFormModal({
           {err && <p className="text-sm text-red-400">{err}</p>}
 
           <div className="flex gap-2 justify-end pt-2">
-            <button onClick={onClose} className="px-4 py-2 bg-white/5 hover:bg-white/10 text-gray-300 text-sm rounded-lg">
+            <button onClick={onClose} className="rp-btn-ghost">
               Cancel
             </button>
             <button

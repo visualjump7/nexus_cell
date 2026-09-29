@@ -24,10 +24,10 @@ interface Props {
 }
 
 const TONE_CLASS: Record<ContextItem['tone'], string> = {
-  alert:  'text-red-400 bg-red-500/[0.08] border-red-500/20',
-  warn:   'text-amber-400 bg-amber-500/[0.08] border-amber-500/20',
-  good:   'text-emerald-400 bg-emerald-500/[0.08] border-emerald-500/20',
-  normal: 'text-gray-400 bg-white/[0.04] border-white/[0.06]',
+  alert:  'text-red-400 border-red-500/40',
+  warn:   'text-amber-400 border-amber-500/40',
+  good:   'text-[#A4CC5C] border-[#A4CC5C]/40',
+  normal: 'text-[#9AA0A4] border-[#26292C]',
 }
 
 // Glance the character downward toward the status pills when anything in the
@@ -80,18 +80,30 @@ export default function CommandLanding({ metrics, heroGreeting, contextStrip, op
   return (
     <main
       className="relative w-full min-h-screen overflow-hidden"
-      style={{ background: 'var(--nx-bg)', color: 'var(--nx-text)', fontFamily: 'var(--font-body), system-ui, sans-serif', fontFeatureSettings: '"ss01", "cv11"' }}
+      style={{ background: 'var(--nx-bg)', color: 'var(--nx-text)', fontFamily: 'var(--font-body), system-ui, sans-serif', isolation: 'isolate' }}
     >
+      {/* Quiet pine silhouettes along the bottom edge */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={BRAND.pines} alt="" aria-hidden className="rp-pines rp-pines--hero" />
+
       {/* Top bar */}
       <header className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between" style={{ padding: '20px 32px' }}>
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-3">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={BRAND.mark} alt="" aria-hidden className="h-[26px] w-auto" />
-          <span
-            className="uppercase font-display"
-            style={{ fontSize: 14, letterSpacing: '0.22em', color: 'var(--nx-text-dim)' }}
-          >
-            {BRAND.fullName}
+          <img src={BRAND.badge} alt={BRAND.fullName} className="h-[38px] w-auto" />
+          <span className="flex flex-col" style={{ lineHeight: 1.15 }}>
+            <span
+              className="uppercase font-display"
+              style={{ fontSize: 15, letterSpacing: '0.12em', color: 'var(--rp-text)' }}
+            >
+              Roaring Pines
+            </span>
+            <span
+              className="uppercase"
+              style={{ fontSize: 11, letterSpacing: '0.18em', color: 'var(--rp-muted)' }}
+            >
+              Motor Club
+            </span>
           </span>
         </div>
       </header>
@@ -114,20 +126,17 @@ export default function CommandLanding({ metrics, heroGreeting, contextStrip, op
           )}
 
           <div>
-            <h1
-              className="m-0 mb-2.5"
-              style={{ fontSize: 36, fontWeight: 300, lineHeight: 1.15, letterSpacing: '-0.02em' }}
-            >
-              {heroGreeting.line1}<br />
-              <span style={{ color: 'var(--nx-teal)' }}>{heroGreeting.line2}</span>
+            <span className="rp-eyebrow--muted block mb-3">{heroGreeting.line1}</span>
+            <h1 className="rp-title rp-title--hero m-0" style={{ color: '#F5F5F5' }}>
+              {heroGreeting.line2}
             </h1>
 
-            {/* Live context strip — at-a-glance status pills derived from real data */}
-            <div className="flex flex-wrap gap-1.5 mt-3" aria-label="Status">
+            {/* Live context strip — at-a-glance status tags derived from real data */}
+            <div className="flex flex-wrap gap-1.5 mt-4" aria-label="Status">
               {contextStrip.map((item, i) => (
                 <span
                   key={i}
-                  className={`inline-flex items-center px-2.5 py-1 rounded-full border text-[11px] font-medium ${TONE_CLASS[item.tone]}`}
+                  className={`rp-tag inline-flex items-center ${TONE_CLASS[item.tone]}`}
                 >
                   {item.label}
                 </span>
@@ -137,16 +146,16 @@ export default function CommandLanding({ metrics, heroGreeting, contextStrip, op
 
           {/* Ask input chip */}
           <div
-            className="flex items-center"
+            className="nx-ask flex items-center"
             style={{
               gap: 10,
               padding: '14px 18px',
-              borderRadius: 12,
-              background: 'rgba(20,24,33,0.7)',
-              border: '1px solid rgba(205, 161, 75,0.35)',
-              boxShadow: '0 0 30px rgba(205, 161, 75,0.12)',
+              borderRadius: 2,
+              background: '#0E0F11',
+              border: '1px solid #26292C',
               maxWidth: 380,
               cursor: 'text',
+              transition: 'border-color .2s',
             }}
             onClick={() => {
               const el = document.getElementById('nx-ask-input') as HTMLInputElement | null
@@ -154,8 +163,8 @@ export default function CommandLanding({ metrics, heroGreeting, contextStrip, op
             }}
           >
             <span
-              className="rounded-full animate-nx-pulse-fast flex-shrink-0"
-              style={{ width: 6, height: 6, background: 'var(--nx-teal)', boxShadow: '0 0 8px var(--nx-teal)' }}
+              className="animate-nx-pulse-fast flex-shrink-0"
+              style={{ width: 6, height: 6, background: 'var(--rp-accent)' }}
               aria-hidden
             />
             <input
@@ -169,8 +178,8 @@ export default function CommandLanding({ metrics, heroGreeting, contextStrip, op
                   submitAsk()
                 }
               }}
-              placeholder="Type or speak…"
-              className="flex-1 bg-transparent outline-none"
+              placeholder="Ask Nexus about the build…"
+              className="flex-1 bg-transparent outline-none placeholder-[#6E7578]"
               style={{ fontSize: 14, color: 'var(--nx-text)' }}
               aria-label="Ask Nexus"
             />
@@ -181,7 +190,7 @@ export default function CommandLanding({ metrics, heroGreeting, contextStrip, op
                 color: 'var(--nx-text-faint)',
                 padding: '3px 7px',
                 border: '1px solid var(--nx-border)',
-                borderRadius: 5,
+                borderRadius: 0,
               }}
             >
               {isMac ? '⌘K' : 'Ctrl K'}
@@ -196,26 +205,30 @@ export default function CommandLanding({ metrics, heroGreeting, contextStrip, op
                   key={s}
                   type="button"
                   onClick={() => { setPendingMessage(s); setAiOpen(true) }}
-                  className="bg-white/[0.04] hover:bg-white/[0.08] rounded-full px-3 py-1.5 text-[12px] text-gray-400 hover:text-white transition-colors border border-white/[0.05]"
+                  className="rp-btn-ghost"
+                  style={{ fontSize: 10, minHeight: 30, padding: '6px 11px' }}
                 >
                   {s}
                 </button>
               ))}
             </div>
           )}
+
+          {/* Construction progress strip — desktop only */}
+          <figure className="hidden lg:block m-0" style={{ maxWidth: 380 }}>
+            <div className="rp-frame" style={{ aspectRatio: '16 / 7' }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/demo/site/site-full-hero.jpg" alt="Aerial view of the Roaring Pines property" className="w-full h-full object-cover" />
+            </div>
+            <figcaption className="rp-caption mt-2">
+              <span className="rp-num">01</span> The whole property, aerial
+            </figcaption>
+          </figure>
         </section>
 
         {/* RIGHT — typographic section list */}
         <nav className="flex flex-col justify-center" aria-label="Sections">
-          <div
-            className="uppercase"
-            style={{
-              fontSize: 11,
-              color: 'var(--nx-text-faint)',
-              letterSpacing: '0.2em',
-              marginBottom: 24,
-            }}
-          >
+          <div className="rp-eyebrow" style={{ marginBottom: 24 }}>
             Sections
           </div>
 
@@ -234,35 +247,24 @@ export default function CommandLanding({ metrics, heroGreeting, contextStrip, op
                     className="nx-section-row flex items-baseline relative"
                     style={{
                       gap: 18,
-                      padding: '14px 0',
+                      padding: '14px 0 14px 14px',
                       borderBottom: '1px solid var(--nx-border)',
                       borderTop: isFirst ? '1px solid var(--nx-border)' : undefined,
+                      borderLeft: '2px solid transparent',
                       cursor: 'pointer',
-                      transition: 'transform .2s, background .2s, border-color .2s',
+                      transition: 'background .2s, border-color .2s',
                       textDecoration: 'none',
                     }}
                   >
-                    <span
-                      style={{
-                        fontSize: 11,
-                        color: 'var(--nx-text-faint)',
-                        fontVariantNumeric: 'tabular-nums',
-                        width: 24,
-                      }}
-                    >
+                    <span className="rp-num nx-section-num" style={{ width: 24, transition: 'color .2s' }}>
                       {num}
                     </span>
                     <span
-                      className="flex-shrink-0 rounded-full"
-                      style={{ width: 8, height: 8, background: section.dotColor }}
-                      aria-hidden
-                    />
-                    <span
-                      className="nx-section-label flex-1"
+                      className="nx-section-label flex-1 font-display uppercase"
                       style={{
                         fontSize: 22,
-                        fontWeight: 400,
-                        letterSpacing: '-0.01em',
+                        fontWeight: 500,
+                        letterSpacing: '0.04em',
                         color: 'var(--nx-text)',
                         transition: 'color .2s',
                       }}
@@ -280,7 +282,7 @@ export default function CommandLanding({ metrics, heroGreeting, contextStrip, op
                           fontWeight: 600,
                           background: '#dc2626',
                           padding: '2px 8px',
-                          borderRadius: 99,
+                          borderRadius: 2,
                           minWidth: 22,
                         }}
                       >
@@ -309,12 +311,15 @@ export default function CommandLanding({ metrics, heroGreeting, contextStrip, op
             gap: 48px;
           }
         }
-        :global(.nx-section-row:hover) {
-          background: rgba(205, 161, 75, 0.04);
-          border-bottom-color: rgba(205, 161, 75, 0.3) !important;
+        :global(.nx-ask:focus-within) {
+          border-color: #CDA14B !important;
         }
-        :global(.nx-section-row:hover .nx-section-label) {
-          color: var(--nx-teal) !important;
+        :global(.nx-section-row:hover) {
+          background: #0E0F11;
+          border-left-color: #CDA14B !important;
+        }
+        :global(.nx-section-row:hover .nx-section-num) {
+          color: #CDA14B !important;
         }
       `}</style>
 

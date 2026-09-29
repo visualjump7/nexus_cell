@@ -7,12 +7,35 @@ import type { Project, ProjectFile, UserRole } from '@/lib/types'
 import DeleteConfirm from '@/components/DeleteConfirm'
 import ProjectTypeCombobox from '@/components/project-detail/ProjectTypeCombobox'
 import ProjectFilesUploader from '@/components/project-detail/ProjectFilesUploader'
+import { BRAND } from '@/lib/brand'
+
+// Projects carry no image column yet, so each card gets a deterministic
+// rendering from the Roaring Pines demo set, picked by keyword, then by id.
+const PROJECT_IMAGE_ROTATION = [
+  '/demo/site/site-full-hero.jpg',
+  '/demo/site/site-central-lake-garage-arc.jpg',
+  '/demo/site/site-eastern-lakefront.jpg',
+  '/demo/site/site-northern-lakes.jpg',
+]
+
+function projectImage(p: Pick<Project, 'id' | 'name' | 'project_type'>): string {
+  const key = `${p.name || ''} ${p.project_type || ''}`.toLowerCase()
+  if (/trackside/.test(key)) return '/demo/images/trackside-connected-row.jpg'
+  if (/garage|paddock|flatrock/.test(key)) return '/demo/images/flatrock-club-01.jpg'
+  if (/home|residence|estate/.test(key)) return '/demo/homes/custom-home-exterior.jpg'
+  if (/entrance|gate/.test(key)) return '/demo/entrance/main-gate-v03.jpg'
+  if (/clubhouse|pool/.test(key)) return '/demo/site/site-clubhouse-pools-courts.jpg'
+  if (/track|circuit/.test(key)) return '/demo/site/site-southern-circuit.jpg'
+  let h = 0
+  for (const c of p.id || '') h = (h * 31 + c.charCodeAt(0)) >>> 0
+  return PROJECT_IMAGE_ROTATION[h % PROJECT_IMAGE_ROTATION.length]
+}
 
 const statusColors: Record<string, string> = {
-  active: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
-  on_hold: 'bg-yellow-500/15 text-yellow-400 border-yellow-500/30',
-  completed: 'bg-blue-500/15 text-blue-400 border-blue-500/30',
-  archived: 'bg-gray-500/15 text-gray-400 border-gray-500/30',
+  active: 'rp-tag--accent',
+  on_hold: 'text-amber-400 border-amber-500/40',
+  completed: 'text-[#3989CB] border-[#3989CB]/40',
+  archived: '',
 }
 
 interface Props { projects: Project[]; role: UserRole; orgId: string }
@@ -40,17 +63,22 @@ export default function ProjectsList({ projects, role, orgId }: Props) {
 
   return (
     <div className="max-w-6xl">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold">Projects</h1>
-          <p className="text-sm text-gray-500 mt-1">{filtered.length} project{filtered.length !== 1 ? 's' : ''}</p>
+      <header className="rp-head">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={BRAND.pines} alt="" aria-hidden className="rp-pines rp-pines--head" />
+        <div className="flex items-end justify-between gap-4 flex-wrap">
+          <div className="flex flex-col gap-2.5">
+            <span className="rp-eyebrow">The build</span>
+            <h1 className="rp-title">Projects</h1>
+            <p className="rp-caption">{filtered.length} project{filtered.length !== 1 ? 's' : ''}</p>
+          </div>
+          {canWrite && (
+            <button onClick={() => { setEditingProj(null); setShowForm(true) }} className="rp-btn-solid">
+              New project
+            </button>
+          )}
         </div>
-        {canWrite && (
-          <button onClick={() => { setEditingProj(null); setShowForm(true) }} className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-medium rounded-lg text-sm transition-colors">
-            + New Project
-          </button>
-        )}
-      </div>
+      </header>
 
       <div className="flex gap-3 mb-6">
         <select className={selectClass} value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
@@ -63,28 +91,37 @@ export default function ProjectsList({ projects, role, orgId }: Props) {
       </div>
 
       {filtered.length === 0 ? (
-        <div className="bg-card rounded-xl shadow-lg shadow-black/20 p-12 text-center">
-          <p className="text-gray-500">No projects found.</p>
+        <div className="rp-panel relative overflow-hidden p-12 text-center" style={{ isolation: 'isolate', minHeight: 220 }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={BRAND.pines} alt="" aria-hidden className="rp-pines rp-pines--foot" />
+          <p className="text-[#9AA0A4]">No projects yet. Add the first build package.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filtered.map(proj => (
-            <Link key={proj.id} href={`/projects/${proj.id}`} className="bg-card rounded-xl shadow-lg shadow-black/20 p-5 hover:brightness-110 transition-colors block">
-              <div className="flex items-start justify-between mb-2">
-                <h3 className="text-white font-medium">{proj.name}</h3>
-                <span className={`text-[11px] font-medium px-2 py-0.5 rounded border shrink-0 ${statusColors[proj.status] || ''}`}>
+            <Link key={proj.id} href={`/projects/${proj.id}`} className="rp-panel group block overflow-hidden transition-colors hover:border-[#3A3E42]">
+              <div className="rp-frame border-0 border-b" style={{ aspectRatio: '16 / 10' }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={projectImage(proj)} alt="" className="w-full h-full object-cover" loading="lazy" />
+              </div>
+              <div className="p-5">
+              <div className="flex items-start justify-between gap-3 mb-2">
+                <h3 className="font-display uppercase text-[22px] leading-none tracking-[0.02em] text-[#F5F5F5]">{proj.name}</h3>
+                <span className={`rp-tag shrink-0 ${statusColors[proj.status] || ''}`}>
                   {proj.status.replace('_', ' ')}
                 </span>
               </div>
-              {proj.project_type && <p className="text-xs text-gray-500 mb-1">{proj.project_type}</p>}
-              {proj.location && <p className="text-xs text-gray-600">{proj.location}</p>}
+              {(proj.project_type || proj.location) && (
+                <p className="rp-caption">{[proj.project_type, proj.location].filter(Boolean).join(' · ')}</p>
+              )}
               {proj.description && <p className="text-sm text-gray-400 mt-2 truncate">{proj.description}</p>}
               {canWrite && (
-                <div className="mt-3 pt-3 border-t border-white/5 flex gap-3">
+                <div className="mt-3 pt-3 border-t border-[#1F1F1F] flex gap-3">
                   <button onClick={e => { e.preventDefault(); setEditingProj(proj); setShowForm(true) }} className="text-gray-500 hover:text-white text-xs transition-colors">Edit</button>
                   <button onClick={e => { e.preventDefault(); setDeletingProj(proj) }} className="text-gray-500 hover:text-red-400 text-xs transition-colors">Delete</button>
                 </div>
               )}
+              </div>
             </Link>
           ))}
         </div>
@@ -217,10 +254,10 @@ function ProjectFormModal({
 
   return (
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4" onClick={onClose}>
-      <div className="bg-main rounded-xl shadow-2xl shadow-black/40 w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
+      <div className="rp-panel w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-white/5 shrink-0">
           <div>
-            <h2 className="text-lg font-semibold text-white">{isEditing ? 'Edit Project' : 'New Project'}</h2>
+            <h2 className="rp-eyebrow">{isEditing ? 'Edit Project' : 'New Project'}</h2>
             <p className="text-[11px] text-gray-500 mt-0.5">
               {step === 'details' ? 'Step 1 of 2 · Details' : 'Step 2 of 2 · Files'}
             </p>
@@ -236,7 +273,7 @@ function ProjectFormModal({
                 key={s}
                 onClick={() => setStep(s)}
                 className={`px-3 py-2 text-xs font-medium uppercase tracking-wider transition-colors border-b-2 ${
-                  step === s ? 'text-white border-emerald-400' : 'text-gray-500 hover:text-white border-transparent'
+                  step === s ? 'text-white border-[#CDA14B]' : 'text-gray-500 hover:text-white border-transparent'
                 }`}
               >
                 {s}
@@ -250,7 +287,7 @@ function ProjectFormModal({
             <form onSubmit={saveDetails} className="p-6 space-y-4">
               <div>
                 <label className={labelClass}>Name *</label>
-                <input className={inputClass} value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} placeholder="e.g. Aspen Remodel" required />
+                <input className={inputClass} value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} placeholder="e.g. Trackside Garage Row" required />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -273,7 +310,7 @@ function ProjectFormModal({
               </div>
               <div>
                 <label className={labelClass}>Location</label>
-                <input className={inputClass} value={form.location} onChange={e => setForm(p => ({ ...p, location: e.target.value }))} placeholder="e.g. 123 Main St, Aspen, CO" />
+                <input className={inputClass} value={form.location} onChange={e => setForm(p => ({ ...p, location: e.target.value }))} placeholder="e.g. Pit lane, Roaring Pines" />
                 <button
                   type="button"
                   onClick={() => setShowCoords(v => !v)}
@@ -312,8 +349,8 @@ function ProjectFormModal({
               </div>
               {error && <p className="text-red-400 text-sm">{error}</p>}
               <div className="flex gap-3 pt-2">
-                <button type="button" onClick={onClose} className="flex-1 py-2 px-4 bg-white/10 hover:bg-white/15 text-gray-300 rounded-lg text-sm transition-colors">Cancel</button>
-                <button type="submit" disabled={saving} className="flex-1 py-2 px-4 bg-emerald-600 hover:bg-emerald-500 disabled:bg-emerald-800 disabled:cursor-not-allowed text-white font-medium rounded-lg text-sm transition-colors">
+                <button type="button" onClick={onClose} className="rp-btn-ghost flex-1 justify-center">Cancel</button>
+                <button type="submit" disabled={saving} className="rp-btn-solid flex-1 justify-center disabled:cursor-not-allowed">
                   {saving ? 'Saving…' : isEditing ? 'Save details' : 'Save & add files'}
                 </button>
               </div>
@@ -333,7 +370,7 @@ function ProjectFormModal({
                   <button
                     type="button"
                     onClick={() => setStep('details')}
-                    className="py-2 px-4 bg-white/5 hover:bg-white/10 text-gray-300 rounded-lg text-sm transition-colors"
+                    className="rp-btn-ghost"
                   >
                     ← Details
                   </button>
@@ -342,7 +379,7 @@ function ProjectFormModal({
                 <button
                   type="button"
                   onClick={onClose}
-                  className="py-2 px-4 bg-emerald-600 hover:bg-emerald-500 text-white font-medium rounded-lg text-sm transition-colors"
+                  className="rp-btn-solid"
                 >
                   Done
                 </button>

@@ -66,13 +66,17 @@ export default function CashFlowView({ bills, role, stats, qbConnection = null, 
 
   return (
     <div className="max-w-6xl">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Cash Flow</h1>
+      <header className="rp-head">
+        <div className="flex items-end justify-between gap-4 flex-wrap">
+        <div className="flex flex-col gap-2.5">
+          <span className="rp-eyebrow">Draws &amp; payables</span>
+          <h1 className="rp-title">Cash Flow</h1>
+        </div>
         <div className="flex items-center gap-2">
           <button
             onClick={() => exportBillsToXlsx(bills)}
             disabled={bills.length === 0}
-            className="px-3 py-2 bg-white/5 hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed text-gray-300 text-sm rounded-lg transition-all flex items-center gap-1.5"
+            className="rp-btn-ghost disabled:opacity-40 disabled:cursor-not-allowed gap-1.5"
             title="Export bills to Excel"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -83,7 +87,7 @@ export default function CashFlowView({ bills, role, stats, qbConnection = null, 
           {canWrite && (
             <button
               onClick={() => setShowImport(true)}
-              className="px-3 py-2 bg-white/5 hover:bg-white/10 text-gray-300 text-sm rounded-lg transition-all flex items-center gap-1.5"
+              className="rp-btn-ghost gap-1.5"
               title="Import bills from Excel"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -93,52 +97,51 @@ export default function CashFlowView({ bills, role, stats, qbConnection = null, 
             </button>
           )}
           {canWrite && (
-            <button onClick={() => { setEditingBill(null); setShowForm(true) }} className="px-4 py-2 bg-emerald-500 hover:brightness-110 text-white font-medium rounded-lg text-sm transition-all">
-              + New Bill
+            <button onClick={() => { setEditingBill(null); setShowForm(true) }} className="rp-btn-solid">
+              New bill
             </button>
           )}
         </div>
-      </div>
+        </div>
+      </header>
 
       {/* QuickBooks Banner */}
       <QuickBooksBanner connection={qbConnection} canWrite={canWrite} isConfigured={qbConfigured} />
 
       {/* Stat Cards */}
       <div className="grid grid-cols-3 gap-4 mb-6">
-        <div className="bg-card rounded-xl shadow-lg shadow-black/20 p-5">
+        <div className="rp-panel p-5">
           <div className="flex items-center gap-2 mb-2">
-            <div className="w-2 h-2 rounded-full bg-amber-400" />
-            <p className="text-xs text-gray-400">Total Outstanding</p>
+            <div className="w-1.5 h-1.5 bg-[#CDA14B]" />
+            <p className="rp-eyebrow--muted">Outstanding</p>
           </div>
-          <p className="text-2xl font-bold">{fmt(stats.totalOutstanding)}</p>
+          <p className="rp-stat-value">{fmt(stats.totalOutstanding)}</p>
         </div>
-        <div className="bg-card rounded-xl shadow-lg shadow-black/20 p-5">
+        <div className="rp-panel p-5">
           <div className="flex items-center gap-2 mb-2">
-            <div className="w-2 h-2 rounded-full bg-emerald-400" />
-            <p className="text-xs text-gray-400">Paid This Month</p>
+            <div className="w-1.5 h-1.5 bg-[#A4CC5C]" />
+            <p className="rp-eyebrow--muted">Paid This Month</p>
           </div>
-          <p className="text-2xl font-bold">{stats.paidThisMonth}</p>
+          <p className="rp-stat-value">{stats.paidThisMonth}</p>
         </div>
-        <div className="bg-card rounded-xl shadow-lg shadow-black/20 p-5">
+        <div className="rp-panel p-5">
           <div className="flex items-center gap-2 mb-2">
-            <div className="w-2 h-2 rounded-full bg-red-400" />
-            <p className="text-xs text-gray-400">Overdue</p>
+            <div className="w-1.5 h-1.5 bg-red-400" />
+            <p className="rp-eyebrow--muted">Overdue</p>
           </div>
-          <p className="text-2xl font-bold">{stats.overdue}</p>
+          <p className="rp-stat-value">{stats.overdue}</p>
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 mb-6 bg-card rounded-lg p-1 w-fit">
+      <div className="rp-tabs mb-6" role="tablist">
         {tabs.map(tab => (
           <button
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
-            className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${
-              activeTab === tab.key
-                ? 'bg-emerald-500/15 text-emerald-400'
-                : 'text-gray-400 hover:text-gray-200'
-            }`}
+            role="tab"
+            aria-selected={activeTab === tab.key}
+            className="rp-tab"
           >
             {tab.label}
           </button>
@@ -147,14 +150,14 @@ export default function CashFlowView({ bills, role, stats, qbConnection = null, 
 
       {/* Table */}
       {filtered.length === 0 ? (
-        <div className="bg-card rounded-xl shadow-lg shadow-black/20 p-12 text-center">
+        <div className="rp-panel p-12 text-center">
           <p className="text-gray-500">No bills found.</p>
         </div>
       ) : (
-        <div className="bg-card rounded-xl shadow-lg shadow-black/20 overflow-x-auto">
+        <div className="rp-panel overflow-x-auto">
           <table className="w-full text-sm min-w-[640px]">
             <thead>
-              <tr className="border-b border-white/5 text-gray-500 text-left">
+              <tr className="border-b border-[#1F1F1F] text-left rp-eyebrow--muted">
                 <th className="px-5 py-3 font-medium">Vendor</th>
                 <th className="px-5 py-3 font-medium">Amount</th>
                 <th className="px-5 py-3 font-medium">Category</th>
@@ -165,7 +168,7 @@ export default function CashFlowView({ bills, role, stats, qbConnection = null, 
             </thead>
             <tbody>
               {filtered.map(bill => (
-                <tr key={bill.id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
+                <tr key={bill.id} className="border-b border-[#1F1F1F] hover:bg-[#141618] transition-colors">
                   <td className="px-5 py-3">
                     <p className="text-white font-medium">{bill.vendor}</p>
                     {bill.description && <p className="text-gray-500 text-xs mt-0.5">{bill.description}</p>}

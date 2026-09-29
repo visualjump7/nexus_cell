@@ -6,9 +6,9 @@ interface ActivityItem {
 }
 
 const typeDots: Record<string, string> = {
-  bill: 'bg-emerald-400',
-  alert: 'bg-amber-400',
-  task: 'bg-purple-400',
+  bill: 'bg-[#CDA14B]',
+  alert: 'bg-[#3989CB]',
+  task: 'bg-[#A4CC5C]',
 }
 
 function timeAgo(dateStr: string) {
@@ -25,15 +25,15 @@ function timeAgo(dateStr: string) {
 
 export default function DashboardActivity({ items }: { items: ActivityItem[] }) {
   return (
-    <div className="bg-card rounded-xl shadow-lg shadow-black/20 p-5">
-      <h3 className="text-sm font-medium text-gray-400 mb-4">Recent Activity</h3>
+    <div className="rp-panel p-5">
+      <h3 className="rp-eyebrow--muted mb-4">Recent Activity</h3>
       {items.length === 0 ? (
         <p className="text-sm text-gray-600">No recent activity</p>
       ) : (
         <div className="space-y-3">
           {items.map((item, i) => (
             <div key={i} className="flex items-start gap-3">
-              <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${typeDots[item.type]}`} />
+              <div className={`w-1.5 h-1.5 mt-2 shrink-0 ${typeDots[item.type]}`} />
               <div className="flex-1 min-w-0">
                 <p className="text-sm text-white leading-snug">{item.title}</p>
                 <p className="text-xs text-gray-500 mt-0.5">{item.description}</p>

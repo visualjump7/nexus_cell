@@ -37,7 +37,7 @@ export default async function BriefingsWidget({ orgId, settings }: Props) {
             <li key={b.id}>
               <Link
                 href={`/brief/${b.id}`}
-                className="block py-2 -my-1 hover:bg-white/[0.03] rounded-md transition-colors"
+                className="block py-2 -my-1 hover:bg-[#141618] transition-colors"
               >
                 <p className="text-sm text-white font-medium leading-tight">{b.title}</p>
                 <p className="text-xs text-gray-500 mt-0.5">{fmtDate(b.brief_date)}</p>

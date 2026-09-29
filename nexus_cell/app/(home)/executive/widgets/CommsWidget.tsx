@@ -14,7 +14,7 @@ export default function CommsWidget() {
         </div>
         <div>
           <p className="text-sm text-white">Messaging is coming soon.</p>
-          <p className="text-xs text-gray-500 mt-0.5">For now, your EA can reach you through Alerts.</p>
+          <p className="text-xs text-gray-500 mt-0.5">For now, your owner&apos;s rep can reach you through Alerts.</p>
         </div>
       </div>
     </WidgetCard>

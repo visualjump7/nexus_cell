@@ -34,6 +34,7 @@ import {
   fetchPendingDecisions,
   type Brief,
 } from "@/lib/brief-service";
+import { BRAND } from "@/lib/brand";
 
 type FilterTab = "all" | "draft" | "published" | "archived";
 
@@ -224,11 +225,13 @@ export default function BriefPage() {
   if (isStaff) {
     return (
       <div className="mx-auto max-w-4xl space-y-6 px-4 py-8 sm:px-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">Daily Briefs</h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Compose and publish briefs for your principal
+        <header className="rp-head !mb-0">
+          <div className="flex items-end justify-between gap-4 flex-wrap">
+          <div className="flex flex-col gap-2.5">
+            <span className="rp-eyebrow">Owner briefings</span>
+            <h1 className="rp-title">Briefs</h1>
+            <p className="rp-lede">
+              Compose and publish briefs for the owner
             </p>
           </div>
           <Button onClick={handleNewBrief} disabled={creating}>
@@ -239,18 +242,17 @@ export default function BriefPage() {
             )}
             New Brief
           </Button>
-        </div>
+          </div>
+        </header>
 
-        <div className="flex gap-1 rounded-lg border border-border bg-card/50 p-1">
+        <div className="rp-tabs" role="tablist">
           {filterTabs.map((tab) => (
             <button
               key={tab.value}
               onClick={() => setFilter(tab.value)}
-              className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
-                filter === tab.value
-                  ? "bg-primary/10 text-primary"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
+              role="tab"
+              aria-selected={filter === tab.value}
+              className="rp-tab"
             >
               {tab.label}
             </button>
@@ -258,8 +260,10 @@ export default function BriefPage() {
         </div>
 
         {briefs.length === 0 ? (
-          <Card>
-            <CardContent className="flex flex-col items-center justify-center py-12">
+          <Card className="relative overflow-hidden" style={{ isolation: "isolate" }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={BRAND.pines} alt="" aria-hidden className="rp-pines rp-pines--foot" />
+            <CardContent className="flex flex-col items-center justify-center py-12 min-h-[240px]">
               <FileText className="h-12 w-12 text-muted-foreground/30" />
               <p className="mt-4 text-sm text-muted-foreground">
                 {filter === "all"
@@ -374,7 +378,7 @@ export default function BriefPage() {
                                 </svg>
                               )}
                             </span>
-                            Visible to principal
+                            Visible to owner
                           </button>
                           <button
                             onClick={() => handleDelete(brief.id)}
@@ -407,7 +411,9 @@ export default function BriefPage() {
       {latestBrief ? (
         <BriefReaderView brief={latestBrief} liveData={liveData} />
       ) : (
-        <div className="py-12 text-center">
+        <div className="relative overflow-hidden py-12 text-center min-h-[280px]" style={{ isolation: "isolate" }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={BRAND.pines} alt="" aria-hidden className="rp-pines rp-pines--foot" />
           <FileText className="mx-auto h-12 w-12 text-muted-foreground/30" />
           <p className="mt-4 text-lg text-muted-foreground">
             No brief available
@@ -421,7 +427,7 @@ export default function BriefPage() {
       {briefs.length > 0 && (
         <section className="mt-12 border-t border-border pt-6">
           <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+            <h2 className="rp-eyebrow--muted">
               Previous briefs
             </h2>
             <span className="text-xs text-muted-foreground">

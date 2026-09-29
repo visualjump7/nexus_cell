@@ -1,6 +1,9 @@
 import Link from 'next/link'
 import { getAuthContext } from '@/lib/auth'
 import type { PendingInvitation } from '@/lib/types'
+import { BRAND } from '@/lib/brand'
+
+const ROLE_LABEL: Record<string, string> = { admin: 'Administrator', ea: "Owner's Rep", cfo: 'CFO', principal: 'Owner', viewer: 'Viewer' }
 
 export default async function AdminOverviewPage() {
   const { supabase, orgId } = await getAuthContext()
@@ -14,7 +17,7 @@ export default async function AdminOverviewPage() {
 
   const stats = [
     { label: 'Active members', value: (membersRes.count ?? 0).toString(), href: '/admin/users' },
-    { label: 'Principals', value: (principalsRes.count ?? 0).toString(), href: '/admin/principals' },
+    { label: 'Owners', value: (principalsRes.count ?? 0).toString(), href: '/admin/principals' },
     { label: 'Pending invitations', value: (pendingInvitesRes.count ?? 0).toString(), href: '/admin/users' },
   ]
 
@@ -22,42 +25,45 @@ export default async function AdminOverviewPage() {
 
   return (
     <div className="max-w-4xl">
-      <h1 className="text-2xl font-semibold text-slate-200 mb-1">Administrator</h1>
-      <p className="text-sm text-gray-500 mb-6">Manage users, principals, and what they see.</p>
+      <header className="rp-head">
+        <span className="rp-eyebrow">{BRAND.fullName}</span>
+        <h1 className="rp-title">Administrator</h1>
+        <p className="rp-lede">Manage users, owners, and what they see.</p>
+      </header>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-8">
         {stats.map(s => (
           <Link
             key={s.label}
             href={s.href}
-            className="bg-card-dark rounded-xl p-5 hover:brightness-110 transition-all border border-white/[0.04]"
+            className="rp-panel p-5 hover:border-[#3A3E42] transition-colors"
           >
-            <p className="text-xs text-gray-500 uppercase tracking-wider mb-2">{s.label}</p>
-            <p className="text-3xl font-semibold text-white">{s.value}</p>
+            <p className="rp-eyebrow--muted mb-2">{s.label}</p>
+            <p className="rp-stat-value text-white">{s.value}</p>
           </Link>
         ))}
       </div>
 
-      <section className="bg-card-dark rounded-xl p-5">
+      <section className="rp-panel p-5">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-sm font-medium text-white">Pending invitations</h2>
+          <h2 className="rp-eyebrow--muted">Pending invitations</h2>
           <Link href="/admin/users" className="text-xs text-gray-500 hover:text-white transition-colors">
             View all →
           </Link>
         </div>
         {pending.length === 0 ? (
-          <p className="text-sm text-gray-500 italic py-4">No invitations awaiting approval.</p>
+          <p className="text-sm text-[#6E7578] py-4">No invitations awaiting approval.</p>
         ) : (
           <ul className="space-y-2 m-0 p-0 list-none">
             {pending.map(inv => (
-              <li key={inv.id} className="bg-[#141520] border border-white/5 rounded-lg p-3 flex items-center gap-3">
+              <li key={inv.id} className="bg-[#141618] border border-[#1F1F1F] p-3 flex items-center gap-3">
                 <div className="flex-1 min-w-0">
                   <p className="text-sm text-white font-medium truncate">{inv.full_name}</p>
-                  <p className="text-xs text-gray-500 truncate">{inv.email} · {inv.role}</p>
+                  <p className="text-xs text-gray-500 truncate">{inv.email} · {ROLE_LABEL[inv.role] || inv.role}</p>
                 </div>
                 <Link
                   href="/admin/users"
-                  className="px-3 py-1.5 bg-white/5 hover:bg-white/10 text-gray-300 text-xs rounded-md transition-colors shrink-0"
+                  className="rp-btn-ghost shrink-0"
                 >
                   Review
                 </Link>

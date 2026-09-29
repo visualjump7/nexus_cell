@@ -49,16 +49,16 @@ export default function DashboardUpcoming({ approvals, nextTrip, role }: Props) 
   }
 
   return (
-    <div className="bg-card rounded-xl shadow-lg shadow-black/20 p-5">
-      <h3 className="text-sm font-medium text-gray-400 mb-4">Upcoming</h3>
+    <div className="rp-panel p-5">
+      <h3 className="rp-eyebrow--muted mb-4">Upcoming</h3>
 
       {/* Pending Approvals */}
       {approvals.length > 0 && (
         <div className="mb-5">
-          <p className="text-[10px] font-semibold text-gray-600 uppercase tracking-widest mb-3">Pending Approvals</p>
+          <p className="rp-eyebrow--muted mb-3">Awaiting sign-off</p>
           <div className="space-y-2">
             {approvals.map(alert => (
-              <div key={alert.id} className="flex items-center justify-between py-2 border-b border-white/5 last:border-0">
+              <div key={alert.id} className="flex items-center justify-between py-2 border-b border-[#1F1F1F] last:border-0">
                 <div className="min-w-0 flex-1 mr-3">
                   <p className="text-sm text-white truncate">{alert.title}</p>
                   <p className="text-[11px] text-gray-500">{timeAgo(alert.created_at)}</p>
@@ -68,14 +68,14 @@ export default function DashboardUpcoming({ approvals, nextTrip, role }: Props) 
                     <button
                       onClick={() => handleApproval(alert.id, 'approved')}
                       disabled={approvingId === alert.id}
-                      className="px-2.5 py-1 bg-emerald-500 hover:brightness-110 disabled:opacity-50 text-white text-[11px] font-medium rounded-md transition-all"
+                      className="rp-btn-solid" style={{ minHeight: 30, padding: '6px 12px', fontSize: 11 }}
                     >
                       Approve
                     </button>
                     <button
                       onClick={() => handleApproval(alert.id, 'rejected')}
                       disabled={approvingId === alert.id}
-                      className="px-2.5 py-1 bg-red-500/80 hover:brightness-110 disabled:opacity-50 text-white text-[11px] font-medium rounded-md transition-all"
+                      className="rp-btn-ghost disabled:opacity-50 hover:!border-red-500 hover:!text-red-400" style={{ minHeight: 30, padding: '6px 12px' }}
                     >
                       Reject
                     </button>
@@ -90,8 +90,8 @@ export default function DashboardUpcoming({ approvals, nextTrip, role }: Props) 
       {/* Next Trip */}
       {nextTrip ? (
         <div>
-          <p className="text-[10px] font-semibold text-gray-600 uppercase tracking-widest mb-3">Next Trip</p>
-          <Link href={`/travel/${nextTrip.trip.id}`} className="block hover:brightness-110 transition-all">
+          <p className="rp-eyebrow--muted mb-3">Next site visit</p>
+          <Link href={`/travel/${nextTrip.trip.id}`} className="block hover:border-[#3A3E42] transition-colors">
             <p className="text-white font-medium">{nextTrip.trip.title}</p>
             <p className="text-xs text-gray-400 mt-1">
               {formatDate(nextTrip.trip.start_date)} → {formatDate(nextTrip.trip.end_date)}
@@ -111,16 +111,16 @@ export default function DashboardUpcoming({ approvals, nextTrip, role }: Props) 
         </div>
       ) : (
         <div>
-          <p className="text-[10px] font-semibold text-gray-600 uppercase tracking-widest mb-3">Next Trip</p>
-          <p className="text-sm text-gray-600">No upcoming trips</p>
+          <p className="rp-eyebrow--muted mb-3">Next site visit</p>
+          <p className="text-sm text-gray-600">No site visits scheduled</p>
         </div>
       )}
 
       {/* View all link */}
       {(approvals.length > 0 || nextTrip) && (
-        <div className="mt-4 pt-3 border-t border-white/5 flex gap-4">
-          {approvals.length > 0 && <Link href="/alerts" className="text-xs text-emerald-400 hover:text-emerald-300">View all alerts →</Link>}
-          {nextTrip && <Link href="/travel" className="text-xs text-emerald-400 hover:text-emerald-300">View all trips →</Link>}
+        <div className="mt-4 pt-3 border-t border-[#1F1F1F] flex gap-4">
+          {approvals.length > 0 && <Link href="/alerts" className="text-xs text-[#CDA14B] hover:text-white">View all alerts →</Link>}
+          {nextTrip && <Link href="/travel" className="text-xs text-[#CDA14B] hover:text-white">All travel →</Link>}
         </div>
       )}
     </div>

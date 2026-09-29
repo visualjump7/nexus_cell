@@ -35,16 +35,19 @@ export default async function AdminPrincipalsPage() {
 
   return (
     <div className="max-w-4xl">
-      <h1 className="text-2xl font-semibold text-slate-200 mb-1">Principals</h1>
-      <p className="text-sm text-gray-500 mb-6">
-        Each principal sees an executive view you curate. Click Configure to choose what shows up on their command screen.
-      </p>
+      <header className="rp-head">
+        <span className="rp-eyebrow">Administrator</span>
+        <h1 className="rp-title">Owners</h1>
+        <p className="rp-lede">
+          Each owner sees a home view you curate. Click Configure to choose what shows up on their screen.
+        </p>
+      </header>
 
       {principals.length === 0 ? (
-        <div className="bg-card-dark rounded-xl p-8 text-center">
-          <p className="text-gray-400">No principals in this organization yet.</p>
+        <div className="rp-panel p-8 text-center">
+          <p className="text-gray-400">No owners in this organization yet.</p>
           <p className="text-xs text-gray-600 mt-1">
-            Create one in <Link href="/admin/users" className="text-emerald-400 hover:underline">Users</Link> with the Principal role.
+            Create one in <Link href="/admin/users" className="text-[#CDA14B] hover:underline">Users</Link> with the Owner role.
           </p>
         </div>
       ) : (
@@ -52,7 +55,7 @@ export default async function AdminPrincipalsPage() {
           {principals.map(p => {
             const hasConfig = !!p.configured_at
             return (
-              <li key={p.user_id} className="bg-card-dark rounded-xl p-4 flex items-center gap-4 border border-white/[0.04]">
+              <li key={p.user_id} className="rp-panel p-4 flex items-center gap-4">
                 <div className="flex-1 min-w-0">
                   <p className="text-sm text-white font-medium truncate">{p.full_name || p.email}</p>
                   <p className="text-xs text-gray-500 truncate">
@@ -68,7 +71,7 @@ export default async function AdminPrincipalsPage() {
                 </div>
                 <Link
                   href={`/admin/executive-views?principal=${p.user_id}`}
-                  className="px-3 py-2 bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 text-xs font-medium rounded-lg transition-colors shrink-0"
+                  className="rp-btn-ghost shrink-0"
                 >
                   Configure view
                 </Link>

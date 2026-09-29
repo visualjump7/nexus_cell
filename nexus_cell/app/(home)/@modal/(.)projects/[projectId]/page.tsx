@@ -23,7 +23,7 @@ export default async function ProjectDetailOverlay({ params }: { params: { proje
     <SectionOverlay title={project.name || 'Project'} fullPageHref={`/projects/${project.id}`}>
       <ProjectDetail project={project} budgets={budgetsRes.data || []} files={filesRes.data || []} role={role} orgId={orgId} />
       <div className="max-w-4xl mt-8">
-        <h2 className="text-lg font-semibold text-slate-200 mb-4">Project Directory</h2>
+        <h2 className="rp-eyebrow--muted mb-4">Project Directory</h2>
         <ProjectBlocks projectId={project.id} orgId={orgId} blocks={blocks} role={role} />
       </div>
     </SectionOverlay>
