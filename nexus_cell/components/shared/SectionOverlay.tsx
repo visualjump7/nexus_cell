@@ -62,7 +62,7 @@ export default function SectionOverlay({ title, fullPageHref, children }: Props)
     >
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-black/70 backdrop-blur-sm animate-overlay-fade-in"
+        className="absolute inset-0 bg-[rgba(8,9,10,.92)] backdrop-blur-sm animate-overlay-fade-in"
         aria-hidden
       />
 
@@ -74,16 +74,16 @@ export default function SectionOverlay({ title, fullPageHref, children }: Props)
         aria-label={title}
         tabIndex={-1}
         onClick={e => e.stopPropagation()}
-        className="relative w-full sm:w-[min(92vw,1100px)] sm:max-w-[1100px] sm:rounded-2xl bg-nexus shadow-2xl shadow-black/40 border border-white/10 flex flex-col h-full sm:max-h-[90vh] animate-overlay-pop-in focus:outline-none"
-        style={{ background: 'var(--nx-bg-raised, #10131b)' }}
+        className="relative w-full sm:w-[min(92vw,1100px)] sm:max-w-[1100px] sm:rounded-sm bg-nexus shadow-2xl shadow-black/40 border border-[#26292C] flex flex-col h-full sm:max-h-[90vh] animate-overlay-pop-in focus:outline-none"
+        style={{ background: 'var(--rp-panel, #0E0F11)' }}
       >
         {/* Header */}
-        <div className="flex items-center justify-between gap-3 px-5 py-3 border-b border-white/5 shrink-0">
-          <h2 className="text-sm font-medium text-white tracking-wide">{title}</h2>
-          <div className="flex items-center gap-1">
+        <div className="flex items-center justify-between gap-3 px-5 py-3 border-b border-[#1F1F1F] shrink-0">
+          <h2 className="rp-eyebrow">{title}</h2>
+          <div className="flex items-center gap-2">
             <button
               onClick={openFullPage}
-              className="text-xs text-gray-400 hover:text-white px-2.5 py-1.5 rounded-md hover:bg-white/5 transition-colors"
+              className="rp-btn-ghost !min-h-[30px] !px-3 !py-1 !text-[10px]"
               title="Open full page"
             >
               Open full page
@@ -91,7 +91,7 @@ export default function SectionOverlay({ title, fullPageHref, children }: Props)
             <button
               onClick={close}
               aria-label="Close"
-              className="text-gray-400 hover:text-white w-8 h-8 rounded-md hover:bg-white/5 transition-colors flex items-center justify-center"
+              className="text-[#9AA0A4] hover:text-white w-8 h-8 rounded-sm hover:bg-[#141618] transition-colors flex items-center justify-center"
             >
               <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
                 <path d="M18 6L6 18M6 6l12 12" />

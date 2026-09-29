@@ -21,11 +21,11 @@ interface ChatMessage {
 }
 
 const exampleQueries = [
-  'What\'s pending approval?',
-  'When is my next flight?',
+  'What needs sign-off?',
+  "What's on the critical path?",
   'How much did we spend this month?',
   'What bills are overdue?',
-  'Upcoming renewals',
+  'Next site visit',
 ]
 
 export default function AIDrawer({ isOpen, onClose, initialMessage, onInitialMessageConsumed, openingMessage }: AIDrawerProps) {
@@ -104,34 +104,34 @@ export default function AIDrawer({ isOpen, onClose, initialMessage, onInitialMes
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
-      <div className="relative w-full max-w-lg bg-[#0f1117] rounded-2xl border border-white/10 shadow-2xl shadow-black/40 flex flex-col max-h-[80vh]" onClick={e => e.stopPropagation()}>
+      <div className="absolute inset-0 bg-[rgba(8,9,10,.85)] backdrop-blur-sm" />
+      <div className="relative w-full max-w-lg bg-[#0E0F11] rounded-sm border border-[#26292C] shadow-2xl shadow-black/40 flex flex-col max-h-[80vh]" onClick={e => e.stopPropagation()}>
 
         {/* Header */}
-        <div className="flex items-center justify-between px-6 pt-5 pb-3">
+        <div className="flex items-center justify-between px-6 pt-5 pb-3 border-b border-[#1F1F1F]">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full" style={{ background: 'radial-gradient(circle, #E0BF7B 0%, #B0853A 50%, #4F3B20 100%)', boxShadow: '0 0 20px rgba(94,234,212,0.2)' }} />
+            <div className="w-8 h-8 rounded-full" style={{ background: 'radial-gradient(circle, #E0BF7B 0%, #B0853A 50%, #4F3B20 100%)', boxShadow: '0 0 20px rgba(205,161,75,0.2)' }} />
             <div>
-              <h2 className="text-sm font-semibold text-[#E0BF7B]">Nexus AI</h2>
-              <p className="text-[10px] text-[#64748b]">Search across all your data</p>
+              <h2 className="rp-eyebrow">Nexus</h2>
+              <p className="text-[11px] text-[#9AA0A4] mt-0.5">Roaring Pines development partner</p>
             </div>
           </div>
-          <button onClick={onClose} className="text-gray-600 hover:text-white text-lg">&times;</button>
+          <button onClick={onClose} aria-label="Close" className="text-[#6E7578] hover:text-white text-lg">&times;</button>
         </div>
 
         {/* Messages area */}
         <div ref={scrollRef} className="flex-1 overflow-y-auto px-6 py-3 space-y-3 min-h-[100px]">
           {messages.length === 0 && !loading && (
             <div className="text-center py-6">
-              <p className="text-[#475569] text-sm">Ask me anything about your operations.</p>
+              <p className="text-[#6E7578] text-sm">Ask about the build, the budget or the calendar.</p>
             </div>
           )}
           {messages.map((msg, i) => (
             <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-              <div className={`max-w-[85%] px-3.5 py-2.5 rounded-xl text-sm leading-relaxed ${
+              <div className={`max-w-[85%] px-3.5 py-2.5 rounded-sm text-sm leading-relaxed ${
                 msg.role === 'user'
-                  ? 'bg-[#141520] text-[#e2e8f0]'
-                  : 'bg-[#E0BF7B]/10 text-[#e2e8f0] border border-[#E0BF7B]/10'
+                  ? 'bg-[#CDA14B]/10 text-[#F5F5F5] border border-[#CDA14B]/25'
+                  : 'bg-[#141618] text-[#F5F5F5] border border-[#1F1F1F]'
               }`}>
                 <p className="whitespace-pre-wrap">{msg.content}</p>
               </div>
@@ -139,10 +139,10 @@ export default function AIDrawer({ isOpen, onClose, initialMessage, onInitialMes
           ))}
           {loading && (
             <div className="flex justify-start">
-              <div className="bg-[#E0BF7B]/10 border border-[#E0BF7B]/10 px-4 py-3 rounded-xl flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 bg-[#E0BF7B] rounded-full animate-pulse" />
-                <span className="w-1.5 h-1.5 bg-[#E0BF7B] rounded-full animate-pulse" style={{ animationDelay: '150ms' }} />
-                <span className="w-1.5 h-1.5 bg-[#E0BF7B] rounded-full animate-pulse" style={{ animationDelay: '300ms' }} />
+              <div className="bg-[#141618] border border-[#1F1F1F] px-4 py-3 rounded-sm flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 bg-[#CDA14B] rounded-full animate-pulse" />
+                <span className="w-1.5 h-1.5 bg-[#CDA14B] rounded-full animate-pulse" style={{ animationDelay: '150ms' }} />
+                <span className="w-1.5 h-1.5 bg-[#CDA14B] rounded-full animate-pulse" style={{ animationDelay: '300ms' }} />
               </div>
             </div>
           )}
@@ -152,7 +152,7 @@ export default function AIDrawer({ isOpen, onClose, initialMessage, onInitialMes
         {messages.length === 0 && (
           <div className="px-6 pb-3 flex flex-wrap gap-2">
             {exampleQueries.map(q => (
-              <button key={q} onClick={() => sendMessage(q)} className="bg-white/5 rounded-full px-3 py-1.5 text-xs text-[#94a3b8] hover:bg-white/10 hover:text-white transition-colors">
+              <button key={q} onClick={() => sendMessage(q)} className="rp-btn-ghost !min-h-[30px] !px-3 !py-1 !text-[10px]">
                 {q}
               </button>
             ))}
@@ -168,14 +168,13 @@ export default function AIDrawer({ isOpen, onClose, initialMessage, onInitialMes
               value={input}
               onChange={e => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Ask anything..."
-              className="flex-1 bg-[#141520] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-[#475569] focus:outline-none focus:border-[#E0BF7B]/50"
+              placeholder="Ask about the build, budget or schedule…"
+              className="flex-1 bg-[#0A0B0C] border border-[#26292C] rounded-sm px-4 py-2.5 text-sm text-white placeholder-[#6E7578] focus:outline-none focus:border-[#CDA14B]"
             />
             <button
               onClick={() => sendMessage(input)}
               disabled={!input.trim() || loading}
-              className="px-4 py-2.5 rounded-xl text-sm font-medium text-white disabled:opacity-30 transition-all hover:brightness-110"
-              style={{ background: 'linear-gradient(to right, #CDA14B, #B0853A)' }}
+              className="rp-btn-solid"
             >
               Send
             </button>

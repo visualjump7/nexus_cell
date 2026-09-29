@@ -111,7 +111,7 @@ export default function QuickBooksBanner({ connection, canWrite, isConfigured }:
       <button
         disabled
         title="Set QUICKBOOKS_CLIENT_ID and QUICKBOOKS_CLIENT_SECRET"
-        className="px-3 py-1.5 text-xs text-gray-600 bg-white/5 rounded-lg cursor-not-allowed"
+        className="rp-btn-ghost !min-h-[30px] !px-3 !py-1 opacity-50 cursor-not-allowed"
       >
         Connect
       </button>
@@ -122,7 +122,7 @@ export default function QuickBooksBanner({ connection, canWrite, isConfigured }:
     actions = canWrite ? (
       <a
         href="/api/quickbooks/authorize"
-        className="px-3 py-1.5 text-xs text-white bg-[#2ca01c] hover:brightness-110 rounded-lg transition-all font-medium"
+        className="px-3 py-1.5 text-xs text-white bg-[#2ca01c] hover:brightness-110 rounded-sm transition-all font-medium"
       >
         Connect →
       </a>
@@ -137,13 +137,13 @@ export default function QuickBooksBanner({ connection, canWrite, isConfigured }:
         <button
           onClick={handleSync}
           disabled={syncing}
-          className="px-3 py-1.5 text-xs text-gray-300 bg-white/5 hover:bg-white/10 rounded-lg transition-all disabled:opacity-50"
+          className="rp-btn-ghost !min-h-[30px] !px-3 !py-1"
         >
           {syncing ? 'Syncing...' : 'Sync Now'}
         </button>
         <button
           onClick={() => setShowConfirmDisconnect(true)}
-          className="px-3 py-1.5 text-xs text-gray-400 hover:text-red-400 bg-white/5 hover:bg-white/10 rounded-lg transition-all"
+          className="rp-btn-ghost !min-h-[30px] !px-3 !py-1 hover:!text-red-400"
         >
           Disconnect
         </button>
@@ -153,7 +153,7 @@ export default function QuickBooksBanner({ connection, canWrite, isConfigured }:
 
   return (
     <>
-      <div className="bg-card rounded-lg px-4 py-2.5 mb-4 flex items-center justify-between gap-4">
+      <div className="rp-panel px-4 py-2.5 mb-4 flex items-center justify-between gap-4">
         <div className="flex items-center gap-3 min-w-0 flex-1">
           {qbIcon}
           <div className={`w-2 h-2 rounded-full shrink-0 ${dotColor}`} />
@@ -167,23 +167,23 @@ export default function QuickBooksBanner({ connection, canWrite, isConfigured }:
 
       {/* Disconnect confirmation modal */}
       {showConfirmDisconnect && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4" onClick={() => setShowConfirmDisconnect(false)}>
-          <div className="bg-main rounded-xl shadow-2xl shadow-black/40 w-full max-w-sm p-6" onClick={e => e.stopPropagation()}>
-            <h3 className="text-lg font-semibold text-white mb-2">Disconnect QuickBooks?</h3>
+        <div className="fixed inset-0 bg-[rgba(8,9,10,.85)] flex items-center justify-center z-50 p-4" onClick={() => setShowConfirmDisconnect(false)}>
+          <div className="rp-panel w-full max-w-sm p-6" onClick={e => e.stopPropagation()}>
+            <h3 className="rp-eyebrow mb-3">Disconnect QuickBooks?</h3>
             <p className="text-sm text-gray-400 mb-6">
               Your portal data will remain intact, but bills will no longer sync with QuickBooks. You can reconnect anytime.
             </p>
             <div className="flex gap-3">
               <button
                 onClick={() => setShowConfirmDisconnect(false)}
-                className="flex-1 py-2 px-4 bg-white/10 hover:bg-white/15 text-gray-300 rounded-lg text-sm transition-colors"
+                className="rp-btn-ghost flex-1 !min-h-[42px]"
               >
                 Cancel
               </button>
               <button
                 onClick={handleDisconnect}
                 disabled={disconnecting}
-                className="flex-1 py-2 px-4 bg-red-600 hover:bg-red-500 disabled:opacity-50 text-white font-medium rounded-lg text-sm transition-colors"
+                className="flex-1 py-2 px-4 bg-red-600 hover:bg-red-500 disabled:opacity-50 text-white rounded-none min-h-[42px] font-display uppercase tracking-[0.16em] text-[13px] transition-colors"
               >
                 {disconnecting ? 'Disconnecting...' : 'Disconnect'}
               </button>

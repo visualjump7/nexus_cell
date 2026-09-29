@@ -5,7 +5,7 @@
 // pure — no fetches, no React.
 //
 // Pass live numbers in via JarvisContext; helpers stay deterministic so the
-// EA landing and the principal widget can share the same logic.
+// owner's rep landing and the owner widget can share the same logic.
 
 export interface JarvisContext {
   firstName: string
@@ -68,7 +68,7 @@ export function buildHeroGreeting(ctx: JarvisContext): { line1: string; line2: s
   if (ctx.recentBriefTitle) {
     return { line1, line2: `Today's brief is ready.` }
   }
-  return { line1, line2: 'All clear today.' }
+  return { line1, line2: 'Clear track today.' }
 }
 
 // ── Live context strip (pill-style status items) ──
@@ -123,7 +123,7 @@ export function buildOpeningMessage(ctx: JarvisContext): string {
   }
 
   if (fragments.length === 0) {
-    return `${greet}, ${ctx.firstName}. Nothing urgent today. What's on your mind?`
+    return `${greet}, ${ctx.firstName}. Nothing urgent on site today. Where do you want to start — the track, the garages, or the numbers?`
   }
 
   // Join: "A, B and C"
@@ -137,7 +137,7 @@ export function buildOpeningMessage(ctx: JarvisContext): string {
 
   const closer = ctx.approvalsCount > 0 || ctx.billsOverdueCount > 0
     ? "What's first?"
-    : 'What do you want to focus on?'
+    : "What's first on the list?"
 
   return `${greet}, ${ctx.firstName}. ${joined}. ${closer}`
 }
@@ -154,7 +154,7 @@ export function buildDynamicSuggestions(ctx: JarvisContext): string[] {
   }
 
   if (ctx.nextTrip && ctx.nextTrip.daysUntil >= 0 && ctx.nextTrip.daysUntil <= 14) {
-    out.push(`Brief me on the ${ctx.nextTrip.city} trip`)
+    out.push(`Brief me on the ${ctx.nextTrip.city} site visit`)
   }
 
   if (ctx.billsOverdueCount > 0) {
@@ -164,7 +164,18 @@ export function buildDynamicSuggestions(ctx: JarvisContext): string[] {
   }
 
   // Always-on closing prompt
-  out.push('Brief me on today')
+  out.push('Where are we on the build?')
+
+  // Fill toward 4 with build-program prompts.
+  const fillers = [
+    "What's on the critical path this week?",
+    'Any change orders waiting?',
+    "How's the garage row tracking against budget?",
+  ]
+  for (const f of fillers) {
+    if (out.length >= 4) break
+    out.push(f)
+  }
 
   return out.slice(0, 4)
 }
@@ -173,11 +184,12 @@ export function buildDynamicSuggestions(ctx: JarvisContext): string[] {
 // not configuring.
 export function buildPrincipalSuggestions(ctx: JarvisContext): string[] {
   const out: string[] = []
-  if (ctx.approvalsCount > 0) out.push('What needs my approval?')
+  if (ctx.approvalsCount > 0) out.push('What needs my sign-off?')
   if (ctx.nextTrip && ctx.nextTrip.daysUntil >= 0 && ctx.nextTrip.daysUntil <= 14) {
-    out.push(`When do we leave for ${ctx.nextTrip.city}?`)
+    out.push(`When's the ${ctx.nextTrip.city} site visit?`)
   }
   if (ctx.recentBriefTitle) out.push("Read me today's brief")
-  out.push('Anything urgent?')
+  out.push('Anything urgent on site?')
+  if (out.length < 4) out.push('Where are we on the track?')
   return out.slice(0, 4)
 }

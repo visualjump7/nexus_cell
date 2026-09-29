@@ -35,20 +35,26 @@ function formatDate(dateStr: string): string {
 
 function getCategoryColor(category: string | null): string {
   if (!category) return "bg-muted text-muted-foreground border-border";
+  const gold = "bg-[#CDA14B]/15 text-[#E0BF7B] border-[#CDA14B]/30";
+  const blue = "bg-[#3989CB]/15 text-[#7FB3DE] border-[#3989CB]/30";
+  const green = "bg-[#A4CC5C]/15 text-[#A4CC5C] border-[#A4CC5C]/30";
+  const steel = "bg-[#9AA0A4]/10 text-[#9AA0A4] border-[#9AA0A4]/25";
   const colors: Record<string, string> = {
-    Mortgage: "bg-blue-500/20 text-blue-400 border-blue-500/30",
-    Insurance: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30",
-    Fuel: "bg-amber-500/20 text-amber-400 border-amber-500/30",
-    Payroll: "bg-violet-500/20 text-violet-400 border-violet-500/30",
-    Maintenance: "bg-orange-500/20 text-orange-400 border-orange-500/30",
-    Taxes: "bg-red-500/20 text-red-400 border-red-500/30",
-    Aviation: "bg-sky-500/20 text-sky-400 border-sky-500/30",
-    Lease: "bg-indigo-500/20 text-indigo-400 border-indigo-500/30",
-    Utilities: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
-    "Credit Card": "bg-pink-500/20 text-pink-400 border-pink-500/30",
-    Professional: "bg-teal-500/20 text-teal-400 border-teal-500/30",
-    HOA: "bg-cyan-500/20 text-cyan-400 border-cyan-500/30",
-    Moorage: "bg-blue-500/20 text-blue-400 border-blue-500/30",
+    "Site Work": gold,
+    "Track & Paddock": gold,
+    Garages: gold,
+    Clubhouse: blue,
+    Homes: blue,
+    "Design & Engineering": blue,
+    Permits: green,
+    Insurance: green,
+    Legal: green,
+    Utilities: steel,
+    Marketing: steel,
+    Merchandise: steel,
+    Travel: steel,
+    Membership: steel,
+    Taxes: "bg-red-500/15 text-red-400 border-red-500/30",
   };
   return (
     colors[category] || "bg-muted text-muted-foreground border-border"
@@ -87,7 +93,7 @@ export function BillDrawer({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm"
+            className="fixed inset-0 z-40 bg-[rgba(8,9,10,.85)] backdrop-blur-sm"
           />
 
           <motion.div
@@ -95,7 +101,7 @@ export function BillDrawer({
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
             transition={{ type: "spring", damping: 30, stiffness: 300 }}
-            className="fixed inset-x-0 bottom-0 z-50 max-h-[80vh] overflow-hidden rounded-t-2xl border-t border-border bg-card shadow-2xl"
+            className="fixed inset-x-0 bottom-0 z-50 max-h-[80vh] overflow-hidden rounded-t-sm border-t border-[#26292C] bg-[#0E0F11] shadow-2xl"
           >
             <div className="flex justify-center py-2">
               <div className="h-1 w-10 rounded-full bg-muted-foreground/30" />
@@ -105,12 +111,12 @@ export function BillDrawer({
               <div>
                 <div className="flex items-center gap-2">
                   <Calendar className="h-5 w-5 text-primary" />
-                  <h3 className="text-lg font-semibold text-foreground">
+                  <h3 className="rp-eyebrow">
                     {formatDate(date)}
                   </h3>
                 </div>
                 <div className="mt-1 flex items-center gap-3">
-                  <span className="text-2xl font-bold text-foreground tabular-nums">
+                  <span className="rp-stat-value">
                     {formatCurrency(total)}
                   </span>
                   <span className="text-sm text-muted-foreground">
@@ -139,7 +145,7 @@ export function BillDrawer({
                     key={bill.id}
                     initial={{ opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}
-                    className="rounded-xl border border-border bg-background/50 p-4 transition-colors hover:bg-muted/20"
+                    className="rounded-sm border border-[#1F1F1F] bg-[#141618] p-4 transition-colors hover:border-[#26292C]"
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
@@ -148,12 +154,12 @@ export function BillDrawer({
                             {bill.vendor}
                           </h4>
                           {bill.status === "paid" && (
-                            <CheckCircle className="h-4 w-4 text-emerald-400" />
+                            <CheckCircle className="h-4 w-4 text-[#A4CC5C]" />
                           )}
                           {bill.quickbooks_synced && (
                             <Badge
                               variant="outline"
-                              className="border-blue-500/50 text-blue-400 text-[10px]"
+                              className="border-[#3989CB]/50 text-[#3989CB] text-[10px]"
                             >
                               QB
                             </Badge>

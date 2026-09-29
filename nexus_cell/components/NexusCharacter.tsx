@@ -379,7 +379,7 @@ export default function NexusCharacter({
             // Darker interior with teal only at the rim — most of the dome
             // is near-black so the bright teal ring reads strongly. Stops
             // are pushed outward (90% before the rim) compared to before.
-            'radial-gradient(circle at 50% 55%, #010403 0%, #02100c 55%, #062a22 82%, #2D2112 92%, #CDA14B 100%)',
+            'radial-gradient(circle at 50% 55%, #0A0B0C 0%, #141210 55%, #2D2112 82%, #2D2112 92%, #CDA14B 100%)',
           ].join(', '),
           boxShadow: [
             // Inset rim glow — narrow bright ring
@@ -410,7 +410,7 @@ export default function NexusCharacter({
         <defs>
           <filter id="nx-eye-glow" x="-100%" y="-100%" width="300%" height="300%">
             <feGaussianBlur stdDeviation="1.8" result="softGlow" />
-            <feFlood floodColor="#a7f3d0" floodOpacity="0.95" result="glowColor" />
+            <feFlood floodColor="#F5E3B8" floodOpacity="0.95" result="glowColor" />
             <feComposite in="glowColor" in2="softGlow" operator="in" result="coloredGlow" />
             <feMerge>
               <feMergeNode in="coloredGlow" />

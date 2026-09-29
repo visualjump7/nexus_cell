@@ -87,16 +87,16 @@ export default function DateTimePicker({ value, onChange, label, mode = 'datetim
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        className="w-full px-3 py-2 bg-card border border-white/10 rounded-lg text-left text-sm focus:outline-none focus:border-[#E0BF7B] transition-colors flex items-center justify-between"
+        className="w-full px-3 py-2 bg-[#0E0F11] border border-[#26292C] rounded-sm text-left text-sm focus:outline-none focus:border-[#CDA14B] transition-colors flex items-center justify-between"
       >
-        <span className={displayVal ? 'text-white' : 'text-[#475569]'}>{displayVal || 'Select...'}</span>
+        <span className={displayVal ? 'text-white' : 'text-[#6E7578]'}>{displayVal || 'Select...'}</span>
         <svg className="w-4 h-4 text-gray-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
         </svg>
       </button>
 
       {open && (
-        <div className="absolute top-full left-0 mt-2 z-50 bg-[#0f1117] border border-white/10 rounded-xl shadow-2xl shadow-black/50 p-4 w-[280px]">
+        <div className="absolute top-full left-0 mt-2 z-50 bg-[#0E0F11] border border-[#26292C] rounded-sm shadow-2xl shadow-black/50 p-4 w-[280px]">
           {/* Month/Year header */}
           <div className="flex items-center justify-between mb-3">
             <button type="button" onClick={prevMonth} className="text-gray-500 hover:text-white p-1">
@@ -123,11 +123,11 @@ export default function DateTimePicker({ value, onChange, label, mode = 'datetim
                   key={day}
                   type="button"
                   onClick={() => selectDay(day)}
-                  className={`w-8 h-8 rounded-lg text-xs flex items-center justify-center transition-all ${
+                  className={`w-8 h-8 rounded-sm font-display text-xs tabular-nums flex items-center justify-center transition-all ${
                     isSelected(day)
-                      ? 'bg-[#E0BF7B] text-[#08090f] font-bold'
+                      ? 'bg-[#CDA14B] text-[#111] font-medium'
                       : isToday(day)
-                        ? 'text-[#E0BF7B] font-medium hover:bg-white/10'
+                        ? 'text-[#CDA14B] border border-[#CDA14B]/40 hover:bg-[#141618]'
                         : 'text-gray-300 hover:bg-white/10'
                   }`}
                 >
@@ -144,7 +144,7 @@ export default function DateTimePicker({ value, onChange, label, mode = 'datetim
                 <select
                   value={hour}
                   onChange={e => updateTime(parseInt(e.target.value), minute)}
-                  className="bg-[#141520] border border-white/10 rounded-lg px-2 py-1.5 text-sm text-white focus:outline-none focus:border-[#E0BF7B] appearance-none text-center w-16"
+                  className="bg-[#141618] border border-[#26292C] rounded-sm px-2 py-1.5 text-sm text-white focus:outline-none focus:border-[#CDA14B] appearance-none text-center w-16"
                 >
                   {Array.from({ length: 24 }).map((_, h) => (
                     <option key={h} value={h}>{String(h).padStart(2, '0')}</option>
@@ -154,7 +154,7 @@ export default function DateTimePicker({ value, onChange, label, mode = 'datetim
                 <select
                   value={minute}
                   onChange={e => updateTime(hour, parseInt(e.target.value))}
-                  className="bg-[#141520] border border-white/10 rounded-lg px-2 py-1.5 text-sm text-white focus:outline-none focus:border-[#E0BF7B] appearance-none text-center w-16"
+                  className="bg-[#141618] border border-[#26292C] rounded-sm px-2 py-1.5 text-sm text-white focus:outline-none focus:border-[#CDA14B] appearance-none text-center w-16"
                 >
                   {[0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55].map(m => (
                     <option key={m} value={m}>{String(m).padStart(2, '0')}</option>
@@ -164,7 +164,7 @@ export default function DateTimePicker({ value, onChange, label, mode = 'datetim
               <button
                 type="button"
                 onClick={() => setOpen(false)}
-                className="w-full mt-3 py-1.5 bg-[#E0BF7B]/15 text-[#E0BF7B] text-xs font-medium rounded-lg hover:bg-[#E0BF7B]/25 transition-colors"
+                className="rp-btn-ghost w-full mt-3 !min-h-[32px]"
               >
                 Done
               </button>

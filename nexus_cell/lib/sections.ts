@@ -31,12 +31,12 @@ export interface SectionMetrics {
 
 export const SECTIONS: SectionDef[] = [
   { id: 'dashboard', label: 'Dashboard', href: '/dashboard', dotColor: '#CDA14B', defaultHint: 'Overview' },
-  { id: 'projects',  label: 'Projects',  href: '/projects',  dotColor: '#f59e0b', defaultHint: '—' },
-  { id: 'financial', label: 'Financial', href: '/financial', dotColor: '#3b82f6', defaultHint: 'CFO sync' },
-  { id: 'travel',    label: 'Travel',    href: '/travel',    dotColor: '#a855f7', defaultHint: 'Itinerary' },
-  { id: 'calendar',  label: 'Calendar',  href: '/calendar',  dotColor: '#6366f1', defaultHint: 'Today' },
-  { id: 'tasks',     label: 'Tasks',     href: '/tasks',     dotColor: '#22d3ee', defaultHint: 'Pipeline' },
-  { id: 'alerts',    label: 'Alerts',    href: '/alerts',    dotColor: '#eab308', defaultHint: 'Action req.' },
-  { id: 'lifestyle', label: 'Lifestyle', href: '/lifestyle', dotColor: '#ec4899', defaultHint: 'Personal' },
-  { id: 'comms',     label: 'Comms',     href: '/comms',     dotColor: '#84cc16', defaultHint: 'Coming soon' },
+  { id: 'projects',  label: 'Projects',  href: '/projects',  dotColor: '#CDA14B', defaultHint: 'The build' },
+  { id: 'financial', label: 'Financial', href: '/financial', dotColor: '#3989CB', defaultHint: 'Draws & bills' },
+  { id: 'travel',    label: 'Travel',    href: '/travel',    dotColor: '#3989CB', defaultHint: 'Site visits' },
+  { id: 'calendar',  label: 'Calendar',  href: '/calendar',  dotColor: '#A4CC5C', defaultHint: 'Today' },
+  { id: 'tasks',     label: 'Tasks',     href: '/tasks',     dotColor: '#A4CC5C', defaultHint: 'Punch list' },
+  { id: 'alerts',    label: 'Alerts',    href: '/alerts',    dotColor: '#E0BF7B', defaultHint: 'Action req.' },
+  { id: 'lifestyle', label: 'Club Life', href: '/lifestyle', dotColor: '#9AA0A4', defaultHint: 'Members & partners' },
+  { id: 'comms',     label: 'Comms',     href: '/comms',     dotColor: '#6E7578', defaultHint: 'Coming soon' },
 ]

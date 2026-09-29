@@ -189,20 +189,20 @@ export function FiscalCalendar({
       <motion.div
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="mb-6 flex items-center justify-between rounded-xl border border-border bg-card/60 p-4"
+        className="mb-6 flex items-center justify-between rp-panel p-4"
       >
         <div>
-          <p className="text-sm text-muted-foreground">
-            {MONTH_NAMES[currentDate.getMonth()]} Cash Outflow
+          <p className="rp-eyebrow--muted">
+            {MONTH_NAMES[currentDate.getMonth()]} cash outflow
           </p>
-          <p className="text-2xl font-bold text-foreground tabular-nums">
+          <p className="rp-stat-value mt-1">
             {formatCurrency(monthlyTotal)}
           </p>
         </div>
         <div className="flex items-center gap-4">
           <div className="text-right">
-            <p className="text-sm text-muted-foreground">Pending Bills</p>
-            <p className="font-semibold text-foreground">{pendingCount}</p>
+            <p className="rp-eyebrow--muted">Pending bills</p>
+            <p className="font-display text-lg font-medium tabular-nums text-foreground mt-1">{pendingCount}</p>
           </div>
           {selectedCategory && (
             <Badge
@@ -228,7 +228,7 @@ export function FiscalCalendar({
           >
             <ChevronLeft className="h-5 w-5" />
           </Button>
-          <h2 className="min-w-[200px] text-center text-lg font-semibold text-foreground">
+          <h2 className="min-w-[200px] text-center font-display text-lg font-medium uppercase tracking-[0.08em] text-foreground">
             {MONTH_NAMES[currentDate.getMonth()]} {currentDate.getFullYear()}
           </h2>
           <Button
@@ -255,7 +255,7 @@ export function FiscalCalendar({
           <select
             value={selectedCategory || ""}
             onChange={(e) => setSelectedCategory(e.target.value || null)}
-            className="rounded-lg border border-border bg-card px-3 py-1.5 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+            className="rounded-sm border border-[#26292C] bg-[#0E0F11] px-3 py-1.5 text-sm text-foreground focus:outline-none focus:border-[#CDA14B]"
           >
             <option value="">All Categories</option>
             {categories.map((cat) => (
@@ -277,13 +277,13 @@ export function FiscalCalendar({
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="overflow-hidden rounded-xl border border-border bg-card/60"
+          className="overflow-hidden rp-panel"
         >
           <div className="grid grid-cols-7 border-b border-border">
             {DAYS_OF_WEEK.map((day) => (
               <div
                 key={day}
-                className="px-2 py-3 text-center text-sm font-medium text-muted-foreground"
+                className="px-2 py-3 text-center font-display text-[11px] uppercase tracking-[0.16em] text-muted-foreground"
               >
                 {day}
               </div>
@@ -321,14 +321,14 @@ export function FiscalCalendar({
                     }
                     ${
                       selectedDate === dateKey
-                        ? "ring-2 ring-inset ring-primary"
+                        ? "ring-2 ring-inset ring-[#3989CB]"
                         : ""
                     }
                   `}
                 >
                   <div
                     className={`
-                    mb-1 text-sm font-medium
+                    mb-1 font-display text-sm tabular-nums
                     ${
                       !isCurrentMonth
                         ? "text-muted-foreground/50"
@@ -336,7 +336,7 @@ export function FiscalCalendar({
                     }
                     ${
                       today
-                        ? "flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground"
+                        ? "flex h-7 w-7 items-center justify-center rounded-none border border-[#CDA14B] !text-[#CDA14B]"
                         : ""
                     }
                   `}
@@ -347,7 +347,7 @@ export function FiscalCalendar({
                   {dayTotal > 0 && isCurrentMonth && (
                     <div
                       className={`
-                      mt-1 rounded-lg p-1.5
+                      mt-1 rounded-sm p-1.5
                       ${intensity === 1 ? "bg-amber-500/10" : ""}
                       ${intensity === 2 ? "bg-orange-500/15" : ""}
                       ${intensity === 3 ? "bg-red-500/15" : ""}
@@ -359,13 +359,13 @@ export function FiscalCalendar({
                         {dayBills.some((b) => b.status === "pending") ? (
                           <AlertTriangle className="h-3 w-3 text-amber-400" />
                         ) : (
-                          <CheckCircle className="h-3 w-3 text-emerald-400" />
+                          <CheckCircle className="h-3 w-3 text-[#A4CC5C]" />
                         )}
                         <div
                           className={`text-xs font-bold ${
                             dayBills.some((b) => b.status === "pending")
                               ? "text-amber-400"
-                              : "text-emerald-400"
+                              : "text-[#A4CC5C]"
                           }`}
                         >
                           {formatCurrency(dayTotal)}
@@ -392,15 +392,15 @@ export function FiscalCalendar({
       <div className="mt-4 flex flex-wrap items-center justify-end gap-4 text-xs text-muted-foreground">
         <span>Cash Outflow:</span>
         <div className="flex items-center gap-1">
-          <div className="h-3 w-3 rounded bg-amber-500/20" />
+          <div className="h-3 w-3 rounded-none bg-amber-500/20" />
           <span>Low</span>
         </div>
         <div className="flex items-center gap-1">
-          <div className="h-3 w-3 rounded bg-orange-500/25" />
+          <div className="h-3 w-3 rounded-none bg-orange-500/25" />
           <span>Medium</span>
         </div>
         <div className="flex items-center gap-1">
-          <div className="h-3 w-3 rounded bg-red-500/30" />
+          <div className="h-3 w-3 rounded-none bg-red-500/30" />
           <span>High</span>
         </div>
         <div className="flex items-center gap-1">
@@ -408,7 +408,7 @@ export function FiscalCalendar({
           <span>Pending</span>
         </div>
         <div className="flex items-center gap-1">
-          <CheckCircle className="h-3 w-3 text-emerald-400" />
+          <CheckCircle className="h-3 w-3 text-[#A4CC5C]" />
           <span>Paid</span>
         </div>
       </div>

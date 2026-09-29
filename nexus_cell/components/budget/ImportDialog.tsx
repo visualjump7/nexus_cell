@@ -144,17 +144,17 @@ export function ImportDialog({
 
   return (
     <div
-      className="fixed inset-0 z-[200] flex items-center justify-center bg-black/70 backdrop-blur-sm"
+      className="fixed inset-0 z-[200] flex items-center justify-center bg-[rgba(8,9,10,.85)] backdrop-blur-sm"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="w-[min(560px,calc(100vw-2rem))] max-h-[85vh] overflow-y-auto rounded-2xl border border-border bg-card shadow-2xl">
+      <div className="w-[min(560px,calc(100vw-2rem))] max-h-[85vh] overflow-y-auto rp-panel">
         <div className="flex items-center justify-between border-b border-border px-5 py-4">
           <div className="flex items-center gap-2">
             <Upload className="h-4 w-4 text-primary" />
-            <h2 className="text-sm font-semibold text-foreground">
-              Import Budget Spreadsheet
+            <h2 className="rp-eyebrow">
+              Import budget spreadsheet
             </h2>
           </div>
           <button
@@ -331,7 +331,7 @@ export function ImportDialog({
                 <button
                   type="button"
                   onClick={() => setStage("pick")}
-                  className="rounded-lg border border-border bg-transparent px-4 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:border-muted-foreground transition-colors"
+                  className="rp-btn-ghost"
                 >
                   Choose a different file
                 </button>
@@ -339,11 +339,7 @@ export function ImportDialog({
                   type="button"
                   onClick={handleConfirm}
                   disabled={preview.lineItemCount === 0}
-                  className={`rounded-lg px-5 py-1.5 text-xs font-semibold transition-all ${
-                    preview.lineItemCount === 0
-                      ? "border border-border bg-transparent text-muted-foreground cursor-not-allowed"
-                      : "bg-primary text-primary-foreground hover:brightness-110"
-                  }`}
+                  className="rp-btn-solid"
                 >
                   Import {preview.lineItemCount} row
                   {preview.lineItemCount === 1 ? "" : "s"}
@@ -375,7 +371,7 @@ export function ImportDialog({
                 <button
                   type="button"
                   onClick={() => setStage("pick")}
-                  className="rounded-lg border border-border bg-transparent px-3 py-1 text-xs text-muted-foreground hover:text-foreground hover:border-muted-foreground transition-colors"
+                  className="rp-btn-ghost"
                 >
                   Try again
                 </button>

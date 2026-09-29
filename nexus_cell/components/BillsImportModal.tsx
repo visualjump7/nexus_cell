@@ -156,15 +156,15 @@ export default function BillsImportModal({ onClose, onComplete, existingBills }:
   const fmtDate = (d: string | null) => d ? new Date(d + 'T00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'
 
   return (
-    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4" onClick={onClose}>
-      <div className="bg-main rounded-xl shadow-2xl shadow-black/40 w-full max-w-2xl max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+    <div className="fixed inset-0 bg-[rgba(8,9,10,.85)] flex items-center justify-center z-50 p-4" onClick={onClose}>
+      <div className="rp-panel w-full max-w-2xl max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
 
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-white/5">
-          <h2 className="text-lg font-semibold text-white">
-            {phase === 'overwrite' ? 'Overwrite existing bills?' : 'Import Bills'}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[#1F1F1F]">
+          <h2 className="rp-eyebrow">
+            {phase === 'overwrite' ? 'Overwrite existing bills?' : 'Import bills'}
           </h2>
-          <button onClick={onClose} className="text-gray-500 hover:text-white text-xl leading-none">&times;</button>
+          <button onClick={onClose} aria-label="Close" className="text-[#6E7578] hover:text-white text-xl leading-none">&times;</button>
         </div>
 
         <div className="p-6">
@@ -173,7 +173,7 @@ export default function BillsImportModal({ onClose, onComplete, existingBills }:
             <div>
               <button
                 onClick={() => fileRef.current?.click()}
-                className="w-full border-2 border-dashed border-white/10 rounded-xl py-10 text-center hover:border-white/20 transition-colors cursor-pointer"
+                className="w-full border border-dashed border-[#26292C] rounded-sm py-10 text-center hover:border-[#CDA14B] transition-colors cursor-pointer"
               >
                 <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-white/5 flex items-center justify-center">
                   <svg className="w-6 h-6 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -201,7 +201,7 @@ export default function BillsImportModal({ onClose, onComplete, existingBills }:
               </div>
 
               <div className="mt-4 bg-white/[0.03] rounded-lg p-3">
-                <p className="text-[11px] text-gray-500 uppercase tracking-wider mb-2">Columns</p>
+                <p className="rp-eyebrow--muted mb-2">Columns</p>
                 <p className="text-xs text-gray-400 leading-relaxed">
                   <span className="text-white">Vendor*</span>, <span className="text-white">Amount*</span>, Currency, Category, Due Date, Status, Description, Payment Method, Paid Date, Notes
                 </p>
@@ -223,7 +223,7 @@ export default function BillsImportModal({ onClose, onComplete, existingBills }:
           {/* ── Preview ── */}
           {phase === 'preview' && (
             <div>
-              <div className="flex items-center justify-between mb-4 pb-3 border-b border-white/5">
+              <div className="flex items-center justify-between mb-4 pb-3 border-b border-[#1F1F1F]">
                 <div>
                   <p className="text-sm text-white">{fileName}</p>
                   <p className="text-xs text-gray-500 mt-0.5">{totalInFile} row{totalInFile !== 1 ? 's' : ''} parsed</p>
@@ -237,15 +237,15 @@ export default function BillsImportModal({ onClose, onComplete, existingBills }:
               <div className="grid grid-cols-3 gap-3 mb-4">
                 <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg px-3 py-2.5">
                   <p className="text-[10px] text-emerald-400 uppercase tracking-wider">New</p>
-                  <p className="text-xl font-bold text-white mt-0.5">{newBills.length}</p>
+                  <p className="text-xl font-display font-medium tabular-nums text-white mt-0.5">{newBills.length}</p>
                 </div>
                 <div className={`rounded-lg px-3 py-2.5 border ${duplicates.length > 0 ? 'bg-amber-500/10 border-amber-500/20' : 'bg-white/5 border-white/5'}`}>
                   <p className={`text-[10px] uppercase tracking-wider ${duplicates.length > 0 ? 'text-amber-400' : 'text-gray-500'}`}>Duplicates</p>
-                  <p className="text-xl font-bold text-white mt-0.5">{duplicates.length}</p>
+                  <p className="text-xl font-display font-medium tabular-nums text-white mt-0.5">{duplicates.length}</p>
                 </div>
                 <div className={`rounded-lg px-3 py-2.5 border ${invalid.length > 0 ? 'bg-red-500/10 border-red-500/20' : 'bg-white/5 border-white/5'}`}>
                   <p className={`text-[10px] uppercase tracking-wider ${invalid.length > 0 ? 'text-red-400' : 'text-gray-500'}`}>Invalid</p>
-                  <p className="text-xl font-bold text-white mt-0.5">{invalid.length}</p>
+                  <p className="text-xl font-display font-medium tabular-nums text-white mt-0.5">{invalid.length}</p>
                 </div>
               </div>
 
@@ -268,7 +268,7 @@ export default function BillsImportModal({ onClose, onComplete, existingBills }:
                   <div className="bg-card rounded-lg overflow-hidden">
                     <table className="w-full text-xs">
                       <thead>
-                        <tr className="border-b border-white/5 text-gray-500 text-left">
+                        <tr className="border-b border-[#1F1F1F] text-gray-500 text-left">
                           <th className="px-3 py-2 font-medium">Vendor</th>
                           <th className="px-3 py-2 font-medium text-right">Amount</th>
                           <th className="px-3 py-2 font-medium">Due</th>
@@ -277,7 +277,7 @@ export default function BillsImportModal({ onClose, onComplete, existingBills }:
                       </thead>
                       <tbody>
                         {newBills.slice(0, 5).map((b, i) => (
-                          <tr key={i} className="border-b border-white/5 last:border-0">
+                          <tr key={i} className="border-b border-[#1F1F1F] last:border-0">
                             <td className="px-3 py-2 text-white">{b.vendor}</td>
                             <td className="px-3 py-2 text-right text-white font-mono">{fmtCurrency(b.amount, b.currency)}</td>
                             <td className="px-3 py-2 text-gray-400">{b.due_date || '—'}</td>
@@ -312,11 +312,11 @@ export default function BillsImportModal({ onClose, onComplete, existingBills }:
               {importError && <p className="text-red-400 text-sm mb-3">{importError}</p>}
 
               <div className="flex gap-3">
-                <button onClick={onClose} className="flex-1 py-2 px-4 bg-white/10 hover:bg-white/15 text-gray-300 rounded-lg text-sm transition-colors">Cancel</button>
+                <button onClick={onClose} className="rp-btn-ghost flex-1">Cancel</button>
                 <button
                   onClick={handleConfirmPreview}
                   disabled={newBills.length === 0 && duplicates.length === 0}
-                  className="flex-1 py-2 px-4 bg-emerald-500 hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium rounded-lg text-sm transition-all"
+                  className="rp-btn-solid flex-1"
                 >
                   {duplicates.length > 0 ? 'Continue' : `Import ${newBills.length} bill${newBills.length !== 1 ? 's' : ''}`}
                 </button>
@@ -400,10 +400,10 @@ export default function BillsImportModal({ onClose, onComplete, existingBills }:
               {importError && <p className="text-red-400 text-sm mb-3">{importError}</p>}
 
               <div className="flex gap-3">
-                <button onClick={() => setPhase('preview')} className="flex-1 py-2 px-4 bg-white/10 hover:bg-white/15 text-gray-300 rounded-lg text-sm transition-colors">Back</button>
+                <button onClick={() => setPhase('preview')} className="rp-btn-ghost flex-1">Back</button>
                 <button
                   onClick={runImport}
-                  className="flex-1 py-2 px-4 bg-emerald-500 hover:brightness-110 text-white font-medium rounded-lg text-sm transition-all"
+                  className="rp-btn-solid flex-1"
                 >
                   {overwriteMode === 'overwrite'
                     ? `Import ${newBills.length} new, overwrite ${duplicates.length}`

@@ -35,10 +35,10 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         {toasts.map(t => (
           <div
             key={t.id}
-            className={`pointer-events-auto px-4 py-2.5 rounded-lg text-sm font-medium text-white shadow-xl shadow-black/30 border-l-[3px] animate-fade-in-up ${
+            className={`pointer-events-auto px-4 py-2.5 rounded-sm text-sm font-medium text-[#F5F5F5] shadow-xl shadow-black/30 border border-[#26292C] border-l-[3px] animate-fade-in-up ${
               t.type === 'success'
-                ? 'bg-[#0f1117] border-l-emerald-400'
-                : 'bg-[#0f1117] border-l-red-400'
+                ? 'bg-[#141618] !border-l-[#A4CC5C]'
+                : 'bg-[#141618] !border-l-red-400'
             }`}
           >
             {t.message}

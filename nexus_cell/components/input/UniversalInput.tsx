@@ -5,17 +5,20 @@ import { useRouter } from 'next/navigation'
 import { useToast } from '@/components/shared/Toast'
 
 const categories = [
-  { key: 'bill', label: 'Bill / Payment', color: '#60a5fa', icon: DollarI },
-  { key: 'travel', label: 'Travel', color: '#a78bfa', icon: PlaneI },
-  { key: 'task', label: 'Task', color: '#f472b6', icon: CheckI },
+  { key: 'bill', label: 'Bill / Payment', color: '#CDA14B', icon: DollarI },
+  { key: 'travel', label: 'Travel', color: '#3989CB', icon: PlaneI },
+  { key: 'task', label: 'Task', color: '#7FB3DE', icon: CheckI },
   { key: 'alert', label: 'Alert', color: '#fbbf24', icon: BellI },
-  { key: 'gift', label: 'Gift', color: '#fb923c', icon: GiftI },
-  { key: 'subscription', label: 'Subscription', color: '#fb923c', icon: RefreshI },
-  { key: 'membership', label: 'Membership', color: '#fb923c', icon: CardI },
-  { key: 'note', label: 'Note', color: '#94a3b8', icon: PenI },
+  { key: 'gift', label: 'Gift', color: '#E0BF7B', icon: GiftI },
+  { key: 'subscription', label: 'Subscription', color: '#E0BF7B', icon: RefreshI },
+  { key: 'membership', label: 'Membership', color: '#E0BF7B', icon: CardI },
+  { key: 'note', label: 'Note', color: '#9AA0A4', icon: PenI },
 ]
 
-const billCategories = ['Property', 'Aviation', 'Vehicle', 'Staff', 'Insurance', 'Utilities', 'Lifestyle', 'Legal', 'Medical', 'Travel', 'Art', 'Marine', 'Security', 'Membership', 'Financial', 'Other']
+const billCategories = ['Site Work', 'Track & Paddock', 'Garages', 'Clubhouse', 'Homes', 'Design & Engineering', 'Permits', 'Insurance', 'Utilities', 'Legal', 'Marketing', 'Merchandise', 'Travel', 'Membership', 'Other']
+
+// Visible labels for alert audience values (values stay principal/ea/cfo).
+const AUDIENCE_LABEL: Record<string, string> = { '': 'Everyone', principal: 'Owner', ea: "Owner's Rep", cfo: 'CFO' }
 
 interface Props { onClose: () => void }
 
@@ -25,10 +28,10 @@ export default function UniversalInput({ onClose }: Props) {
   const [selected, setSelected] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
 
-  const inputClass = 'w-full px-3.5 py-2.5 bg-[#141520] border border-white/10 rounded-lg text-[#e2e8f0] placeholder-[#475569] focus:outline-none focus:border-[#E0BF7B] text-sm'
-  const labelClass = 'block text-[11px] text-[#94a3b8] uppercase tracking-wider mb-1'
+  const inputClass = 'w-full px-3.5 py-2.5 bg-[#0E0F11] border border-[#26292C] rounded-sm text-[#F5F5F5] placeholder-[#6E7578] focus:outline-none focus:border-[#CDA14B] text-sm'
+  const labelClass = 'block font-display text-[11px] text-[#9AA0A4] uppercase tracking-[0.16em] mb-1.5'
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const pillClass = (active: boolean, color: string) => `px-3.5 py-1.5 rounded-full text-[11px] font-medium transition-all cursor-pointer ${active ? '' : 'bg-[#141520] text-[#475569] hover:text-[#94a3b8]'}`
+  const pillClass = (active: boolean, color: string) => `px-3.5 py-1.5 rounded-sm text-[11px] font-medium transition-all cursor-pointer ${active ? '' : 'bg-[#0E0F11] text-[#6E7578] hover:text-[#9AA0A4]'}`
 
   async function saveBill(f: Record<string, string>) {
     setSaving(true)
@@ -101,25 +104,25 @@ export default function UniversalInput({ onClose }: Props) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
-      <div className="relative w-full max-w-[520px] max-h-[85vh] overflow-y-auto bg-[#0f1117] rounded-2xl border border-white/5 shadow-2xl shadow-black/50" onClick={e => e.stopPropagation()}>
+      <div className="absolute inset-0 bg-[rgba(8,9,10,.85)] backdrop-blur-sm" />
+      <div className="relative w-full max-w-[520px] max-h-[85vh] overflow-y-auto bg-[#0A0B0C] rounded-sm border border-[#26292C] shadow-2xl shadow-black/50" onClick={e => e.stopPropagation()}>
 
         {!selected ? (
           /* ── Category Selection ── */
           <div className="p-6">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-lg font-semibold text-white">Create New</h2>
-              <button onClick={onClose} className="text-gray-600 hover:text-white text-xl">&times;</button>
+              <h2 className="rp-eyebrow">Create new</h2>
+              <button onClick={onClose} aria-label="Close" className="text-[#6E7578] hover:text-white text-xl">&times;</button>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {categories.map(cat => {
                 const Icon = cat.icon
                 return (
-                  <button key={cat.key} onClick={() => setSelected(cat.key)} className="flex flex-col items-center gap-2 p-4 rounded-xl hover:bg-white/5 transition-all group">
-                    <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ background: `${cat.color}1F` }}>
+                  <button key={cat.key} onClick={() => setSelected(cat.key)} className="flex flex-col items-center gap-2 p-4 rounded-sm border border-transparent hover:border-[#26292C] hover:bg-[#141618] transition-all group">
+                    <div className="w-12 h-12 rounded-sm flex items-center justify-center" style={{ background: `${cat.color}1A`, border: `1px solid ${cat.color}33` }}>
                       <Icon className="w-5 h-5" style={{ color: cat.color }} />
                     </div>
-                    <span className="text-[11px] text-[#94a3b8] group-hover:text-white transition-colors">{cat.label}</span>
+                    <span className="font-display text-[11px] uppercase tracking-[0.12em] text-[#9AA0A4] group-hover:text-white transition-colors text-center">{cat.label}</span>
                   </button>
                 )
               })}
@@ -129,10 +132,10 @@ export default function UniversalInput({ onClose }: Props) {
           /* ── Dynamic Form ── */
           <div className="p-6">
             <div className="flex items-center gap-3 mb-6">
-              <button onClick={() => setSelected(null)} className="text-gray-500 hover:text-white">
+              <button onClick={() => setSelected(null)} aria-label="Back" className="text-[#6E7578] hover:text-white">
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" /></svg>
               </button>
-              <h2 className="text-lg font-semibold text-white">New {categories.find(c => c.key === selected)?.label}</h2>
+              <h2 className="rp-eyebrow">New {categories.find(c => c.key === selected)?.label}</h2>
             </div>
 
             {selected === 'bill' && <BillForm inputClass={inputClass} labelClass={labelClass} pillClass={pillClass} saving={saving} onSave={saveBill} categories={billCategories} />}
@@ -158,14 +161,14 @@ function BillForm({ inputClass, labelClass, saving, onSave, categories }: FormPr
   const [f, setF] = useState<Record<string, string>>({ vendor: '', amount: '', category: '', due_date: '', description: '', notes: '' })
   return (
     <div className="space-y-4">
-      <div><label className={labelClass}>Vendor</label><input className={inputClass} placeholder="e.g. NetJets" value={f.vendor} onChange={e => setF(p => ({ ...p, vendor: e.target.value }))} /></div>
+      <div><label className={labelClass}>Vendor</label><input className={inputClass} placeholder="e.g. Paving contractor" value={f.vendor} onChange={e => setF(p => ({ ...p, vendor: e.target.value }))} /></div>
       <div className="grid grid-cols-2 gap-3">
         <div><label className={labelClass}>Amount</label><input className={inputClass} type="number" step="0.01" placeholder="0.00" value={f.amount} onChange={e => setF(p => ({ ...p, amount: e.target.value }))} /></div>
         <div><label className={labelClass}>Category</label><select className={inputClass} value={f.category} onChange={e => setF(p => ({ ...p, category: e.target.value }))}><option value="">Select...</option>{(categories || []).map(c => <option key={c} value={c}>{c}</option>)}</select></div>
       </div>
       <div><label className={labelClass}>Due Date</label><input className={inputClass} type="date" value={f.due_date} onChange={e => setF(p => ({ ...p, due_date: e.target.value }))} /></div>
       <div><label className={labelClass}>Description</label><textarea className={`${inputClass} resize-none`} rows={2} value={f.description} onChange={e => setF(p => ({ ...p, description: e.target.value }))} /></div>
-      <button onClick={() => f.vendor && f.amount && onSave(f)} disabled={saving || !f.vendor || !f.amount} className="w-full py-2.5 bg-[#B0853A] hover:brightness-110 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-all">{saving ? 'Saving...' : 'Save Bill'}</button>
+      <button onClick={() => f.vendor && f.amount && onSave(f)} disabled={saving || !f.vendor || !f.amount} className="rp-btn-solid w-full">{saving ? 'Saving...' : 'Save Bill'}</button>
     </div>
   )
 }
@@ -174,16 +177,16 @@ function TravelForm({ inputClass, labelClass, saving, onSave }: FormProps) {
   const [f, setF] = useState<Record<string, string>>({ title: '', start_date: '', end_date: '', status: 'planning', notes: '' })
   return (
     <div className="space-y-4">
-      <div><label className={labelClass}>Trip Name</label><input className={inputClass} placeholder="e.g. Miami Art Basel" value={f.title} onChange={e => setF(p => ({ ...p, title: e.target.value }))} /></div>
+      <div><label className={labelClass}>Trip Name</label><input className={inputClass} placeholder="e.g. Site walk with the GC" value={f.title} onChange={e => setF(p => ({ ...p, title: e.target.value }))} /></div>
       <div className="grid grid-cols-2 gap-3">
         <div><label className={labelClass}>Start Date</label><input className={inputClass} type="date" value={f.start_date} onChange={e => setF(p => ({ ...p, start_date: e.target.value }))} /></div>
         <div><label className={labelClass}>End Date</label><input className={inputClass} type="date" value={f.end_date} onChange={e => setF(p => ({ ...p, end_date: e.target.value }))} /></div>
       </div>
       <div><label className={labelClass}>Status</label>
-        <div className="flex gap-2">{['planning', 'confirmed'].map(s => <button key={s} type="button" onClick={() => setF(p => ({ ...p, status: s }))} className={`px-3.5 py-1.5 rounded-full text-[11px] font-medium transition-all ${f.status === s ? 'bg-purple-500/15 text-purple-400' : 'bg-[#141520] text-[#475569]'}`}>{s}</button>)}</div>
+        <div className="flex gap-2">{['planning', 'confirmed'].map(s => <button key={s} type="button" onClick={() => setF(p => ({ ...p, status: s }))} className={`px-3.5 py-1.5 rounded-sm text-[11px] font-medium transition-all ${f.status === s ? 'bg-[#3989CB]/15 text-[#3989CB] border border-[#3989CB]/40' : 'bg-[#0E0F11] border border-[#26292C] text-[#6E7578]'}`}>{s}</button>)}</div>
       </div>
       <div><label className={labelClass}>Notes</label><textarea className={`${inputClass} resize-none`} rows={2} value={f.notes} onChange={e => setF(p => ({ ...p, notes: e.target.value }))} /></div>
-      <button onClick={() => f.title && onSave(f)} disabled={saving || !f.title} className="w-full py-2.5 bg-[#B0853A] hover:brightness-110 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-all">{saving ? 'Saving...' : 'Save Trip'}</button>
+      <button onClick={() => f.title && onSave(f)} disabled={saving || !f.title} className="rp-btn-solid w-full">{saving ? 'Saving...' : 'Save Trip'}</button>
     </div>
   )
 }
@@ -192,13 +195,13 @@ function TaskForm({ inputClass, labelClass, saving, onSave }: FormProps) {
   const [f, setF] = useState<Record<string, string>>({ title: '', description: '', priority: 'normal', due_date: '' })
   return (
     <div className="space-y-4">
-      <div><label className={labelClass}>Title</label><input className={inputClass} placeholder="e.g. Confirm dinner reservations" value={f.title} onChange={e => setF(p => ({ ...p, title: e.target.value }))} /></div>
+      <div><label className={labelClass}>Title</label><input className={inputClass} placeholder="e.g. Confirm grandstand steel delivery" value={f.title} onChange={e => setF(p => ({ ...p, title: e.target.value }))} /></div>
       <div><label className={labelClass}>Description</label><textarea className={`${inputClass} resize-none`} rows={2} value={f.description} onChange={e => setF(p => ({ ...p, description: e.target.value }))} /></div>
       <div><label className={labelClass}>Priority</label>
-        <div className="flex gap-2">{['low', 'normal', 'high', 'urgent'].map(p => <button key={p} type="button" onClick={() => setF(prev => ({ ...prev, priority: p }))} className={`px-3.5 py-1.5 rounded-full text-[11px] font-medium transition-all ${f.priority === p ? 'bg-pink-500/15 text-pink-400' : 'bg-[#141520] text-[#475569]'}`}>{p}</button>)}</div>
+        <div className="flex gap-2">{['low', 'normal', 'high', 'urgent'].map(p => <button key={p} type="button" onClick={() => setF(prev => ({ ...prev, priority: p }))} className={`px-3.5 py-1.5 rounded-sm text-[11px] font-medium transition-all ${f.priority === p ? 'bg-[#7FB3DE]/15 text-[#7FB3DE] border border-[#7FB3DE]/40' : 'bg-[#0E0F11] border border-[#26292C] text-[#6E7578]'}`}>{p}</button>)}</div>
       </div>
       <div><label className={labelClass}>Due Date</label><input className={inputClass} type="date" value={f.due_date} onChange={e => setF(p => ({ ...p, due_date: e.target.value }))} /></div>
-      <button onClick={() => f.title && onSave(f)} disabled={saving || !f.title} className="w-full py-2.5 bg-[#B0853A] hover:brightness-110 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-all">{saving ? 'Saving...' : 'Save Task'}</button>
+      <button onClick={() => f.title && onSave(f)} disabled={saving || !f.title} className="rp-btn-solid w-full">{saving ? 'Saving...' : 'Save Task'}</button>
     </div>
   )
 }
@@ -208,17 +211,17 @@ function AlertForm({ inputClass, labelClass, saving, onSave }: FormProps) {
   return (
     <div className="space-y-4">
       <div><label className={labelClass}>Type</label>
-        <div className="flex flex-wrap gap-2">{['info', 'action_required', 'approval', 'urgent', 'fyi'].map(t => <button key={t} type="button" onClick={() => setF(p => ({ ...p, alert_type: t }))} className={`px-3 py-1.5 rounded-full text-[11px] font-medium transition-all ${f.alert_type === t ? 'bg-amber-500/15 text-amber-400' : 'bg-[#141520] text-[#475569]'}`}>{t.replace('_', ' ')}</button>)}</div>
+        <div className="flex flex-wrap gap-2">{['info', 'action_required', 'approval', 'urgent', 'fyi'].map(t => <button key={t} type="button" onClick={() => setF(p => ({ ...p, alert_type: t }))} className={`px-3 py-1.5 rounded-sm text-[11px] font-medium transition-all ${f.alert_type === t ? 'bg-amber-500/15 text-amber-400 border border-amber-500/40' : 'bg-[#0E0F11] border border-[#26292C] text-[#6E7578]'}`}>{t.replace('_', ' ')}</button>)}</div>
       </div>
       <div><label className={labelClass}>Title</label><input className={inputClass} placeholder="Alert title" value={f.title} onChange={e => setF(p => ({ ...p, title: e.target.value }))} /></div>
       <div><label className={labelClass}>Body</label><textarea className={`${inputClass} resize-none`} rows={3} value={f.body} onChange={e => setF(p => ({ ...p, body: e.target.value }))} /></div>
       <div><label className={labelClass}>Priority</label>
-        <div className="flex gap-2">{['low', 'normal', 'high', 'urgent'].map(p => <button key={p} type="button" onClick={() => setF(prev => ({ ...prev, priority: p }))} className={`px-3 py-1.5 rounded-full text-[11px] font-medium transition-all ${f.priority === p ? 'bg-amber-500/15 text-amber-400' : 'bg-[#141520] text-[#475569]'}`}>{p}</button>)}</div>
+        <div className="flex gap-2">{['low', 'normal', 'high', 'urgent'].map(p => <button key={p} type="button" onClick={() => setF(prev => ({ ...prev, priority: p }))} className={`px-3 py-1.5 rounded-sm text-[11px] font-medium transition-all ${f.priority === p ? 'bg-amber-500/15 text-amber-400 border border-amber-500/40' : 'bg-[#0E0F11] border border-[#26292C] text-[#6E7578]'}`}>{p}</button>)}</div>
       </div>
       <div><label className={labelClass}>Send To</label>
-        <div className="flex gap-2">{['', 'principal', 'ea', 'cfo'].map(r => <button key={r} type="button" onClick={() => setF(p => ({ ...p, target_role: r }))} className={`px-3 py-1.5 rounded-full text-[11px] font-medium transition-all ${f.target_role === r ? 'bg-amber-500/15 text-amber-400' : 'bg-[#141520] text-[#475569]'}`}>{r || 'Everyone'}</button>)}</div>
+        <div className="flex gap-2">{['', 'principal', 'ea', 'cfo'].map(r => <button key={r} type="button" onClick={() => setF(p => ({ ...p, target_role: r }))} className={`px-3 py-1.5 rounded-sm text-[11px] font-medium transition-all ${f.target_role === r ? 'bg-amber-500/15 text-amber-400 border border-amber-500/40' : 'bg-[#0E0F11] border border-[#26292C] text-[#6E7578]'}`}>{AUDIENCE_LABEL[r] ?? r}</button>)}</div>
       </div>
-      <button onClick={() => f.title && onSave(f)} disabled={saving || !f.title} className="w-full py-2.5 bg-[#B0853A] hover:brightness-110 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-all">{saving ? 'Saving...' : 'Send Alert'}</button>
+      <button onClick={() => f.title && onSave(f)} disabled={saving || !f.title} className="rp-btn-solid w-full">{saving ? 'Saving...' : 'Send Alert'}</button>
     </div>
   )
 }
@@ -227,17 +230,17 @@ function GiftForm({ inputClass, labelClass, saving, onSave }: FormProps) {
   const [f, setF] = useState<Record<string, string>>({ recipient: '', occasion: '', description: '', amount: '', date: '', status: 'idea', notes: '' })
   return (
     <div className="space-y-4">
-      <div><label className={labelClass}>Recipient</label><input className={inputClass} placeholder="e.g. Robert Chen" value={f.recipient} onChange={e => setF(p => ({ ...p, recipient: e.target.value }))} /></div>
+      <div><label className={labelClass}>Recipient</label><input className={inputClass} placeholder="e.g. Lead architect" value={f.recipient} onChange={e => setF(p => ({ ...p, recipient: e.target.value }))} /></div>
       <div className="grid grid-cols-2 gap-3">
-        <div><label className={labelClass}>Occasion</label><input className={inputClass} placeholder="e.g. Birthday" value={f.occasion} onChange={e => setF(p => ({ ...p, occasion: e.target.value }))} /></div>
+        <div><label className={labelClass}>Occasion</label><input className={inputClass} placeholder="e.g. Topping-out" value={f.occasion} onChange={e => setF(p => ({ ...p, occasion: e.target.value }))} /></div>
         <div><label className={labelClass}>Amount</label><input className={inputClass} type="number" step="0.01" placeholder="0.00" value={f.amount} onChange={e => setF(p => ({ ...p, amount: e.target.value }))} /></div>
       </div>
       <div><label className={labelClass}>Description</label><input className={inputClass} value={f.description} onChange={e => setF(p => ({ ...p, description: e.target.value }))} /></div>
       <div><label className={labelClass}>Date</label><input className={inputClass} type="date" value={f.date} onChange={e => setF(p => ({ ...p, date: e.target.value }))} /></div>
       <div><label className={labelClass}>Status</label>
-        <div className="flex flex-wrap gap-2">{['idea', 'purchased', 'shipped', 'delivered'].map(s => <button key={s} type="button" onClick={() => setF(p => ({ ...p, status: s }))} className={`px-3 py-1.5 rounded-full text-[11px] font-medium transition-all ${f.status === s ? 'bg-orange-500/15 text-orange-400' : 'bg-[#141520] text-[#475569]'}`}>{s}</button>)}</div>
+        <div className="flex flex-wrap gap-2">{['idea', 'purchased', 'shipped', 'delivered'].map(s => <button key={s} type="button" onClick={() => setF(p => ({ ...p, status: s }))} className={`px-3 py-1.5 rounded-sm text-[11px] font-medium transition-all ${f.status === s ? 'bg-[#CDA14B]/15 text-[#E0BF7B] border border-[#CDA14B]/40' : 'bg-[#0E0F11] border border-[#26292C] text-[#6E7578]'}`}>{s}</button>)}</div>
       </div>
-      <button onClick={() => f.recipient && onSave(f)} disabled={saving || !f.recipient} className="w-full py-2.5 bg-[#B0853A] hover:brightness-110 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-all">{saving ? 'Saving...' : 'Save Gift'}</button>
+      <button onClick={() => f.recipient && onSave(f)} disabled={saving || !f.recipient} className="rp-btn-solid w-full">{saving ? 'Saving...' : 'Save Gift'}</button>
     </div>
   )
 }
@@ -246,19 +249,19 @@ function SubscriptionForm({ inputClass, labelClass, saving, onSave }: FormProps)
   const [f, setF] = useState<Record<string, string>>({ name: '', provider: '', amount: '', frequency: 'monthly', next_renewal: '', category: '', auto_renew: 'true' })
   return (
     <div className="space-y-4">
-      <div><label className={labelClass}>Name</label><input className={inputClass} placeholder="e.g. Wine Access Club" value={f.name} onChange={e => setF(p => ({ ...p, name: e.target.value }))} /></div>
+      <div><label className={labelClass}>Name</label><input className={inputClass} placeholder="e.g. Procore" value={f.name} onChange={e => setF(p => ({ ...p, name: e.target.value }))} /></div>
       <div className="grid grid-cols-2 gap-3">
-        <div><label className={labelClass}>Provider</label><input className={inputClass} placeholder="e.g. Wine Access" value={f.provider} onChange={e => setF(p => ({ ...p, provider: e.target.value }))} /></div>
+        <div><label className={labelClass}>Provider</label><input className={inputClass} placeholder="e.g. Procore Technologies" value={f.provider} onChange={e => setF(p => ({ ...p, provider: e.target.value }))} /></div>
         <div><label className={labelClass}>Amount</label><input className={inputClass} type="number" step="0.01" placeholder="0.00" value={f.amount} onChange={e => setF(p => ({ ...p, amount: e.target.value }))} /></div>
       </div>
       <div><label className={labelClass}>Frequency</label>
-        <div className="flex gap-2">{['weekly', 'monthly', 'quarterly', 'annual'].map(fr => <button key={fr} type="button" onClick={() => setF(p => ({ ...p, frequency: fr }))} className={`px-3 py-1.5 rounded-full text-[11px] font-medium transition-all ${f.frequency === fr ? 'bg-orange-500/15 text-orange-400' : 'bg-[#141520] text-[#475569]'}`}>{fr}</button>)}</div>
+        <div className="flex gap-2">{['weekly', 'monthly', 'quarterly', 'annual'].map(fr => <button key={fr} type="button" onClick={() => setF(p => ({ ...p, frequency: fr }))} className={`px-3 py-1.5 rounded-sm text-[11px] font-medium transition-all ${f.frequency === fr ? 'bg-[#CDA14B]/15 text-[#E0BF7B] border border-[#CDA14B]/40' : 'bg-[#0E0F11] border border-[#26292C] text-[#6E7578]'}`}>{fr}</button>)}</div>
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div><label className={labelClass}>Next Renewal</label><input className={inputClass} type="date" value={f.next_renewal} onChange={e => setF(p => ({ ...p, next_renewal: e.target.value }))} /></div>
-        <div><label className={labelClass}>Category</label><input className={inputClass} placeholder="e.g. Entertainment" value={f.category} onChange={e => setF(p => ({ ...p, category: e.target.value }))} /></div>
+        <div><label className={labelClass}>Category</label><input className={inputClass} placeholder="e.g. Project software" value={f.category} onChange={e => setF(p => ({ ...p, category: e.target.value }))} /></div>
       </div>
-      <button onClick={() => f.name && onSave(f)} disabled={saving || !f.name} className="w-full py-2.5 bg-[#B0853A] hover:brightness-110 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-all">{saving ? 'Saving...' : 'Save Subscription'}</button>
+      <button onClick={() => f.name && onSave(f)} disabled={saving || !f.name} className="rp-btn-solid w-full">{saving ? 'Saving...' : 'Save Subscription'}</button>
     </div>
   )
 }
@@ -267,17 +270,17 @@ function MembershipForm({ inputClass, labelClass, saving, onSave }: Omit<FormPro
   const [f, setF] = useState<Record<string, string>>({ name: '', organization_name: '', member_id: '', tier: '', expiry_date: '', renewal_amount: '' })
   return (
     <div className="space-y-4">
-      <div><label className={labelClass}>Name</label><input className={inputClass} placeholder="e.g. Palm Beach Country Club" value={f.name} onChange={e => setF(p => ({ ...p, name: e.target.value }))} /></div>
+      <div><label className={labelClass}>Name</label><input className={inputClass} placeholder="e.g. SCCA" value={f.name} onChange={e => setF(p => ({ ...p, name: e.target.value }))} /></div>
       <div className="grid grid-cols-2 gap-3">
         <div><label className={labelClass}>Organization</label><input className={inputClass} value={f.organization_name} onChange={e => setF(p => ({ ...p, organization_name: e.target.value }))} /></div>
         <div><label className={labelClass}>Member ID</label><input className={inputClass} value={f.member_id} onChange={e => setF(p => ({ ...p, member_id: e.target.value }))} /></div>
       </div>
       <div className="grid grid-cols-2 gap-3">
-        <div><label className={labelClass}>Tier</label><input className={inputClass} placeholder="e.g. Platinum" value={f.tier} onChange={e => setF(p => ({ ...p, tier: e.target.value }))} /></div>
+        <div><label className={labelClass}>Tier</label><input className={inputClass} placeholder="e.g. Founding" value={f.tier} onChange={e => setF(p => ({ ...p, tier: e.target.value }))} /></div>
         <div><label className={labelClass}>Renewal Amount</label><input className={inputClass} type="number" step="0.01" value={f.renewal_amount} onChange={e => setF(p => ({ ...p, renewal_amount: e.target.value }))} /></div>
       </div>
       <div><label className={labelClass}>Expiry Date</label><input className={inputClass} type="date" value={f.expiry_date} onChange={e => setF(p => ({ ...p, expiry_date: e.target.value }))} /></div>
-      <button onClick={() => f.name && onSave(f)} disabled={saving || !f.name} className="w-full py-2.5 bg-[#B0853A] hover:brightness-110 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-all">{saving ? 'Saving...' : 'Save Membership'}</button>
+      <button onClick={() => f.name && onSave(f)} disabled={saving || !f.name} className="rp-btn-solid w-full">{saving ? 'Saving...' : 'Save Membership'}</button>
     </div>
   )
 }
@@ -288,7 +291,7 @@ function NoteForm({ inputClass, labelClass, saving, onSave }: Omit<FormProps, 'p
     <div className="space-y-4">
       <div><label className={labelClass}>Title (optional)</label><input className={inputClass} value={f.title} onChange={e => setF(p => ({ ...p, title: e.target.value }))} /></div>
       <div><label className={labelClass}>Body</label><textarea className={`${inputClass} resize-none`} rows={8} placeholder="Write your note..." value={f.body} onChange={e => setF(p => ({ ...p, body: e.target.value }))} /></div>
-      <button onClick={() => f.body && onSave(f)} disabled={saving || !f.body} className="w-full py-2.5 bg-[#B0853A] hover:brightness-110 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-all">{saving ? 'Saving...' : 'Save Note'}</button>
+      <button onClick={() => f.body && onSave(f)} disabled={saving || !f.body} className="rp-btn-solid w-full">{saving ? 'Saving...' : 'Save Note'}</button>
     </div>
   )
 }

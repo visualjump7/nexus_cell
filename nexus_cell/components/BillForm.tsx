@@ -5,9 +5,9 @@ import { useRouter } from 'next/navigation'
 import type { Bill } from '@/lib/types'
 
 const categories = [
-  'Property Management', 'Aviation', 'Staff Payroll', 'Club Dues',
-  'Insurance', 'Legal', 'Household', 'Vehicle', 'Travel',
-  'Entertainment', 'Medical', 'Education', 'Charity', 'Other',
+  'Site Work', 'Track & Paddock', 'Garages', 'Clubhouse', 'Homes',
+  'Design & Engineering', 'Permits', 'Insurance', 'Utilities', 'Legal',
+  'Marketing', 'Merchandise', 'Travel', 'Membership', 'Other',
 ]
 
 interface BillFormProps {
@@ -72,22 +72,22 @@ export default function BillForm({ bill, onClose }: BillFormProps) {
     onClose()
   }
 
-  const inputClass = 'w-full px-3 py-2 bg-card border border-white/10 rounded-lg text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 text-sm'
-  const labelClass = 'block text-sm text-gray-400 mb-1'
+  const inputClass = 'w-full px-3 py-2 bg-[#0A0B0C] border border-[#26292C] rounded-sm text-white placeholder-[#6E7578] focus:outline-none focus:border-[#CDA14B] text-sm'
+  const labelClass = 'block font-display text-[11px] uppercase tracking-[0.16em] text-[#9AA0A4] mb-1.5'
 
   return (
-    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4" onClick={onClose}>
-      <div className="bg-main rounded-xl shadow-2xl shadow-black/40 w-full max-w-lg max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between px-6 py-4 border-b border-white/5">
-          <h2 className="text-lg font-semibold text-white">{isEditing ? 'Edit Bill' : 'New Bill'}</h2>
-          <button onClick={onClose} className="text-gray-500 hover:text-white text-xl leading-none">&times;</button>
+    <div className="fixed inset-0 bg-[rgba(8,9,10,.85)] flex items-center justify-center z-50 p-4" onClick={onClose}>
+      <div className="rp-panel w-full max-w-lg max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[#1F1F1F]">
+          <h2 className="rp-eyebrow">{isEditing ? 'Edit bill' : 'New bill'}</h2>
+          <button onClick={onClose} aria-label="Close" className="text-[#6E7578] hover:text-white text-xl leading-none">&times;</button>
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="col-span-2">
               <label className={labelClass}>Vendor *</label>
-              <input className={inputClass} value={form.vendor} onChange={e => update('vendor', e.target.value)} placeholder="e.g. NetJets" required />
+              <input className={inputClass} value={form.vendor} onChange={e => update('vendor', e.target.value)} placeholder="e.g. Paving contractor" required />
             </div>
 
             <div>
@@ -108,6 +108,9 @@ export default function BillForm({ bill, onClose }: BillFormProps) {
               <label className={labelClass}>Category</label>
               <select className={inputClass} value={form.category} onChange={e => update('category', e.target.value)}>
                 <option value="">Select...</option>
+                {form.category && !categories.includes(form.category) && (
+                  <option value={form.category}>{form.category}</option>
+                )}
                 {categories.map(c => <option key={c} value={c}>{c}</option>)}
               </select>
             </div>
@@ -149,10 +152,10 @@ export default function BillForm({ bill, onClose }: BillFormProps) {
           {error && <p className="text-red-400 text-sm">{error}</p>}
 
           <div className="flex gap-3 pt-2">
-            <button type="button" onClick={onClose} className="flex-1 py-2 px-4 bg-white/10 hover:bg-white/15 text-gray-300 rounded-lg text-sm transition-colors">
+            <button type="button" onClick={onClose} className="rp-btn-ghost flex-1">
               Cancel
             </button>
-            <button type="submit" disabled={saving} className="flex-1 py-2 px-4 bg-emerald-600 hover:bg-emerald-500 disabled:bg-emerald-800 disabled:cursor-not-allowed text-white font-medium rounded-lg text-sm transition-colors">
+            <button type="submit" disabled={saving} className="rp-btn-solid flex-1">
               {saving ? 'Saving...' : isEditing ? 'Update Bill' : 'Create Bill'}
             </button>
           </div>

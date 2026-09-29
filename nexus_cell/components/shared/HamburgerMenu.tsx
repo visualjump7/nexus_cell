@@ -6,6 +6,7 @@ import { useRouter, usePathname } from 'next/navigation'
 import { createPortal } from 'react-dom'
 import type { UserRole } from '@/lib/types'
 import { SECTIONS } from '@/lib/sections'
+import { BRAND } from '@/lib/brand'
 
 // Per-section badge counts shown as red pills next to section labels in the
 // drill-down submenu. Server fetches these once in HamburgerMount and passes
@@ -40,15 +41,15 @@ const MENU_ITEMS: MenuItem[] = [
   {
     kind: 'link',
     href: '/',
-    label: 'Command Panel',
-    description: 'Your home — landing surface',
+    label: 'Home',
+    description: 'The command landing',
     visible: () => true,
   },
   {
     kind: 'link',
     href: '/admin',
     label: 'Administrator',
-    description: 'Manage users, principals, and views',
+    description: 'Manage users, owners and views',
     visible: role => role === 'admin',
   },
   {
@@ -61,11 +62,11 @@ const MENU_ITEMS: MenuItem[] = [
 ]
 
 const ROLE_LABEL: Record<UserRole, string> = {
-  principal: 'Principal',
-  ea: 'Executive Assistant',
+  principal: BRAND.roleLabel.principal,
+  ea: BRAND.roleLabel.ea,
   cfo: 'CFO',
-  admin: 'Administrator',
-  viewer: 'Viewer',
+  admin: BRAND.roleLabel.admin,
+  viewer: BRAND.roleLabel.viewer,
 }
 
 type View = 'top' | 'sections'
@@ -128,7 +129,7 @@ export default function HamburgerMenu({ userName, userRole, sectionBadges = {} }
         onClick={() => setOpen(true)}
         aria-label="Open menu"
         aria-expanded={open}
-        className="fixed top-5 right-5 z-40 w-10 h-10 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center text-gray-300 hover:text-white transition-colors backdrop-blur-sm"
+        className="fixed top-5 right-5 z-40 w-10 h-10 rounded-sm bg-[#0E0F11] hover:border-[#CDA14B] border border-[#26292C] flex items-center justify-center text-[#9AA0A4] hover:text-white transition-colors backdrop-blur-sm"
       >
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
           <line x1="3" y1="6" x2="21" y2="6" />
@@ -184,7 +185,7 @@ function MenuSheet({
   return (
     <div className="fixed inset-0 z-50" onClick={onClose} role="presentation">
       {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm animate-overlay-fade-in" aria-hidden />
+      <div className="absolute inset-0 bg-[rgba(8,9,10,.7)] backdrop-blur-sm animate-overlay-fade-in" aria-hidden />
 
       {/* Sheet */}
       <aside
@@ -193,14 +194,14 @@ function MenuSheet({
         aria-label="Main menu"
         onClick={e => e.stopPropagation()}
         className="absolute top-0 right-0 bottom-0 w-full sm:w-[360px] flex flex-col animate-sheet-slide-in"
-        style={{ background: 'var(--nx-bg-raised, #10131b)', borderLeft: '1px solid rgba(255,255,255,0.08)' }}
+        style={{ background: '#0A0B0C', borderLeft: '1px solid #1F1F1F' }}
       >
         {/* Header — back button when drilled in, else close-only */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-white/5 shrink-0">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-[#1F1F1F] shrink-0">
           {view === 'sections' ? (
             <button
               onClick={onBack}
-              className="flex items-center gap-2 text-xs uppercase tracking-[0.18em] text-gray-400 hover:text-white transition-colors"
+              className="flex items-center gap-2 font-display text-xs uppercase tracking-[0.18em] text-[#9AA0A4] hover:text-white transition-colors"
             >
               <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
                 <path d="M15 18l-6-6 6-6" />
@@ -208,12 +209,19 @@ function MenuSheet({
               Sections
             </button>
           ) : (
-            <span className="text-xs uppercase tracking-[0.18em] text-gray-500 font-medium">Menu</span>
+            <div className="flex items-center gap-3" aria-label={`${BRAND.fullName} menu`}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={BRAND.badge} alt="" aria-hidden className="h-7 w-auto" />
+              <div className="leading-none">
+                <p className="font-display text-[13px] uppercase tracking-[0.12em] text-[#F5F5F5]">{BRAND.shortName}</p>
+                <p className="font-display text-[10px] uppercase tracking-[0.18em] text-[#9AA0A4] mt-1">{BRAND.subName}</p>
+              </div>
+            </div>
           )}
           <button
             onClick={onClose}
             aria-label="Close menu"
-            className="text-gray-400 hover:text-white w-8 h-8 rounded-md hover:bg-white/5 transition-colors flex items-center justify-center"
+            className="text-[#9AA0A4] hover:text-white w-8 h-8 rounded-sm hover:bg-[#141618] transition-colors flex items-center justify-center"
           >
             <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
               <path d="M18 6L6 18M6 6l12 12" />
@@ -231,10 +239,10 @@ function MenuSheet({
                     <li key={item.id}>
                       <button
                         onClick={() => onDrillTo(item.id)}
-                        className="w-full text-left block px-5 py-3 hover:bg-white/[0.04] transition-colors group flex items-center justify-between gap-3"
+                        className="w-full text-left px-5 py-3 border-l-2 border-transparent hover:border-[#CDA14B] hover:bg-[#141618] transition-colors group flex items-center justify-between gap-3"
                       >
                         <div className="min-w-0">
-                          <p className="text-sm text-white font-medium leading-tight group-hover:text-emerald-400 transition-colors">
+                          <p className="font-display text-[15px] uppercase tracking-[0.06em] text-white leading-tight group-hover:text-emerald-400 transition-colors">
                             {item.label}
                           </p>
                           {item.description && (
@@ -252,9 +260,13 @@ function MenuSheet({
                   <li key={item.href}>
                     <Link
                       href={item.href}
-                      className="block px-5 py-3 hover:bg-white/[0.04] transition-colors group"
+                      className={`block px-5 py-3 border-l-2 transition-colors group ${
+                        pathname === item.href
+                          ? 'border-[#CDA14B] bg-[#141618]'
+                          : 'border-transparent hover:border-[#CDA14B] hover:bg-[#141618]'
+                      }`}
                     >
-                      <p className="text-sm text-white font-medium leading-tight group-hover:text-emerald-400 transition-colors">
+                      <p className="font-display text-[15px] uppercase tracking-[0.06em] text-white leading-tight group-hover:text-emerald-400 transition-colors">
                         {item.label}
                       </p>
                       {item.description && (
@@ -271,15 +283,15 @@ function MenuSheet({
         </nav>
 
         {/* Footer — identity + sign out (always present, regardless of view) */}
-        <div className="px-5 py-4 border-t border-white/5 shrink-0">
+        <div className="px-5 py-4 border-t border-[#1F1F1F] shrink-0">
           <div className="mb-3">
             <p className="text-sm text-white font-medium truncate">{userName}</p>
-            <p className="text-xs text-gray-500">{ROLE_LABEL[userRole] || userRole}</p>
+            <p className="rp-eyebrow--muted mt-1">{ROLE_LABEL[userRole] || userRole}</p>
           </div>
           <button
             onClick={onSignOut}
             disabled={signingOut}
-            className="w-full px-3 py-2 bg-white/5 hover:bg-white/10 disabled:opacity-50 text-gray-300 hover:text-white text-sm rounded-lg transition-colors flex items-center justify-center gap-2"
+            className="rp-btn-ghost w-full"
           >
             <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
               <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9" />
@@ -309,33 +321,32 @@ function SectionsSubmenu({
 
   return (
     <ul key="sections" className="m-0 p-0 list-none animate-menu-slide-in-from-right">
-      {SECTIONS.map(section => {
+      {SECTIONS.map((section, i) => {
         const badge = badgeFor(section.id, sectionBadges)
         const isActive = section.id === activeId
         return (
           <li key={section.id}>
             <Link
               href={section.href}
-              className={`flex items-center gap-3 px-5 py-3 transition-colors group ${
-                isActive ? 'bg-emerald-500/[0.06]' : 'hover:bg-white/[0.04]'
+              className={`flex items-center gap-3 px-5 py-3 border-l-2 transition-colors group ${
+                isActive ? 'border-[#CDA14B] bg-[#141618]' : 'border-transparent hover:bg-[#141618]'
               }`}
             >
               <span
-                className="w-2 h-2 rounded-full shrink-0"
-                style={{ background: section.dotColor }}
+                className={`rp-num w-6 shrink-0 transition-colors ${isActive ? '!text-[#CDA14B]' : 'group-hover:!text-[#CDA14B]'}`}
                 aria-hidden
-              />
+              >
+                {String(i + 1).padStart(2, '0')}
+              </span>
               <p
-                className={`text-sm font-medium leading-tight flex-1 transition-colors ${
-                  isActive
-                    ? 'text-emerald-400'
-                    : 'text-white group-hover:text-emerald-400'
+                className={`font-display text-[15px] uppercase tracking-[0.06em] leading-tight flex-1 transition-colors ${
+                  isActive ? 'text-white' : 'text-[#CDD1D3] group-hover:text-white'
                 }`}
               >
                 {section.label}
               </p>
               {badge !== undefined && badge > 0 && (
-                <span className="text-[11px] font-semibold text-white bg-red-500 px-1.5 py-0.5 rounded-full min-w-[20px] text-center">
+                <span className="text-[11px] font-semibold text-white bg-red-500 px-1.5 py-0.5 rounded-sm min-w-[20px] text-center tabular-nums">
                   {badge > 99 ? '99+' : badge}
                 </span>
               )}

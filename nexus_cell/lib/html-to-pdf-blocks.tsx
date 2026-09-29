@@ -2,8 +2,17 @@ import React from "react";
 import { Text, View, StyleSheet } from "@react-pdf/renderer";
 
 const styles = StyleSheet.create({
-  h2: { fontSize: 16, fontWeight: "bold", marginTop: 14, marginBottom: 6 },
-  h3: { fontSize: 13, fontWeight: "bold", marginTop: 10, marginBottom: 4 },
+  h2: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#111111",
+    marginTop: 14,
+    marginBottom: 6,
+    paddingBottom: 3,
+    borderBottomWidth: 1,
+    borderBottomColor: "#CDA14B",
+  },
+  h3: { fontSize: 13, fontWeight: "bold", color: "#111111", marginTop: 10, marginBottom: 4 },
   p: { fontSize: 10, lineHeight: 1.6, marginBottom: 8 },
   bold: { fontWeight: "bold" },
   italic: { fontStyle: "italic" },
@@ -15,7 +24,7 @@ const styles = StyleSheet.create({
     marginBottom: 3,
     flexDirection: "row" as const,
   },
-  liBullet: { width: 12, fontSize: 10 },
+  liBullet: { width: 12, fontSize: 10, color: "#B0853A" },
   liContent: { flex: 1, fontSize: 10, lineHeight: 1.6 },
 });
 

@@ -131,7 +131,7 @@ export default function NexusEnergyOrb({
             top: cy - p.size / 2,
             width: p.size,
             height: p.size,
-            background: 'radial-gradient(circle, #a7f3d0 0%, #E0BF7B 60%, transparent 100%)',
+            background: 'radial-gradient(circle, #F5E3B8 0%, #E0BF7B 60%, transparent 100%)',
             filter: 'blur(0.6px)',
             // CSS variables consumed by the @keyframes
             ['--nx-px-from-x' as string]: `${p.fromX}px`,

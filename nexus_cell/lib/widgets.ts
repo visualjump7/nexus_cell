@@ -38,7 +38,7 @@ export const WIDGET_CATALOG: WidgetCatalogEntry[] = [
   {
     id: 'approvals',
     label: 'Pending Approvals',
-    description: 'Items waiting for principal sign-off. Approve or reject in one tap.',
+    description: "Items waiting for the owner's sign-off. Approve or reject in one tap.",
     interactive: true,
   },
   {
@@ -50,7 +50,7 @@ export const WIDGET_CATALOG: WidgetCatalogEntry[] = [
   {
     id: 'next_trip',
     label: 'Next Trip',
-    description: 'Upcoming trip with countdown, key segments, and travel docs.',
+    description: 'Upcoming trip or site visit with countdown and key segments.',
     interactive: false,
   },
   {
@@ -63,26 +63,26 @@ export const WIDGET_CATALOG: WidgetCatalogEntry[] = [
   {
     id: 'glance',
     label: 'Quick Glance',
-    description: 'High-level totals: outstanding spend, open alerts, active trips.',
+    description: 'High-level totals: outstanding spend, open alerts, site visits.',
     interactive: false,
   },
   {
     id: 'briefings',
     label: 'Recent Briefings',
-    description: 'Briefs the EA has marked visible to the principal.',
+    description: "Briefs the owner's rep has marked visible to the owner.",
     interactive: false,
     defaultSettings: { limit: 3 },
   },
   {
     id: 'comms',
     label: 'Comms',
-    description: 'Direct messages between EA / CFO / principal. (Coming soon — placeholder for now.)',
+    description: "Direct messages between the owner's rep, CFO and owner. (Coming soon.)",
     interactive: false,
   },
   {
     id: 'ai_ask',
     label: 'Ask Nexus',
-    description: 'Always-on AI chat — the principal\'s primary way to ask questions and request actions.',
+    description: "Always-on AI chat — the owner's fastest way to ask about the build and request actions.",
     interactive: true,
     pinned: true,
   },
