@@ -26,7 +26,7 @@ function DetailRow({ label, value, mono }: { label: string; value: string | null
   return (
     <div className="flex items-start justify-between py-2.5 border-b border-white/5 last:border-0">
       <span className="text-xs text-gray-500 uppercase tracking-wider shrink-0 mt-0.5">{label}</span>
-      <span className={`text-sm text-white text-right ml-4 ${mono ? 'font-mono text-[#E0BF7B]' : ''}`}>{value}</span>
+      <span className={`text-sm text-white text-right ml-4 ${mono ? 'font-mono text-[#CDA14B]' : ''}`}>{value}</span>
     </div>
   )
 }
@@ -34,7 +34,7 @@ function DetailRow({ label, value, mono }: { label: string; value: string | null
 export default function SegmentDetail({ segment: initialSegment, canWrite, onClose }: Props) {
   const router = useRouter()
   const seg = initialSegment
-  const color = segmentColors[seg.segment_type] || '#94a3b8'
+  const color = segmentColors[seg.segment_type] || '#9AA0A4'
 
   const [notes, setNotes] = useState(seg.notes || '')
   const [saving, setSaving] = useState(false)
@@ -70,17 +70,17 @@ export default function SegmentDetail({ segment: initialSegment, canWrite, onClo
   }, [seg.trip_id, seg.id, notes, router])
 
   return (
-    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={onClose}>
-      <div className="bg-[#0f1117] rounded-2xl shadow-2xl shadow-black/50 w-full max-w-md max-h-[85vh] overflow-y-auto border border-white/5" onClick={e => e.stopPropagation()}>
+    <div className="fixed inset-0 bg-[rgba(8,9,10,.85)] backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={onClose}>
+      <div className="bg-[#0E0F11] rounded-sm shadow-2xl shadow-black/50 w-full max-w-md max-h-[85vh] overflow-y-auto border border-[#26292C]" onClick={e => e.stopPropagation()}>
 
         {/* Header with color accent */}
         <div className="relative px-6 pt-5 pb-4">
-          <div className="absolute top-0 left-0 right-0 h-1 rounded-t-2xl" style={{ background: color }} />
+          <div className="absolute top-0 left-0 right-0 h-[2px]" style={{ background: color }} />
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="text-gray-400">{getSegmentIcon(seg.segment_type)}</div>
               <div>
-                <h2 className="text-base font-semibold text-white">{segmentLabels[seg.segment_type]}</h2>
+                <h2 className="rp-eyebrow">{segmentLabels[seg.segment_type]}</h2>
                 <p className="text-xs text-gray-500 mt-0.5">{seg.carrier || seg.segment_type.replace('_', ' ')}</p>
               </div>
             </div>
@@ -90,7 +90,7 @@ export default function SegmentDetail({ segment: initialSegment, canWrite, onClo
 
         {/* Route / Location hero */}
         <div className="px-6 pb-4">
-          <div className="bg-white/[0.03] rounded-xl p-4">
+          <div className="rp-surface p-4">
             {seg.segment_type === 'hotel' ? (
               <div className="text-center">
                 <p className="text-lg font-medium text-white">{seg.from_location || '—'}</p>
@@ -123,7 +123,7 @@ export default function SegmentDetail({ segment: initialSegment, canWrite, onClo
 
         {/* Detail rows */}
         <div className="px-6 pb-4">
-          <div className="bg-white/[0.03] rounded-xl px-4">
+          <div className="rp-surface px-4">
             {/* Time details */}
             {seg.segment_type === 'hotel' ? (
               <>
@@ -157,14 +157,14 @@ export default function SegmentDetail({ segment: initialSegment, canWrite, onClo
             onChange={e => setNotes(e.target.value)}
             readOnly={!canWrite}
             placeholder={canWrite ? 'Add notes — meeting details, special requests, reminders...' : 'No notes'}
-            className="w-full bg-white/[0.03] border border-white/5 rounded-xl px-4 py-3 text-sm text-gray-200 placeholder-gray-600 resize-none focus:outline-none focus:border-[#E0BF7B]/30 min-h-[80px]"
+            className="w-full bg-[#0A0B0C] border border-[#26292C] rounded-sm px-4 py-3 text-sm text-[#F5F5F5] placeholder-[#6E7578] resize-none focus:outline-none focus:border-[#CDA14B] min-h-[80px]"
             rows={3}
           />
           {canWrite && notes !== (seg.notes || '') && (
             <button
               onClick={saveNotes}
               disabled={saving}
-              className="mt-2 px-4 py-1.5 bg-[#E0BF7B]/15 text-[#E0BF7B] text-xs font-medium rounded-lg hover:bg-[#E0BF7B]/25 transition-colors disabled:opacity-50"
+              className="mt-2 rp-btn-ghost !min-h-[32px]"
             >
               Save Notes
             </button>

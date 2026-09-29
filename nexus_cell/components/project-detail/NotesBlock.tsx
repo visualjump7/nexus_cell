@@ -42,7 +42,7 @@ export default function NotesBlock({ blockId, initialContent, canWrite }: Props)
       <div className="flex items-center justify-between mb-2">
         <div />
         {saveStatus !== 'idle' && (
-          <span className={`text-[10px] ${saveStatus === 'saving' ? 'text-gray-500' : 'text-emerald-400'}`}>
+          <span className={`text-[10px] ${saveStatus === 'saving' ? 'text-[#6E7578]' : 'text-[#A4CC5C]'}`}>
             {saveStatus === 'saving' ? 'Saving...' : 'Saved'}
           </span>
         )}
@@ -51,8 +51,8 @@ export default function NotesBlock({ blockId, initialContent, canWrite }: Props)
         value={content}
         onChange={handleChange}
         readOnly={!canWrite}
-        placeholder={canWrite ? 'Add project notes, milestones, or status updates...' : 'No notes yet.'}
-        className="w-full min-h-[160px] bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-sm text-gray-200 placeholder-gray-600 resize-y focus:outline-none focus:ring-2 focus:ring-teal-500/50"
+        placeholder={canWrite ? 'Add site notes, milestones, inspections or status updates…' : 'No notes yet.'}
+        className="w-full min-h-[160px] bg-[#0A0B0C] border border-[#26292C] rounded-sm px-4 py-3 text-sm text-[#F5F5F5] placeholder-[#6E7578] resize-y focus:outline-none focus:border-[#CDA14B]"
       />
     </div>
   )

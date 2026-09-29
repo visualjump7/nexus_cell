@@ -88,7 +88,7 @@ export function BriefBlockEditor({
     return (
       <div className="space-y-3">
         {data ? (
-          <div className="rounded-lg bg-muted/30 p-3">
+          <div className="rp-surface p-3">
             <p className="text-sm font-medium text-foreground">
               Cash Flow — {data.month} {data.year}
             </p>
@@ -118,7 +118,7 @@ export function BriefBlockEditor({
             </div>
           </div>
         ) : (
-          <div className="rounded-lg bg-muted/30 p-3">
+          <div className="rp-surface p-3">
             <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
           </div>
         )}
@@ -131,7 +131,7 @@ export function BriefBlockEditor({
             onChange={(e) => onUpdate({ commentary: e.target.value })}
             placeholder="Add a note below this data..."
             rows={2}
-            className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:border-primary"
+            className="mt-1 w-full rounded-sm border border-[#26292C] bg-[#0A0B0C] px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:border-primary"
           />
         </div>
       </div>
@@ -157,7 +157,7 @@ export function BriefBlockEditor({
                 config: { ...block.config, days_ahead: Number(e.target.value) },
               })
             }
-            className="rounded-md border border-border bg-background px-2 py-1 text-sm text-foreground"
+            className="rounded-sm border border-[#26292C] bg-[#0A0B0C] px-2 py-1 text-sm text-foreground"
           >
             <option value={7}>7 days</option>
             <option value={14}>14 days</option>
@@ -165,7 +165,7 @@ export function BriefBlockEditor({
           </select>
         </div>
         {data ? (
-          <div className="rounded-lg bg-muted/30 p-3">
+          <div className="rp-surface p-3">
             <p className="text-sm font-medium text-foreground">
               {data.bills.length} bill{data.bills.length !== 1 ? "s" : ""} due —{" "}
               {formatCurrency(data.total)}
@@ -190,7 +190,7 @@ export function BriefBlockEditor({
             )}
           </div>
         ) : (
-          <div className="rounded-lg bg-muted/30 p-3">
+          <div className="rp-surface p-3">
             <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
           </div>
         )}
@@ -203,7 +203,7 @@ export function BriefBlockEditor({
             onChange={(e) => onUpdate({ commentary: e.target.value })}
             placeholder="Add a note below this data..."
             rows={2}
-            className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:border-primary"
+            className="mt-1 w-full rounded-sm border border-[#26292C] bg-[#0A0B0C] px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:border-primary"
           />
         </div>
       </div>
@@ -226,7 +226,7 @@ export function BriefBlockEditor({
                 config: { ...block.config, status: e.target.value },
               })
             }
-            className="rounded-md border border-border bg-background px-2 py-1 text-sm text-foreground"
+            className="rounded-sm border border-[#26292C] bg-[#0A0B0C] px-2 py-1 text-sm text-foreground"
           >
             <option value="all">All</option>
             <option value="active">Active</option>
@@ -236,7 +236,7 @@ export function BriefBlockEditor({
           </select>
         </div>
         {data ? (
-          <div className="rounded-lg bg-muted/30 p-3">
+          <div className="rp-surface p-3">
             <p className="text-sm font-medium text-foreground">
               {data.projects.length} project
               {data.projects.length !== 1 ? "s" : ""} · {data.activeCount} active
@@ -258,7 +258,7 @@ export function BriefBlockEditor({
             )}
           </div>
         ) : (
-          <div className="rounded-lg bg-muted/30 p-3">
+          <div className="rp-surface p-3">
             <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
           </div>
         )}
@@ -271,7 +271,7 @@ export function BriefBlockEditor({
             onChange={(e) => onUpdate({ commentary: e.target.value })}
             placeholder="Add a note below this data..."
             rows={2}
-            className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:border-primary"
+            className="mt-1 w-full rounded-sm border border-[#26292C] bg-[#0A0B0C] px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:border-primary"
           />
         </div>
       </div>
@@ -284,7 +284,7 @@ export function BriefBlockEditor({
     return (
       <div className="space-y-3">
         {data ? (
-          <div className="rounded-lg bg-muted/30 p-3">
+          <div className="rp-surface p-3">
             <p className="text-sm font-medium text-foreground">
               {data.count} pending decision{data.count !== 1 ? "s" : ""}
             </p>
@@ -303,7 +303,7 @@ export function BriefBlockEditor({
             )}
           </div>
         ) : (
-          <div className="rounded-lg bg-muted/30 p-3">
+          <div className="rp-surface p-3">
             <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
           </div>
         )}
@@ -316,7 +316,7 @@ export function BriefBlockEditor({
             onChange={(e) => onUpdate({ commentary: e.target.value })}
             placeholder="Add a note below this data..."
             rows={2}
-            className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:border-primary"
+            className="mt-1 w-full rounded-sm border border-[#26292C] bg-[#0A0B0C] px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:border-primary"
           />
         </div>
       </div>

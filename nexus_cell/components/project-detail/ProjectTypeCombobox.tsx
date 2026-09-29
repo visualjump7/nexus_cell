@@ -2,6 +2,9 @@
 
 import { useEffect, useRef, useState } from 'react'
 
+// Roaring Pines build-program project types, offered alongside existing ones.
+const SUGGESTED_TYPES = ['Track & Paddock', 'Garages', 'Clubhouse', 'Homes', 'Entrance', 'Site Work', 'Amenities']
+
 interface Props {
   value: string
   onChange: (value: string) => void
@@ -17,7 +20,7 @@ export default function ProjectTypeCombobox({
   value,
   onChange,
   className = '',
-  placeholder = 'e.g. Property, Travel plan, Event…',
+  placeholder = 'e.g. Garages, Clubhouse, Track & Paddock…',
 }: Props) {
   const [types, setTypes] = useState<string[]>([])
   const [open, setOpen] = useState(false)
@@ -41,12 +44,18 @@ export default function ProjectTypeCombobox({
     return () => document.removeEventListener('mousedown', onClick)
   }, [])
 
+  // Existing types first (most-used), then the build-program defaults.
+  const allTypes = [
+    ...types,
+    ...SUGGESTED_TYPES.filter(d => !types.some(t => t.toLowerCase() === d.toLowerCase())),
+  ]
+
   const lower = value.trim().toLowerCase()
   const filtered = lower
-    ? types.filter(t => t.toLowerCase().includes(lower))
-    : types
+    ? allTypes.filter(t => t.toLowerCase().includes(lower))
+    : allTypes
 
-  const showCreateOption = !!lower && !types.some(t => t.toLowerCase() === lower)
+  const showCreateOption = !!lower && !allTypes.some(t => t.toLowerCase() === lower)
 
   return (
     <div ref={wrapRef} className="relative">
@@ -61,13 +70,13 @@ export default function ProjectTypeCombobox({
       />
 
       {open && (filtered.length > 0 || showCreateOption) && (
-        <div className="absolute top-full left-0 right-0 mt-1 bg-[#10131b] border border-white/10 rounded-lg shadow-xl shadow-black/40 z-20 max-h-56 overflow-y-auto">
+        <div className="absolute top-full left-0 right-0 mt-1 bg-[#0E0F11] border border-[#26292C] rounded-sm shadow-xl shadow-black/40 z-20 max-h-56 overflow-y-auto">
           {filtered.map(t => (
             <button
               key={t}
               type="button"
               onClick={() => { onChange(t); setOpen(false) }}
-              className="w-full text-left px-3 py-2 text-sm text-white hover:bg-white/[0.04] transition-colors"
+              className="w-full text-left px-3 py-2 text-sm text-white hover:bg-[#141618] transition-colors"
             >
               {t}
             </button>
@@ -76,7 +85,7 @@ export default function ProjectTypeCombobox({
             <button
               type="button"
               onClick={() => setOpen(false)}
-              className="w-full text-left px-3 py-2 text-sm text-emerald-400 hover:bg-emerald-500/[0.06] transition-colors border-t border-white/5"
+              className="w-full text-left px-3 py-2 text-sm text-[#CDA14B] hover:bg-[#141618] transition-colors border-t border-[#1F1F1F]"
             >
               + Create &ldquo;{value.trim()}&rdquo;
             </button>

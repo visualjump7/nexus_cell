@@ -16,39 +16,47 @@ import type {
   ProjectsBlockData,
   DecisionsBlockData,
 } from "@/lib/brief-service";
+import { BRAND } from "@/lib/brand";
 
 const coverStyles = StyleSheet.create({
   page: {
-    backgroundColor: "#0a0a0a",
+    backgroundColor: "#0A0B0C",
     padding: 60,
     justifyContent: "center",
     alignItems: "center",
   },
   logoContainer: { marginBottom: 40 },
   logo: { maxHeight: 80, maxWidth: 200, objectFit: "contain" },
+  eyebrow: {
+    fontSize: 9,
+    letterSpacing: 2,
+    color: "#CDA14B",
+    textAlign: "center",
+    marginBottom: 16,
+  },
   title: {
     fontSize: 32,
     fontWeight: "bold",
-    color: "#ffffff",
+    color: "#F5F5F5",
     textAlign: "center",
     marginBottom: 12,
   },
   subtitle: {
     fontSize: 14,
-    color: "#a0a0a0",
+    color: "#9AA0A4",
     textAlign: "center",
     marginBottom: 30,
   },
   accentLine: { width: 60, height: 2, marginBottom: 30 },
   date: {
     fontSize: 12,
-    color: "#a0a0a0",
+    color: "#9AA0A4",
     textAlign: "center",
     marginBottom: 8,
   },
   principal: {
     fontSize: 12,
-    color: "#a0a0a0",
+    color: "#9AA0A4",
     textAlign: "center",
     marginBottom: 8,
   },
@@ -59,7 +67,7 @@ const coverStyles = StyleSheet.create({
     right: 60,
     textAlign: "center",
   },
-  footerText: { fontSize: 8, color: "#555555" },
+  footerText: { fontSize: 8, color: "#6E7578", letterSpacing: 1 },
 });
 
 const contentStyles = StyleSheet.create({
@@ -68,18 +76,18 @@ const contentStyles = StyleSheet.create({
   briefTitle: {
     fontSize: 22,
     fontWeight: "bold",
-    color: "#1a1a1a",
+    color: "#111111",
     marginBottom: 6,
   },
   attribution: { fontSize: 9, color: "#888888", marginBottom: 20 },
   divider: {
     borderBottomWidth: 1,
-    borderBottomColor: "#e0e0e0",
+    borderBottomColor: "#CDA14B",
     marginBottom: 20,
   },
   blockCard: {
     border: "1px solid #e0e0e0",
-    borderRadius: 6,
+    borderRadius: 2,
     padding: 16,
     marginBottom: 16,
     backgroundColor: "#fafafa",
@@ -87,8 +95,11 @@ const contentStyles = StyleSheet.create({
   blockTitle: {
     fontSize: 12,
     fontWeight: "bold",
-    color: "#1a1a1a",
+    color: "#111111",
     marginBottom: 10,
+    paddingBottom: 4,
+    borderBottomWidth: 1,
+    borderBottomColor: "#CDA14B",
   },
   blockCommentary: {
     fontSize: 9,
@@ -127,10 +138,10 @@ const contentStyles = StyleSheet.create({
     marginBottom: 6,
   },
   dataLabel: { fontSize: 9, color: "#888888" },
-  dataValue: { fontSize: 14, fontWeight: "bold", color: "#1a1a1a" },
+  dataValue: { fontSize: 14, fontWeight: "bold", color: "#111111" },
   dataValueRed: { fontSize: 14, fontWeight: "bold", color: "#ef4444" },
-  dataValueGreen: { fontSize: 14, fontWeight: "bold", color: "#22c55e" },
-  dataValueYellow: { fontSize: 14, fontWeight: "bold", color: "#eab308" },
+  dataValueGreen: { fontSize: 14, fontWeight: "bold", color: "#6E9A2E" },
+  dataValueYellow: { fontSize: 14, fontWeight: "bold", color: "#B0853A" },
   badge: {
     fontSize: 8,
     paddingHorizontal: 5,
@@ -170,9 +181,16 @@ interface BriefPDFProps {
   brief: Brief;
   liveData: Record<string, unknown>;
   principalName?: string;
+  // Club name shown on the cover eyebrow and in the footers.
+  clubName?: string;
 }
 
-export function BriefPDF({ brief, liveData, principalName }: BriefPDFProps) {
+export function BriefPDF({
+  brief,
+  liveData,
+  principalName,
+  clubName = BRAND.fullName,
+}: BriefPDFProps) {
   const accentColor = brief.cover_accent_color || "#CDA14B";
   const coverTitle = brief.cover_title || brief.title;
   const briefDate = formatDate(brief.brief_date);
@@ -185,6 +203,8 @@ export function BriefPDF({ brief, liveData, principalName }: BriefPDFProps) {
             <Image src={brief.cover_logo_url} style={coverStyles.logo} />
           </View>
         )}
+
+        <Text style={coverStyles.eyebrow}>{clubName.toUpperCase()}</Text>
 
         <Text style={coverStyles.title}>{coverTitle}</Text>
 
@@ -207,7 +227,7 @@ export function BriefPDF({ brief, liveData, principalName }: BriefPDFProps) {
         )}
 
         <View style={coverStyles.footer}>
-          <Text style={coverStyles.footerText}>Confidential</Text>
+          <Text style={coverStyles.footerText}>Confidential · {clubName}</Text>
         </View>
       </Page>
 
@@ -225,7 +245,7 @@ export function BriefPDF({ brief, liveData, principalName }: BriefPDFProps) {
         ))}
 
         <View style={contentStyles.pageFooter} fixed>
-          <Text style={contentStyles.pageFooterText}>Confidential</Text>
+          <Text style={contentStyles.pageFooterText}>Confidential · {clubName}</Text>
           <Text style={contentStyles.pageFooterText}>{briefDate}</Text>
           <Text
             style={contentStyles.pageFooterText}
@@ -461,7 +481,7 @@ function ContentBlock({
     const priorityColors: Record<string, string> = {
       urgent: "#ef4444",
       high: "#f59e0b",
-      normal: "#3b82f6",
+      normal: "#3989CB",
       low: "#9ca3af",
     };
 

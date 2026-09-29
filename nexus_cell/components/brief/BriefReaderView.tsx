@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { BRAND } from "@/lib/brand";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency } from "@/lib/utils";
 import type {
@@ -20,14 +21,14 @@ interface BriefReaderViewProps {
 const statusColors: Record<string, string> = {
   active: "bg-emerald-600 text-white",
   on_hold: "bg-amber-600 text-white",
-  completed: "bg-blue-600 text-white",
-  archived: "bg-zinc-600 text-white",
+  completed: "bg-[#3989CB] text-white",
+  archived: "bg-[#3A3E42] text-white",
 };
 
 const priorityColors: Record<string, string> = {
   urgent: "bg-red-600 text-white border-red-600",
   high: "bg-amber-600 text-white border-amber-600",
-  normal: "bg-blue-600 text-white border-blue-600",
+  normal: "bg-[#3989CB] text-white border-[#3989CB]",
   low: "border-border text-muted-foreground",
 };
 
@@ -43,7 +44,8 @@ export function BriefReaderView({ brief, liveData }: BriefReaderViewProps) {
   return (
     <article className="space-y-8">
       <header>
-        <h1 className="font-serif text-3xl font-bold leading-tight text-foreground sm:text-4xl">
+        <p className="rp-eyebrow mb-3">{BRAND.fullName}</p>
+        <h1 className="font-serif text-3xl font-medium uppercase tracking-[0.02em] leading-tight text-foreground sm:text-4xl">
           {brief.title}
         </h1>
         <p className="mt-3 text-sm text-muted-foreground">
@@ -81,8 +83,8 @@ function ReaderBlock({
     const data = liveData.cashflow as CashFlowBlockData | undefined;
     if (!data) return null;
     return (
-      <section className="rounded-xl border border-border bg-card/40 p-6">
-        <h2 className="font-serif text-lg font-semibold text-foreground">
+      <section className="rp-panel p-6">
+        <h2 className="rp-eyebrow">
           Cash Flow — {data.month} {data.year}
         </h2>
         <div className="mt-4 grid grid-cols-3 gap-6">
@@ -134,8 +136,8 @@ function ReaderBlock({
     const data = liveData[dataKey] as BillBlockData | undefined;
     if (!data) return null;
     return (
-      <section className="rounded-xl border border-border bg-card/40 p-6">
-        <h2 className="font-serif text-lg font-semibold text-foreground">
+      <section className="rp-panel p-6">
+        <h2 className="rp-eyebrow">
           Bills Due — Next {daysAhead} Days
         </h2>
         {data.bills.length === 0 ? (
@@ -197,8 +199,8 @@ function ReaderBlock({
         : data.projects;
 
     return (
-      <section className="rounded-xl border border-border bg-card/40 p-6">
-        <h2 className="font-serif text-lg font-semibold text-foreground">
+      <section className="rp-panel p-6">
+        <h2 className="rp-eyebrow">
           Projects Snapshot
         </h2>
         {filteredProjects.length === 0 ? (
@@ -245,8 +247,8 @@ function ReaderBlock({
     if (!data) return null;
 
     return (
-      <section className="rounded-xl border border-border bg-card/40 p-6">
-        <h2 className="font-serif text-lg font-semibold text-foreground">
+      <section className="rp-panel p-6">
+        <h2 className="rp-eyebrow">
           Pending Decisions ({data.count})
         </h2>
         {data.decisions.length === 0 ? (

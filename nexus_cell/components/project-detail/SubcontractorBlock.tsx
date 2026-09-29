@@ -5,16 +5,20 @@ import { useRouter } from 'next/navigation'
 import type { ProjectContact } from '@/lib/types'
 
 const tradeColors: Record<string, string> = {
-  Electrical: 'bg-amber-500/15 text-amber-400',
-  Mechanical: 'bg-blue-500/15 text-blue-400',
-  HVAC: 'bg-teal-500/15 text-teal-400',
-  Plumbing: 'bg-cyan-500/15 text-cyan-400',
-  Legal: 'bg-purple-500/15 text-purple-400',
-  General: 'bg-gray-500/15 text-gray-400',
-  Architecture: 'bg-rose-500/15 text-rose-400',
-  Landscaping: 'bg-emerald-500/15 text-emerald-400',
-  Interior: 'bg-orange-500/15 text-orange-400',
-  Marine: 'bg-blue-500/15 text-blue-400',
+  General: 'bg-[#CDA14B]/15 text-[#E0BF7B]',
+  Paving: 'bg-[#CDA14B]/15 text-[#E0BF7B]',
+  Track: 'bg-[#CDA14B]/15 text-[#E0BF7B]',
+  Sitework: 'bg-[#CDA14B]/15 text-[#E0BF7B]',
+  Civil: 'bg-[#CDA14B]/15 text-[#E0BF7B]',
+  Architecture: 'bg-[#3989CB]/15 text-[#7FB3DE]',
+  Engineering: 'bg-[#3989CB]/15 text-[#7FB3DE]',
+  Electrical: 'bg-[#3989CB]/15 text-[#7FB3DE]',
+  Mechanical: 'bg-[#3989CB]/15 text-[#7FB3DE]',
+  HVAC: 'bg-[#3989CB]/15 text-[#7FB3DE]',
+  Plumbing: 'bg-[#3989CB]/15 text-[#7FB3DE]',
+  Landscaping: 'bg-[#A4CC5C]/15 text-[#A4CC5C]',
+  Legal: 'bg-[#9AA0A4]/15 text-[#9AA0A4]',
+  Interior: 'bg-[#9AA0A4]/15 text-[#9AA0A4]',
 }
 
 function getTradeColor(trade: string | null) {
@@ -58,7 +62,7 @@ export default function SubcontractorBlock({ blockId, contacts, canWrite }: Prop
     router.refresh()
   }
 
-  const inputClass = 'w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-teal-500/50 text-sm'
+  const inputClass = 'w-full px-3 py-2 bg-[#0A0B0C] border border-[#26292C] rounded-sm text-white placeholder-[#6E7578] focus:outline-none focus:border-[#CDA14B] text-sm'
 
   function isInsuranceExpiring(expiry: string | null) {
     if (!expiry) return false
@@ -75,10 +79,10 @@ export default function SubcontractorBlock({ blockId, contacts, canWrite }: Prop
     <div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         {contacts.map(c => (
-          <div key={c.id} className="bg-white/5 rounded-lg p-4">
+          <div key={c.id} className="rp-surface p-4">
             <div className="flex items-center justify-between mb-2">
-              <h4 className="text-sm font-medium text-white">{c.company_name || c.name}</h4>
-              {c.trade && <span className={`text-[10px] px-2 py-0.5 rounded-full ${getTradeColor(c.trade)}`}>{c.trade}</span>}
+              <h4 className="font-display text-[15px] uppercase tracking-[0.06em] text-white">{c.company_name || c.name}</h4>
+              {c.trade && <span className={`font-display text-[10px] uppercase tracking-[0.12em] px-2 py-0.5 rounded-sm ${getTradeColor(c.trade)}`}>{c.trade}</span>}
             </div>
             <p className="text-xs text-gray-400">{c.name}{c.role ? ` — ${c.role}` : ''}</p>
             <div className="flex items-center gap-3 mt-2 text-xs text-gray-500">
@@ -95,14 +99,14 @@ export default function SubcontractorBlock({ blockId, contacts, canWrite }: Prop
                 ) : isInsuranceExpiring(c.insurance_expiry) ? (
                   <span className="text-[10px] text-amber-400 flex items-center gap-1">&#9888; Insurance expiring soon</span>
                 ) : (
-                  <span className="text-[10px] text-emerald-400 flex items-center gap-1">&#10003; Insurance on file</span>
+                  <span className="text-[10px] text-[#A4CC5C] flex items-center gap-1">&#10003; Insurance on file</span>
                 )
               ) : (
                 <span className="text-[10px] text-red-400 flex items-center gap-1">&#9888; No insurance on file</span>
               )}
             </div>
             {canWrite && (
-              <div className="flex gap-2 mt-3 pt-2 border-t border-white/5">
+              <div className="flex gap-2 mt-3 pt-2 border-t border-[#1F1F1F]">
                 <button onClick={() => { setEditing(c); setShowForm(true) }} className="text-[10px] text-gray-500 hover:text-white">Edit</button>
                 <button onClick={() => handleDelete(c.id)} className="text-[10px] text-gray-500 hover:text-red-400">Delete</button>
               </div>
@@ -112,7 +116,7 @@ export default function SubcontractorBlock({ blockId, contacts, canWrite }: Prop
       </div>
 
       {canWrite && !showForm && (
-        <button onClick={() => { setEditing(null); setShowForm(true) }} className="mt-3 text-xs text-teal-400 hover:text-teal-300">+ Add Subcontractor</button>
+        <button onClick={() => { setEditing(null); setShowForm(true) }} className="mt-3 rp-btn-ghost !min-h-[30px] !px-3 !py-1">Add subcontractor</button>
       )}
 
       {showForm && (
@@ -163,10 +167,10 @@ function SubcontractorForm({ contact, onSave, onCancel, inputClass }: {
   }
 
   return (
-    <div className="mt-3 bg-white/5 rounded-lg p-4 space-y-3">
+    <div className="mt-3 rp-surface p-4 space-y-3">
       <div className="grid grid-cols-2 gap-3">
         <input className={inputClass} placeholder="Company Name *" value={form.company_name} onChange={e => setForm(p => ({ ...p, company_name: e.target.value }))} />
-        <input className={inputClass} placeholder="Trade *" value={form.trade} onChange={e => setForm(p => ({ ...p, trade: e.target.value }))} />
+        <input className={inputClass} placeholder="Trade * (e.g. Paving, Electrical)" value={form.trade} onChange={e => setForm(p => ({ ...p, trade: e.target.value }))} />
         <input className={inputClass} placeholder="Contact Name *" value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} />
         <input className={inputClass} placeholder="Email" value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))} />
         <input className={inputClass} placeholder="Phone" value={form.phone} onChange={e => setForm(p => ({ ...p, phone: e.target.value }))} />
@@ -183,10 +187,10 @@ function SubcontractorForm({ contact, onSave, onCancel, inputClass }: {
         <input className={inputClass} type="date" placeholder="Insurance Expiry" value={form.insurance_expiry} onChange={e => setForm(p => ({ ...p, insurance_expiry: e.target.value }))} />
       )}
       <div className="flex gap-2">
-        <button onClick={handleSubmit} className="px-3 py-1.5 bg-teal-500 hover:brightness-110 text-white text-xs rounded-lg font-medium">
+        <button onClick={handleSubmit} className="rp-btn-solid !min-h-[34px] !px-4 !py-1.5 !text-[11px]">
           {contact ? 'Update' : 'Add'}
         </button>
-        <button onClick={onCancel} className="px-3 py-1.5 bg-white/10 hover:bg-white/15 text-gray-300 text-xs rounded-lg">Cancel</button>
+        <button onClick={onCancel} className="rp-btn-ghost !min-h-[30px] !px-3 !py-1">Cancel</button>
       </div>
     </div>
   )

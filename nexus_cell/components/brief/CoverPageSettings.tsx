@@ -6,6 +6,7 @@ import { Loader2, Upload, X, ChevronDown, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/utils/supabase/client";
 import type { Brief } from "@/lib/brief-service";
+import { BRAND } from "@/lib/brand";
 
 interface CoverPageSettingsProps {
   brief: Brief;
@@ -16,10 +17,9 @@ interface CoverPageSettingsProps {
 
 const presetColors = [
   { label: "Gold", value: "#CDA14B" },
-  { label: "Blue", value: "#3b82f6" },
-  { label: "Amber", value: "#f59e0b" },
-  { label: "Rose", value: "#f43f5e" },
-  { label: "Violet", value: "#8b5cf6" },
+  { label: "Blue", value: "#3989CB" },
+  { label: "Green", value: "#A4CC5C" },
+  { label: "Steel", value: "#9AA0A4" },
   { label: "White", value: "#ffffff" },
 ];
 
@@ -67,12 +67,12 @@ export function CoverPageSettings({
   };
 
   return (
-    <div className="rounded-lg border border-border">
+    <div className="rp-panel">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex w-full items-center justify-between px-4 py-3 text-sm font-medium text-foreground hover:bg-muted/30 transition-colors"
+        className="flex w-full items-center justify-between px-4 py-3 text-foreground hover:bg-[#141618] transition-colors"
       >
-        <span>Cover Page Settings</span>
+        <span className="rp-eyebrow--muted">Cover page settings</span>
         {isOpen ? (
           <ChevronDown className="h-4 w-4" />
         ) : (
@@ -88,7 +88,7 @@ export function CoverPageSettings({
               type="text"
               value={brief.cover_title || ""}
               onChange={(e) => onUpdate({ cover_title: e.target.value })}
-              placeholder="Daily Brief"
+              placeholder="Build Brief"
               className="mt-1 w-full rounded-md border border-border bg-background px-3 py-1.5 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:border-primary"
             />
           </div>
@@ -174,7 +174,7 @@ export function CoverPageSettings({
                 }
                 className="rounded border-border"
               />
-              Show principal name
+              Show owner name
             </label>
           </div>
 
@@ -188,7 +188,7 @@ export function CoverPageSettings({
                   key={c.value}
                   onClick={() => onUpdate({ cover_accent_color: c.value })}
                   title={c.label}
-                  className={`h-6 w-6 rounded-full border-2 transition-all ${
+                  className={`h-6 w-6 rounded-none border-2 transition-all ${
                     (brief.cover_accent_color || "#CDA14B") === c.value
                       ? "border-foreground scale-110"
                       : "border-transparent hover:border-muted-foreground"
@@ -210,7 +210,7 @@ export function CoverPageSettings({
 
           <div>
             <label className="text-xs text-muted-foreground">Preview</label>
-            <div className="mt-1.5 rounded-lg border border-border bg-[#0a0a0a] p-6 text-center">
+            <div className="mt-1.5 rounded-sm border border-border bg-[#0A0B0C] p-6 text-center">
               {brief.cover_logo_url && (
                 <Image
                   src={brief.cover_logo_url}
@@ -221,11 +221,14 @@ export function CoverPageSettings({
                   unoptimized
                 />
               )}
-              <p className="text-sm font-bold text-white">
-                {brief.cover_title || "Daily Brief"}
+              <p className="mb-2 font-display text-[9px] uppercase tracking-[0.22em] text-[#CDA14B]">
+                {BRAND.fullName}
+              </p>
+              <p className="text-sm font-bold text-[#F5F5F5]">
+                {brief.cover_title || "Build Brief"}
               </p>
               {brief.cover_subtitle && (
-                <p className="mt-1 text-[10px] text-zinc-400">
+                <p className="mt-1 text-[10px] text-[#9AA0A4]">
                   {brief.cover_subtitle}
                 </p>
               )}
@@ -236,7 +239,7 @@ export function CoverPageSettings({
                 }}
               />
               {brief.cover_show_date !== false && (
-                <p className="text-[10px] text-zinc-500">
+                <p className="text-[10px] text-[#9AA0A4]">
                   {new Date(
                     brief.brief_date + "T00:00:00"
                   ).toLocaleDateString("en-US", {
@@ -247,7 +250,7 @@ export function CoverPageSettings({
                 </p>
               )}
               {brief.cover_show_principal !== false && (
-                <p className="text-[10px] text-zinc-500">
+                <p className="text-[10px] text-[#9AA0A4]">
                   Prepared for {principalName}
                 </p>
               )}

@@ -104,7 +104,7 @@ export default function TripMap({ segments, selectedSegmentId, onSegmentSelect }
         if (route.type === 'flight' || route.type === 'car' || route.type === 'ground_transport') {
           map.addLayer({
             id: `route-glow-${i}`, type: 'line', source: `route-${i}`,
-            paint: { 'line-color': segmentColors[route.type] || '#94a3b8', 'line-width': 6, 'line-opacity': 0.08 },
+            paint: { 'line-color': segmentColors[route.type] || '#9AA0A4', 'line-width': 6, 'line-opacity': 0.08 },
           })
         }
 
@@ -112,7 +112,7 @@ export default function TripMap({ segments, selectedSegmentId, onSegmentSelect }
         map.addLayer({
           id: `route-line-${i}`, type: 'line', source: `route-${i}`,
           paint: {
-            'line-color': segmentColors[route.type] || '#94a3b8',
+            'line-color': segmentColors[route.type] || '#9AA0A4',
             'line-width': isGround ? 2.5 : (route.type === 'flight' ? 2 : 1.5),
             'line-opacity': route.isDashed ? 0.3 : 0.6,
             'line-dasharray': route.isDashed ? [4, 4] : [1],
@@ -123,15 +123,15 @@ export default function TripMap({ segments, selectedSegmentId, onSegmentSelect }
       // Add markers and store refs
       markersRef.current.clear()
       uniquePoints.forEach((point) => {
-        const color = segmentColors[point.type] || '#94a3b8'
+        const color = segmentColors[point.type] || '#9AA0A4'
         const el = document.createElement('div')
-        el.style.cssText = `width:14px;height:14px;border-radius:50%;background:${color};border:2px solid #08090f;box-shadow:0 0 8px ${color}60;transition:all 0.3s ease;`
+        el.style.cssText = `width:14px;height:14px;border-radius:50%;background:${color};border:2px solid #0A0B0C;box-shadow:0 0 8px ${color}60;transition:all 0.3s ease;`
 
         const marker = new mapboxgl.Marker({ element: el }).setLngLat([point.lng, point.lat]).addTo(map)
 
         if (point.label) {
           const popup = new mapboxgl.Popup({ offset: 12, closeButton: false, closeOnClick: false, className: 'nexus-popup' })
-            .setHTML(`<div style="font-size:11px;color:#e2e8f0;font-family:sans-serif;padding:2px 4px">${point.label}</div>`)
+            .setHTML(`<div style="font-size:11px;color:#F5F5F5;font-family:var(--font-body),sans-serif;padding:2px 4px">${point.label}</div>`)
           marker.setPopup(popup).togglePopup()
         }
 
@@ -247,54 +247,55 @@ export default function TripMap({ segments, selectedSegmentId, onSegmentSelect }
 
   if (!hasCoords) {
     return (
-      <div className="w-full h-[300px] bg-[#0f1117] rounded-xl flex items-center justify-center mb-6">
+      <div className="w-full h-[300px] rp-panel flex items-center justify-center mb-6">
         <div className="text-center">
-          <svg className="w-8 h-8 text-gray-600 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+          <svg className="w-8 h-8 text-[#6E7578] mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
             <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
           </svg>
-          <p className="text-xs text-gray-600">No coordinates available for map</p>
+          <p className="rp-eyebrow--muted">No coordinates available for map</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="relative w-full rounded-xl overflow-hidden mb-6">
+    <div className="relative w-full rounded-sm border border-[#1F1F1F] overflow-hidden mb-6">
       <div ref={mapContainer} className="w-full h-[350px] md:h-[400px]" />
 
       {!loaded && (
-        <div className="absolute inset-0 bg-[#0f1117] flex items-center justify-center rounded-xl pointer-events-none">
+        <div className="absolute inset-0 bg-[#0E0F11] flex items-center justify-center pointer-events-none">
           <div className="flex items-center gap-2">
-            <div className="w-2 h-2 bg-[#E0BF7B] rounded-full animate-pulse" />
-            <p className="text-xs text-gray-500">Loading map...</p>
+            <div className="w-2 h-2 bg-[#CDA14B] rounded-full animate-pulse" />
+            <p className="rp-eyebrow--muted">Loading map…</p>
           </div>
         </div>
       )}
 
-      <div className="absolute bottom-3 left-3 bg-[#08090f]/80 backdrop-blur-sm rounded-lg px-3 py-2 flex gap-3 pointer-events-none">
+      <div className="absolute bottom-3 left-3 bg-[#0A0B0C]/85 border border-[#26292C] backdrop-blur-sm rounded-none px-3 py-2 flex gap-4 pointer-events-none">
         {[
-          { color: '#A4CC5C', label: 'Flight' },
-          { color: '#a78bfa', label: 'Hotel' },
-          { color: '#fb923c', label: 'Ground' },
+          { color: segmentColors.flight, label: 'Flight' },
+          { color: segmentColors.hotel, label: 'Hotel' },
+          { color: segmentColors.ground_transport, label: 'Ground' },
         ].map(item => (
           <div key={item.label} className="flex items-center gap-1.5">
-            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: item.color }} />
-            <span className="text-[10px] text-gray-400">{item.label}</span>
+            <div className="w-2 h-2" style={{ backgroundColor: item.color }} />
+            <span className="rp-eyebrow--muted !text-[10px]">{item.label}</span>
           </div>
         ))}
       </div>
 
       <style jsx global>{`
         .mapboxgl-popup-content {
-          background: #141520 !important;
-          border: 1px solid rgba(255,255,255,0.1) !important;
-          border-radius: 6px !important;
+          background: #141618 !important;
+          border: 1px solid #26292C !important;
+          border-radius: 2px !important;
+          font-family: var(--font-body), sans-serif !important;
           padding: 4px 8px !important;
           box-shadow: 0 4px 20px rgba(0,0,0,0.5) !important;
         }
         .mapboxgl-popup-tip {
-          border-top-color: #141520 !important;
+          border-top-color: #141618 !important;
         }
         @keyframes marker-pulse {
           0%, 100% { transform: scale(1.5); }

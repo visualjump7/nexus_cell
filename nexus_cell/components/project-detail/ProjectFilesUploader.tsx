@@ -167,13 +167,13 @@ export default function ProjectFilesUploader({
           setDragOver(false)
           handleFiles(Array.from(e.dataTransfer.files))
         }}
-        className={`border-2 border-dashed rounded-xl py-8 text-center cursor-pointer transition-colors ${
+        className={`border border-dashed rounded-sm py-8 text-center cursor-pointer transition-colors ${
           dragOver
-            ? 'border-emerald-400 bg-emerald-500/[0.04]'
-            : 'border-white/10 hover:border-white/20'
+            ? 'border-[#CDA14B] bg-[#CDA14B]/[0.04]'
+            : 'border-[#26292C] bg-[#0E0F11] hover:border-[#CDA14B]'
         }`}
       >
-        <div className="w-10 h-10 mx-auto mb-2 rounded-full bg-white/5 flex items-center justify-center">
+        <div className="w-10 h-10 mx-auto mb-2 rounded-sm border border-[#26292C] flex items-center justify-center">
           <svg className="w-5 h-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
           </svg>
@@ -196,9 +196,9 @@ export default function ProjectFilesUploader({
 
       {/* Pending uploads */}
       {pending.length > 0 && (
-        <div className="bg-[#141520] border border-white/5 rounded-lg p-3 space-y-1">
+        <div className="rp-surface p-3 space-y-1">
           <div className="flex items-center justify-between mb-1">
-            <p className="text-[10px] text-gray-500 uppercase tracking-wider">Uploads</p>
+            <p className="rp-eyebrow--muted">Uploads</p>
             {pending.some(p => p.progress === 'done') && (
               <button onClick={clearCompleted} className="text-[10px] text-gray-500 hover:text-white transition-colors">
                 Clear done
@@ -213,7 +213,7 @@ export default function ProjectFilesUploader({
                 <p className="text-[10px] text-gray-500">{humanSize(p.file.size)}</p>
               </div>
               <span className={`text-[10px] uppercase tracking-wider shrink-0 ${
-                p.progress === 'done' ? 'text-emerald-400' :
+                p.progress === 'done' ? 'text-[#A4CC5C]' :
                 p.progress === 'error' ? 'text-red-400' :
                 p.progress === 'uploading' ? 'text-amber-400' :
                 'text-gray-500'
@@ -228,9 +228,9 @@ export default function ProjectFilesUploader({
       {/* Existing files list */}
       {existingFiles.length > 0 && (
         <div className="space-y-1.5">
-          <p className="text-[10px] text-gray-500 uppercase tracking-wider">Attached</p>
+          <p className="rp-eyebrow--muted">Attached</p>
           {existingFiles.map(f => (
-            <div key={f.id} className="bg-[#141520] border border-white/5 rounded-lg p-3 flex items-center gap-3">
+            <div key={f.id} className="rp-surface p-3 flex items-center gap-3">
               <span className="text-lg shrink-0" aria-hidden>{fileIcon(f.file_type)}</span>
               <div className="flex-1 min-w-0">
                 <p className="text-sm text-white font-medium truncate">{f.file_name}</p>
@@ -243,7 +243,7 @@ export default function ProjectFilesUploader({
                 href={f.file_url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-emerald-400 text-xs hover:underline shrink-0"
+                className="text-[#CDA14B] text-xs hover:underline shrink-0"
               >
                 Open
               </a>

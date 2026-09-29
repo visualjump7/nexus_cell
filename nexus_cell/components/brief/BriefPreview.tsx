@@ -1,6 +1,7 @@
 "use client";
 
 import { Badge } from "@/components/ui/badge";
+import { BRAND } from "@/lib/brand";
 import { formatCurrency } from "@/lib/utils";
 import type {
   Brief,
@@ -20,14 +21,14 @@ interface BriefPreviewProps {
 const statusColors: Record<string, string> = {
   active: "bg-emerald-600 text-white",
   on_hold: "bg-amber-600 text-white",
-  completed: "bg-blue-600 text-white",
-  archived: "bg-zinc-600 text-white",
+  completed: "bg-[#3989CB] text-white",
+  archived: "bg-[#3A3E42] text-white",
 };
 
 const priorityColors: Record<string, string> = {
   urgent: "bg-red-600 text-white border-red-600",
   high: "bg-amber-600 text-white border-amber-600",
-  normal: "bg-blue-600 text-white border-blue-600",
+  normal: "bg-[#3989CB] text-white border-[#3989CB]",
   low: "border-border text-muted-foreground",
 };
 
@@ -43,11 +44,12 @@ export function BriefPreview({ brief, liveData, compact }: BriefPreviewProps) {
   return (
     <div className={compact ? "space-y-4" : "space-y-6"}>
       <div>
+        {!compact && <p className="rp-eyebrow mb-2">{BRAND.fullName}</p>}
         <h2
           className={
             compact
-              ? "text-lg font-bold text-foreground"
-              : "text-2xl font-bold text-foreground font-serif"
+              ? "font-display text-lg font-medium uppercase tracking-[0.02em] text-foreground"
+              : "text-2xl font-medium uppercase tracking-[0.02em] text-foreground font-serif"
           }
         >
           {brief.title}
@@ -97,8 +99,8 @@ function BriefBlockPreview({
     const data = liveData.cashflow as CashFlowBlockData | undefined;
     if (!data) return null;
     return (
-      <div className="rounded-lg border border-border bg-card/50 p-4">
-        <h3 className="text-sm font-semibold text-foreground">
+      <div className="rp-panel p-4">
+        <h3 className="rp-eyebrow">
           Cash Flow — {data.month} {data.year}
         </h3>
         <div className="mt-3 grid grid-cols-3 gap-4">
@@ -140,8 +142,8 @@ function BriefBlockPreview({
     const data = liveData[dataKey] as BillBlockData | undefined;
     if (!data) return null;
     return (
-      <div className="rounded-lg border border-border bg-card/50 p-4">
-        <h3 className="text-sm font-semibold text-foreground">
+      <div className="rp-panel p-4">
+        <h3 className="rp-eyebrow">
           Bills Due — Next {daysAhead} Days
         </h3>
         {data.bills.length === 0 ? (
@@ -196,8 +198,8 @@ function BriefBlockPreview({
         : data.projects;
 
     return (
-      <div className="rounded-lg border border-border bg-card/50 p-4">
-        <h3 className="text-sm font-semibold text-foreground">
+      <div className="rp-panel p-4">
+        <h3 className="rp-eyebrow">
           Projects Snapshot
         </h3>
         {filteredProjects.length === 0 ? (
@@ -242,8 +244,8 @@ function BriefBlockPreview({
     if (!data) return null;
 
     return (
-      <div className="rounded-lg border border-border bg-card/50 p-4">
-        <h3 className="text-sm font-semibold text-foreground">
+      <div className="rp-panel p-4">
+        <h3 className="rp-eyebrow">
           Pending Decisions ({data.count})
         </h3>
         {data.decisions.length === 0 ? (

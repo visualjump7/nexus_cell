@@ -84,7 +84,7 @@ export function TipTapEditor({
   ];
 
   return (
-    <div className="rounded-lg border border-border">
+    <div className="rounded-sm border border-[#26292C] bg-[#0E0F11]">
       <div className="flex gap-1 border-b border-border px-2 py-1.5">
         {toolbarButtons.map((btn) => (
           <button

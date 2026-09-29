@@ -64,26 +64,26 @@ export default function ProjectBlocks({ projectId, orgId, blocks, role }: Props)
         <div className="mb-6 relative">
           <button
             onClick={() => setShowAddMenu(!showAddMenu)}
-            className="px-4 py-2 bg-teal-500 hover:brightness-110 text-white text-sm font-medium rounded-lg transition-all flex items-center gap-2"
+            className="rp-btn-solid"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
             </svg>
-            Add Block
+            Add block
           </button>
 
           {showAddMenu && (
-            <div className="absolute top-full left-0 mt-2 bg-card-dark rounded-xl shadow-2xl shadow-black/40 border border-white/10 p-2 z-20 w-72">
+            <div className="absolute top-full left-0 mt-2 bg-[#0E0F11] rounded-sm shadow-2xl shadow-black/40 border border-[#26292C] p-2 z-20 w-72">
               {(Object.entries(blockTypeConfig) as [ProjectBlockType, typeof blockTypeConfig[ProjectBlockType]][]).map(([type, config]) => (
                 <button
                   key={type}
                   onClick={() => addBlock(type)}
-                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left hover:bg-white/5 transition-colors"
+                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-sm text-left border-l-2 border-transparent hover:border-[#CDA14B] hover:bg-[#141618] transition-colors"
                 >
                   <span className="text-xl">{config.icon}</span>
                   <div>
-                    <p className="text-sm text-white font-medium">{config.label}</p>
-                    <p className="text-[11px] text-gray-500">{config.description}</p>
+                    <p className="font-display text-sm uppercase tracking-[0.08em] text-white">{config.label}</p>
+                    <p className="text-[11px] text-[#9AA0A4]">{config.description}</p>
                   </div>
                 </button>
               ))}
@@ -94,15 +94,15 @@ export default function ProjectBlocks({ projectId, orgId, blocks, role }: Props)
 
       {/* Blocks */}
       {blocks.length === 0 ? (
-        <div className="bg-card-dark rounded-xl p-12 text-center">
-          <p className="text-gray-500 text-sm">No blocks yet. Add a gallery, personnel directory, subcontractor list, or notes to build out this project.</p>
+        <div className="rp-panel p-12 text-center">
+          <p className="text-[#9AA0A4] text-sm">No blocks yet. Add a gallery of renderings and site photos, the project team, subcontractors, or notes.</p>
         </div>
       ) : (
         <div className="space-y-4">
           {blocks.map(block => (
-            <div key={block.id} className="bg-card-dark rounded-xl shadow-lg shadow-black/20 overflow-hidden">
+            <div key={block.id} className="rp-panel overflow-hidden">
               {/* Block Header */}
-              <div className="flex items-center justify-between px-5 py-3 border-b border-white/5">
+              <div className="flex items-center justify-between px-5 py-3 border-b border-[#1F1F1F]">
                 <div className="flex items-center gap-2">
                   <span className="text-sm">{blockTypeConfig[block.type]?.icon}</span>
                   {editingTitle === block.id ? (
@@ -111,11 +111,11 @@ export default function ProjectBlocks({ projectId, orgId, blocks, role }: Props)
                       defaultValue={block.title || ''}
                       onBlur={e => updateTitle(block.id, e.target.value)}
                       onKeyDown={e => { if (e.key === 'Enter') updateTitle(block.id, (e.target as HTMLInputElement).value) }}
-                      className="bg-transparent border-b border-white/20 text-sm text-white font-medium focus:outline-none focus:border-teal-400 px-1"
+                      className="bg-transparent border-b border-[#3A3E42] font-display text-[12px] uppercase tracking-[0.18em] text-white focus:outline-none focus:border-[#CDA14B] px-1"
                     />
                   ) : (
                     <h3
-                      className={`text-sm font-medium text-white ${canWrite ? 'cursor-pointer hover:text-teal-400' : ''}`}
+                      className={`rp-eyebrow--muted ${canWrite ? 'cursor-pointer hover:!text-[#CDA14B]' : ''}`}
                       onClick={() => canWrite && setEditingTitle(block.id)}
                     >
                       {block.title || blockTypeConfig[block.type]?.label}
@@ -123,7 +123,7 @@ export default function ProjectBlocks({ projectId, orgId, blocks, role }: Props)
                   )}
                 </div>
                 {canWrite && (
-                  <button onClick={() => setDeletingBlock(block)} className="text-gray-600 hover:text-red-400 text-xs transition-colors">
+                  <button onClick={() => setDeletingBlock(block)} className="font-display text-[10px] uppercase tracking-[0.14em] text-[#6E7578] hover:text-red-400 transition-colors">
                     Remove
                   </button>
                 )}
