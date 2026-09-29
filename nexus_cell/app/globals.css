@@ -3,27 +3,27 @@
 @tailwind utilities;
 
 :root {
-  --background: #08090f;
+  --background: #0A0B0C;
   --foreground: #ffffff;
 
   /* Command landing (V8) tokens */
-  --nx-bg: #0a0c12;
-  --nx-bg-raised: #10131b;
-  --nx-bg-card: #161a25;
+  --nx-bg: #0A0B0C;
+  --nx-bg-raised: #0E0F11;
+  --nx-bg-card: #141618;
   --nx-border: rgba(255, 255, 255, 0.08);
   --nx-border-strong: rgba(255, 255, 255, 0.14);
-  --nx-text: #e8ecf3;
-  --nx-text-dim: rgba(232, 236, 243, 0.62);
-  --nx-text-faint: rgba(232, 236, 243, 0.38);
-  --nx-teal: #2dbfa3;
-  --nx-teal-dim: #1a8470;
-  --nx-teal-glow: rgba(45, 191, 163, 0.35);
+  --nx-text: #F5F5F5;
+  --nx-text-dim: rgba(245, 245, 245, 0.62);
+  --nx-text-faint: rgba(245, 245, 245, 0.38);
+  --nx-teal: #CDA14B;
+  --nx-teal-dim: #8C6830;
+  --nx-teal-glow: rgba(205, 161, 75, 0.35);
 }
 
 body {
   color: var(--foreground);
   background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-body), system-ui, sans-serif;
 }
 
 @keyframes nexus-pulse {

@@ -2,7 +2,7 @@
 
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
 
-const COLORS = ['#4ade80', '#60a5fa', '#a78bfa', '#fbbf24', '#f87171']
+const COLORS = ['#CDA14B', '#60a5fa', '#a78bfa', '#fbbf24', '#f87171']
 
 const monthlyData = [
   { month: 'Jan', amount: 42000 },
@@ -40,8 +40,8 @@ export default function DashboardCharts({ categoryData }: Props) {
           <AreaChart data={monthlyData}>
             <defs>
               <linearGradient id="greenGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#4ade80" stopOpacity={0.3} />
-                <stop offset="100%" stopColor="#4ade80" stopOpacity={0} />
+                <stop offset="0%" stopColor="#CDA14B" stopOpacity={0.3} />
+                <stop offset="100%" stopColor="#CDA14B" stopOpacity={0} />
               </linearGradient>
             </defs>
             <XAxis
@@ -60,13 +60,13 @@ export default function DashboardCharts({ categoryData }: Props) {
             <Tooltip
               contentStyle={{ background: '#1a1b2e', border: 'none', borderRadius: 8, boxShadow: '0 4px 20px rgba(0,0,0,0.4)' }}
               labelStyle={{ color: '#9ca3af' }}
-              itemStyle={{ color: '#4ade80' }}
+              itemStyle={{ color: '#CDA14B' }}
               formatter={(value) => [`$${Number(value).toLocaleString()}`, 'Spending']}
             />
             <Area
               type="monotone"
               dataKey="amount"
-              stroke="#4ade80"
+              stroke="#CDA14B"
               fill="url(#greenGradient)"
               strokeWidth={2}
             />

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
-import { Inter } from "next/font/google";
+import { Inter, Oswald, Source_Sans_3 } from "next/font/google";
+import { BRAND } from "@/lib/brand";
 import { ToastProvider } from "@/components/shared/Toast";
 import "./globals.css";
 
@@ -20,10 +21,22 @@ const inter = Inter({
   variable: "--font-inter",
   display: "swap",
 });
+const sourceSans = Source_Sans_3({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800"],
+  variable: "--font-body",
+  display: "swap",
+});
+const oswald = Oswald({
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
+  variable: "--font-display",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
-  title: "Nexus Cell",
-  description: "Operations management platform",
+  title: BRAND.fullName,
+  description: `${BRAND.fullName} — ${BRAND.tagline}`,
 };
 
 export default function RootLayout({
@@ -34,7 +47,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${inter.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} ${inter.variable} ${sourceSans.variable} ${oswald.variable} font-sans antialiased`}
       >
         <ToastProvider>
           {children}

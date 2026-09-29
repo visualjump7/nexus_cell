@@ -79,13 +79,13 @@ export default function AiAskWidget({ openingMessage, suggestions }: Props) {
         <div
           className="w-8 h-8 rounded-full shrink-0"
           style={{
-            background: 'radial-gradient(circle, #5eead4 0%, #0d9488 50%, #064e3b 100%)',
+            background: 'radial-gradient(circle, #E0BF7B 0%, #B0853A 50%, #4F3B20 100%)',
             boxShadow: '0 0 20px rgba(94,234,212,0.2)',
           }}
           aria-hidden
         />
         <div>
-          <p className="text-sm font-semibold text-[#5eead4] leading-none">Ask Nexus</p>
+          <p className="text-sm font-semibold text-[#E0BF7B] leading-none">Ask Nexus</p>
           <p className="text-[11px] text-gray-500 mt-1">Anything about your operations.</p>
         </div>
       </div>
@@ -97,14 +97,14 @@ export default function AiAskWidget({ openingMessage, suggestions }: Props) {
           onChange={e => setInput(e.target.value)}
           onKeyDown={handleKey}
           placeholder="Type or ask…"
-          className="flex-1 bg-[#141520] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-[#475569] focus:outline-none focus:border-[#5eead4]/50 transition-colors"
+          className="flex-1 bg-[#141520] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-[#475569] focus:outline-none focus:border-[#E0BF7B]/50 transition-colors"
           disabled={loading}
         />
         <button
           onClick={() => send(input)}
           disabled={!input.trim() || loading}
           className="px-4 py-2.5 rounded-xl text-sm font-medium text-white disabled:opacity-30 transition-all hover:brightness-110"
-          style={{ background: 'linear-gradient(to right, #14b8a6, #10b981)' }}
+          style={{ background: 'linear-gradient(to right, #CDA14B, #B0853A)' }}
         >
           {loading ? '…' : 'Ask'}
         </button>
@@ -112,7 +112,7 @@ export default function AiAskWidget({ openingMessage, suggestions }: Props) {
 
       {showOpener && (
         <div className="mt-4 flex justify-start">
-          <div className="max-w-[90%] px-3.5 py-2.5 rounded-xl text-sm leading-relaxed bg-[#5eead4]/10 text-[#e2e8f0] border border-[#5eead4]/10">
+          <div className="max-w-[90%] px-3.5 py-2.5 rounded-xl text-sm leading-relaxed bg-[#E0BF7B]/10 text-[#e2e8f0] border border-[#E0BF7B]/10">
             <p className="whitespace-pre-wrap">{openingMessage}</p>
           </div>
         </div>
@@ -140,7 +140,7 @@ export default function AiAskWidget({ openingMessage, suggestions }: Props) {
               <div className={`max-w-[85%] px-3.5 py-2.5 rounded-xl text-sm leading-relaxed ${
                 msg.role === 'user'
                   ? 'bg-[#141520] text-[#e2e8f0]'
-                  : 'bg-[#5eead4]/10 text-[#e2e8f0] border border-[#5eead4]/10'
+                  : 'bg-[#E0BF7B]/10 text-[#e2e8f0] border border-[#E0BF7B]/10'
               }`}>
                 <p className="whitespace-pre-wrap">{msg.content}</p>
               </div>
@@ -148,10 +148,10 @@ export default function AiAskWidget({ openingMessage, suggestions }: Props) {
           ))}
           {loading && (
             <div className="flex justify-start">
-              <div className="bg-[#5eead4]/10 border border-[#5eead4]/10 px-4 py-3 rounded-xl flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 bg-[#5eead4] rounded-full animate-pulse" />
-                <span className="w-1.5 h-1.5 bg-[#5eead4] rounded-full animate-pulse" style={{ animationDelay: '150ms' }} />
-                <span className="w-1.5 h-1.5 bg-[#5eead4] rounded-full animate-pulse" style={{ animationDelay: '300ms' }} />
+              <div className="bg-[#E0BF7B]/10 border border-[#E0BF7B]/10 px-4 py-3 rounded-xl flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 bg-[#E0BF7B] rounded-full animate-pulse" />
+                <span className="w-1.5 h-1.5 bg-[#E0BF7B] rounded-full animate-pulse" style={{ animationDelay: '150ms' }} />
+                <span className="w-1.5 h-1.5 bg-[#E0BF7B] rounded-full animate-pulse" style={{ animationDelay: '300ms' }} />
               </div>
             </div>
           )}

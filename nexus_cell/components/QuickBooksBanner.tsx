@@ -171,7 +171,7 @@ export default function QuickBooksBanner({ connection, canWrite, isConfigured }:
           <div className="bg-main rounded-xl shadow-2xl shadow-black/40 w-full max-w-sm p-6" onClick={e => e.stopPropagation()}>
             <h3 className="text-lg font-semibold text-white mb-2">Disconnect QuickBooks?</h3>
             <p className="text-sm text-gray-400 mb-6">
-              Your Nexus Cell data will remain intact, but bills will no longer sync with QuickBooks. You can reconnect anytime.
+              Your portal data will remain intact, but bills will no longer sync with QuickBooks. You can reconnect anytime.
             </p>
             <div className="flex gap-3">
               <button

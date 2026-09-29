@@ -87,7 +87,7 @@ export default function DateTimePicker({ value, onChange, label, mode = 'datetim
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        className="w-full px-3 py-2 bg-card border border-white/10 rounded-lg text-left text-sm focus:outline-none focus:border-[#5eead4] transition-colors flex items-center justify-between"
+        className="w-full px-3 py-2 bg-card border border-white/10 rounded-lg text-left text-sm focus:outline-none focus:border-[#E0BF7B] transition-colors flex items-center justify-between"
       >
         <span className={displayVal ? 'text-white' : 'text-[#475569]'}>{displayVal || 'Select...'}</span>
         <svg className="w-4 h-4 text-gray-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -125,9 +125,9 @@ export default function DateTimePicker({ value, onChange, label, mode = 'datetim
                   onClick={() => selectDay(day)}
                   className={`w-8 h-8 rounded-lg text-xs flex items-center justify-center transition-all ${
                     isSelected(day)
-                      ? 'bg-[#5eead4] text-[#08090f] font-bold'
+                      ? 'bg-[#E0BF7B] text-[#08090f] font-bold'
                       : isToday(day)
-                        ? 'text-[#5eead4] font-medium hover:bg-white/10'
+                        ? 'text-[#E0BF7B] font-medium hover:bg-white/10'
                         : 'text-gray-300 hover:bg-white/10'
                   }`}
                 >
@@ -144,7 +144,7 @@ export default function DateTimePicker({ value, onChange, label, mode = 'datetim
                 <select
                   value={hour}
                   onChange={e => updateTime(parseInt(e.target.value), minute)}
-                  className="bg-[#141520] border border-white/10 rounded-lg px-2 py-1.5 text-sm text-white focus:outline-none focus:border-[#5eead4] appearance-none text-center w-16"
+                  className="bg-[#141520] border border-white/10 rounded-lg px-2 py-1.5 text-sm text-white focus:outline-none focus:border-[#E0BF7B] appearance-none text-center w-16"
                 >
                   {Array.from({ length: 24 }).map((_, h) => (
                     <option key={h} value={h}>{String(h).padStart(2, '0')}</option>
@@ -154,7 +154,7 @@ export default function DateTimePicker({ value, onChange, label, mode = 'datetim
                 <select
                   value={minute}
                   onChange={e => updateTime(hour, parseInt(e.target.value))}
-                  className="bg-[#141520] border border-white/10 rounded-lg px-2 py-1.5 text-sm text-white focus:outline-none focus:border-[#5eead4] appearance-none text-center w-16"
+                  className="bg-[#141520] border border-white/10 rounded-lg px-2 py-1.5 text-sm text-white focus:outline-none focus:border-[#E0BF7B] appearance-none text-center w-16"
                 >
                   {[0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55].map(m => (
                     <option key={m} value={m}>{String(m).padStart(2, '0')}</option>
@@ -164,7 +164,7 @@ export default function DateTimePicker({ value, onChange, label, mode = 'datetim
               <button
                 type="button"
                 onClick={() => setOpen(false)}
-                className="w-full mt-3 py-1.5 bg-[#5eead4]/15 text-[#5eead4] text-xs font-medium rounded-lg hover:bg-[#5eead4]/25 transition-colors"
+                className="w-full mt-3 py-1.5 bg-[#E0BF7B]/15 text-[#E0BF7B] text-xs font-medium rounded-lg hover:bg-[#E0BF7B]/25 transition-colors"
               >
                 Done
               </button>

@@ -30,7 +30,7 @@ export interface SectionMetrics {
 }
 
 export const SECTIONS: SectionDef[] = [
-  { id: 'dashboard', label: 'Dashboard', href: '/dashboard', dotColor: '#2dbfa3', defaultHint: 'Overview' },
+  { id: 'dashboard', label: 'Dashboard', href: '/dashboard', dotColor: '#CDA14B', defaultHint: 'Overview' },
   { id: 'projects',  label: 'Projects',  href: '/projects',  dotColor: '#f59e0b', defaultHint: '—' },
   { id: 'financial', label: 'Financial', href: '/financial', dotColor: '#3b82f6', defaultHint: 'CFO sync' },
   { id: 'travel',    label: 'Travel',    href: '/travel',    dotColor: '#a855f7', defaultHint: 'Itinerary' },

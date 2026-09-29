@@ -329,7 +329,7 @@ export default function NexusCharacter({
           width: size * 2,
           height: size * 2,
           background:
-            'radial-gradient(circle at 50% 50%, rgba(94,234,212,0.45) 0%, rgba(45,191,163,0.25) 25%, transparent 55%)',
+            'radial-gradient(circle at 50% 50%, rgba(94,234,212,0.45) 0%, rgba(205, 161, 75,0.25) 25%, transparent 55%)',
           borderRadius: '50%',
           filter: 'blur(8px)',
           maskImage: 'linear-gradient(to bottom, black 52.5%, transparent 52.5%)',
@@ -379,7 +379,7 @@ export default function NexusCharacter({
             // Darker interior with teal only at the rim — most of the dome
             // is near-black so the bright teal ring reads strongly. Stops
             // are pushed outward (90% before the rim) compared to before.
-            'radial-gradient(circle at 50% 55%, #010403 0%, #02100c 55%, #062a22 82%, #0d4438 92%, #2dbfa3 100%)',
+            'radial-gradient(circle at 50% 55%, #010403 0%, #02100c 55%, #062a22 82%, #2D2112 92%, #CDA14B 100%)',
           ].join(', '),
           boxShadow: [
             // Inset rim glow — narrow bright ring
@@ -387,8 +387,8 @@ export default function NexusCharacter({
             'inset 0 0 30px rgba(94,234,212,0.55)',
             // Immediate outer rim
             '0 0 16px rgba(94,234,212,0.65)',
-            '0 0 40px rgba(45,191,163,0.55)',
-            '0 0 80px rgba(45,191,163,0.35)',
+            '0 0 40px rgba(205, 161, 75,0.55)',
+            '0 0 80px rgba(205, 161, 75,0.35)',
           ].join(', '),
           maskImage: domeMask,
           WebkitMaskImage: domeMask,

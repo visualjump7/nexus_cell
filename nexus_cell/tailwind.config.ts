@@ -8,7 +8,20 @@ const config: Config = {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ['var(--font-body)', 'system-ui', 'sans-serif'],
+        display: ['var(--font-display)', 'Helvetica Neue', 'sans-serif'],
+      },
       colors: {
+        // Roaring Pines: burnished gold replaces the old emerald/teal accent app-wide.
+        emerald: {
+          50: '#FBF7EE', 100: '#F5EBD3', 200: '#EBD6A8', 300: '#E0BF7B', 400: '#D6AE5E',
+          500: '#CDA14B', 600: '#B0853A', 700: '#8C6830', 800: '#6B4F28', 900: '#4F3B20', 950: '#2D2112',
+        },
+        teal: {
+          50: '#FBF7EE', 100: '#F5EBD3', 200: '#EBD6A8', 300: '#E0BF7B', 400: '#D6AE5E',
+          500: '#CDA14B', 600: '#B0853A', 700: '#8C6830', 800: '#6B4F28', 900: '#4F3B20', 950: '#2D2112',
+        },
         // Nexus tokens (existing)
         background: "var(--background)",
         foreground: "var(--foreground)",
@@ -28,7 +41,7 @@ const config: Config = {
           foreground: '#ffffff',
         },
         primary: {
-          DEFAULT: '#4ade80',
+          DEFAULT: '#CDA14B',
           foreground: '#000000',
         },
         secondary: {
@@ -40,7 +53,7 @@ const config: Config = {
           foreground: 'rgba(255, 255, 255, 0.6)',
         },
         accent: {
-          DEFAULT: '#4ade80',
+          DEFAULT: '#CDA14B',
           foreground: '#000000',
         },
         destructive: {
@@ -49,7 +62,7 @@ const config: Config = {
         },
         border: 'rgba(255, 255, 255, 0.1)',
         input: 'rgba(255, 255, 255, 0.1)',
-        ring: '#4ade80',
+        ring: '#CDA14B',
       },
     },
   },

@@ -173,7 +173,7 @@ interface BriefPDFProps {
 }
 
 export function BriefPDF({ brief, liveData, principalName }: BriefPDFProps) {
-  const accentColor = brief.cover_accent_color || "#4ade80";
+  const accentColor = brief.cover_accent_color || "#CDA14B";
   const coverTitle = brief.cover_title || brief.title;
   const briefDate = formatDate(brief.brief_date);
 

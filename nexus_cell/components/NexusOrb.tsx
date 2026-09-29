@@ -11,7 +11,7 @@ export default function NexusOrb({ size = 'large', onClick }: NexusOrbProps) {
       <button
         onClick={onClick}
         className="relative w-9 h-9 rounded-full animate-nexus-pulse cursor-pointer"
-        style={{ background: 'radial-gradient(circle, #5eead4 0%, #0d9488 50%, #064e3b 100%)' }}
+        style={{ background: 'radial-gradient(circle, #E0BF7B 0%, #B0853A 50%, #4F3B20 100%)' }}
       >
         <div className="absolute inset-0 rounded-full" style={{ boxShadow: '0 0 20px rgba(94, 234, 212, 0.3)' }} />
       </button>
@@ -25,7 +25,7 @@ export default function NexusOrb({ size = 'large', onClick }: NexusOrbProps) {
         onClick={onClick}
         className="relative w-[120px] h-[120px] rounded-full animate-nexus-pulse cursor-pointer flex items-center justify-center z-10"
         style={{
-          background: 'radial-gradient(circle, #5eead4 0%, #0d9488 40%, #064e3b 100%)',
+          background: 'radial-gradient(circle, #E0BF7B 0%, #B0853A 40%, #4F3B20 100%)',
           boxShadow: '0 0 60px rgba(94, 234, 212, 0.3), 0 0 120px rgba(94, 234, 212, 0.1)',
         }}
       >

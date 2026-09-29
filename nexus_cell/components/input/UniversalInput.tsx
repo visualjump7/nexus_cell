@@ -25,7 +25,7 @@ export default function UniversalInput({ onClose }: Props) {
   const [selected, setSelected] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
 
-  const inputClass = 'w-full px-3.5 py-2.5 bg-[#141520] border border-white/10 rounded-lg text-[#e2e8f0] placeholder-[#475569] focus:outline-none focus:border-[#5eead4] text-sm'
+  const inputClass = 'w-full px-3.5 py-2.5 bg-[#141520] border border-white/10 rounded-lg text-[#e2e8f0] placeholder-[#475569] focus:outline-none focus:border-[#E0BF7B] text-sm'
   const labelClass = 'block text-[11px] text-[#94a3b8] uppercase tracking-wider mb-1'
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const pillClass = (active: boolean, color: string) => `px-3.5 py-1.5 rounded-full text-[11px] font-medium transition-all cursor-pointer ${active ? '' : 'bg-[#141520] text-[#475569] hover:text-[#94a3b8]'}`
@@ -165,7 +165,7 @@ function BillForm({ inputClass, labelClass, saving, onSave, categories }: FormPr
       </div>
       <div><label className={labelClass}>Due Date</label><input className={inputClass} type="date" value={f.due_date} onChange={e => setF(p => ({ ...p, due_date: e.target.value }))} /></div>
       <div><label className={labelClass}>Description</label><textarea className={`${inputClass} resize-none`} rows={2} value={f.description} onChange={e => setF(p => ({ ...p, description: e.target.value }))} /></div>
-      <button onClick={() => f.vendor && f.amount && onSave(f)} disabled={saving || !f.vendor || !f.amount} className="w-full py-2.5 bg-[#0d9488] hover:brightness-110 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-all">{saving ? 'Saving...' : 'Save Bill'}</button>
+      <button onClick={() => f.vendor && f.amount && onSave(f)} disabled={saving || !f.vendor || !f.amount} className="w-full py-2.5 bg-[#B0853A] hover:brightness-110 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-all">{saving ? 'Saving...' : 'Save Bill'}</button>
     </div>
   )
 }
@@ -183,7 +183,7 @@ function TravelForm({ inputClass, labelClass, saving, onSave }: FormProps) {
         <div className="flex gap-2">{['planning', 'confirmed'].map(s => <button key={s} type="button" onClick={() => setF(p => ({ ...p, status: s }))} className={`px-3.5 py-1.5 rounded-full text-[11px] font-medium transition-all ${f.status === s ? 'bg-purple-500/15 text-purple-400' : 'bg-[#141520] text-[#475569]'}`}>{s}</button>)}</div>
       </div>
       <div><label className={labelClass}>Notes</label><textarea className={`${inputClass} resize-none`} rows={2} value={f.notes} onChange={e => setF(p => ({ ...p, notes: e.target.value }))} /></div>
-      <button onClick={() => f.title && onSave(f)} disabled={saving || !f.title} className="w-full py-2.5 bg-[#0d9488] hover:brightness-110 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-all">{saving ? 'Saving...' : 'Save Trip'}</button>
+      <button onClick={() => f.title && onSave(f)} disabled={saving || !f.title} className="w-full py-2.5 bg-[#B0853A] hover:brightness-110 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-all">{saving ? 'Saving...' : 'Save Trip'}</button>
     </div>
   )
 }
@@ -198,7 +198,7 @@ function TaskForm({ inputClass, labelClass, saving, onSave }: FormProps) {
         <div className="flex gap-2">{['low', 'normal', 'high', 'urgent'].map(p => <button key={p} type="button" onClick={() => setF(prev => ({ ...prev, priority: p }))} className={`px-3.5 py-1.5 rounded-full text-[11px] font-medium transition-all ${f.priority === p ? 'bg-pink-500/15 text-pink-400' : 'bg-[#141520] text-[#475569]'}`}>{p}</button>)}</div>
       </div>
       <div><label className={labelClass}>Due Date</label><input className={inputClass} type="date" value={f.due_date} onChange={e => setF(p => ({ ...p, due_date: e.target.value }))} /></div>
-      <button onClick={() => f.title && onSave(f)} disabled={saving || !f.title} className="w-full py-2.5 bg-[#0d9488] hover:brightness-110 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-all">{saving ? 'Saving...' : 'Save Task'}</button>
+      <button onClick={() => f.title && onSave(f)} disabled={saving || !f.title} className="w-full py-2.5 bg-[#B0853A] hover:brightness-110 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-all">{saving ? 'Saving...' : 'Save Task'}</button>
     </div>
   )
 }
@@ -218,7 +218,7 @@ function AlertForm({ inputClass, labelClass, saving, onSave }: FormProps) {
       <div><label className={labelClass}>Send To</label>
         <div className="flex gap-2">{['', 'principal', 'ea', 'cfo'].map(r => <button key={r} type="button" onClick={() => setF(p => ({ ...p, target_role: r }))} className={`px-3 py-1.5 rounded-full text-[11px] font-medium transition-all ${f.target_role === r ? 'bg-amber-500/15 text-amber-400' : 'bg-[#141520] text-[#475569]'}`}>{r || 'Everyone'}</button>)}</div>
       </div>
-      <button onClick={() => f.title && onSave(f)} disabled={saving || !f.title} className="w-full py-2.5 bg-[#0d9488] hover:brightness-110 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-all">{saving ? 'Saving...' : 'Send Alert'}</button>
+      <button onClick={() => f.title && onSave(f)} disabled={saving || !f.title} className="w-full py-2.5 bg-[#B0853A] hover:brightness-110 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-all">{saving ? 'Saving...' : 'Send Alert'}</button>
     </div>
   )
 }
@@ -237,7 +237,7 @@ function GiftForm({ inputClass, labelClass, saving, onSave }: FormProps) {
       <div><label className={labelClass}>Status</label>
         <div className="flex flex-wrap gap-2">{['idea', 'purchased', 'shipped', 'delivered'].map(s => <button key={s} type="button" onClick={() => setF(p => ({ ...p, status: s }))} className={`px-3 py-1.5 rounded-full text-[11px] font-medium transition-all ${f.status === s ? 'bg-orange-500/15 text-orange-400' : 'bg-[#141520] text-[#475569]'}`}>{s}</button>)}</div>
       </div>
-      <button onClick={() => f.recipient && onSave(f)} disabled={saving || !f.recipient} className="w-full py-2.5 bg-[#0d9488] hover:brightness-110 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-all">{saving ? 'Saving...' : 'Save Gift'}</button>
+      <button onClick={() => f.recipient && onSave(f)} disabled={saving || !f.recipient} className="w-full py-2.5 bg-[#B0853A] hover:brightness-110 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-all">{saving ? 'Saving...' : 'Save Gift'}</button>
     </div>
   )
 }
@@ -258,7 +258,7 @@ function SubscriptionForm({ inputClass, labelClass, saving, onSave }: FormProps)
         <div><label className={labelClass}>Next Renewal</label><input className={inputClass} type="date" value={f.next_renewal} onChange={e => setF(p => ({ ...p, next_renewal: e.target.value }))} /></div>
         <div><label className={labelClass}>Category</label><input className={inputClass} placeholder="e.g. Entertainment" value={f.category} onChange={e => setF(p => ({ ...p, category: e.target.value }))} /></div>
       </div>
-      <button onClick={() => f.name && onSave(f)} disabled={saving || !f.name} className="w-full py-2.5 bg-[#0d9488] hover:brightness-110 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-all">{saving ? 'Saving...' : 'Save Subscription'}</button>
+      <button onClick={() => f.name && onSave(f)} disabled={saving || !f.name} className="w-full py-2.5 bg-[#B0853A] hover:brightness-110 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-all">{saving ? 'Saving...' : 'Save Subscription'}</button>
     </div>
   )
 }
@@ -277,7 +277,7 @@ function MembershipForm({ inputClass, labelClass, saving, onSave }: Omit<FormPro
         <div><label className={labelClass}>Renewal Amount</label><input className={inputClass} type="number" step="0.01" value={f.renewal_amount} onChange={e => setF(p => ({ ...p, renewal_amount: e.target.value }))} /></div>
       </div>
       <div><label className={labelClass}>Expiry Date</label><input className={inputClass} type="date" value={f.expiry_date} onChange={e => setF(p => ({ ...p, expiry_date: e.target.value }))} /></div>
-      <button onClick={() => f.name && onSave(f)} disabled={saving || !f.name} className="w-full py-2.5 bg-[#0d9488] hover:brightness-110 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-all">{saving ? 'Saving...' : 'Save Membership'}</button>
+      <button onClick={() => f.name && onSave(f)} disabled={saving || !f.name} className="w-full py-2.5 bg-[#B0853A] hover:brightness-110 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-all">{saving ? 'Saving...' : 'Save Membership'}</button>
     </div>
   )
 }
@@ -288,7 +288,7 @@ function NoteForm({ inputClass, labelClass, saving, onSave }: Omit<FormProps, 'p
     <div className="space-y-4">
       <div><label className={labelClass}>Title (optional)</label><input className={inputClass} value={f.title} onChange={e => setF(p => ({ ...p, title: e.target.value }))} /></div>
       <div><label className={labelClass}>Body</label><textarea className={`${inputClass} resize-none`} rows={8} placeholder="Write your note..." value={f.body} onChange={e => setF(p => ({ ...p, body: e.target.value }))} /></div>
-      <button onClick={() => f.body && onSave(f)} disabled={saving || !f.body} className="w-full py-2.5 bg-[#0d9488] hover:brightness-110 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-all">{saving ? 'Saving...' : 'Save Note'}</button>
+      <button onClick={() => f.body && onSave(f)} disabled={saving || !f.body} className="w-full py-2.5 bg-[#B0853A] hover:brightness-110 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-all">{saving ? 'Saving...' : 'Save Note'}</button>
     </div>
   )
 }

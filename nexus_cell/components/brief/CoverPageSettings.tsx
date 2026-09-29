@@ -15,7 +15,7 @@ interface CoverPageSettingsProps {
 }
 
 const presetColors = [
-  { label: "Mint", value: "#4ade80" },
+  { label: "Gold", value: "#CDA14B" },
   { label: "Blue", value: "#3b82f6" },
   { label: "Amber", value: "#f59e0b" },
   { label: "Rose", value: "#f43f5e" },
@@ -189,7 +189,7 @@ export function CoverPageSettings({
                   onClick={() => onUpdate({ cover_accent_color: c.value })}
                   title={c.label}
                   className={`h-6 w-6 rounded-full border-2 transition-all ${
-                    (brief.cover_accent_color || "#4ade80") === c.value
+                    (brief.cover_accent_color || "#CDA14B") === c.value
                       ? "border-foreground scale-110"
                       : "border-transparent hover:border-muted-foreground"
                   }`}
@@ -198,7 +198,7 @@ export function CoverPageSettings({
               ))}
               <input
                 type="color"
-                value={brief.cover_accent_color || "#4ade80"}
+                value={brief.cover_accent_color || "#CDA14B"}
                 onChange={(e) =>
                   onUpdate({ cover_accent_color: e.target.value })
                 }
@@ -232,7 +232,7 @@ export function CoverPageSettings({
               <div
                 className="mx-auto my-3 h-0.5 w-8"
                 style={{
-                  backgroundColor: brief.cover_accent_color || "#4ade80",
+                  backgroundColor: brief.cover_accent_color || "#CDA14B",
                 }}
               />
               {brief.cover_show_date !== false && (

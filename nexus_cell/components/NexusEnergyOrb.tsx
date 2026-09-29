@@ -114,7 +114,7 @@ export default function NexusEnergyOrb({
           width: size * 2,
           height: size * 2,
           background:
-            'radial-gradient(circle at 50% 50%, rgba(94,234,212,0.4) 0%, rgba(45,191,163,0.2) 25%, transparent 55%)',
+            'radial-gradient(circle at 50% 50%, rgba(94,234,212,0.4) 0%, rgba(205, 161, 75,0.2) 25%, transparent 55%)',
           borderRadius: '50%',
           filter: 'blur(8px)',
         }}
@@ -131,7 +131,7 @@ export default function NexusEnergyOrb({
             top: cy - p.size / 2,
             width: p.size,
             height: p.size,
-            background: 'radial-gradient(circle, #a7f3d0 0%, #5eead4 60%, transparent 100%)',
+            background: 'radial-gradient(circle, #a7f3d0 0%, #E0BF7B 60%, transparent 100%)',
             filter: 'blur(0.6px)',
             // CSS variables consumed by the @keyframes
             ['--nx-px-from-x' as string]: `${p.fromX}px`,
@@ -174,10 +174,10 @@ export default function NexusEnergyOrb({
           width: size,
           height: size,
           background:
-            'radial-gradient(circle at 35% 30%, #5fe8c8 0%, var(--nx-teal, #2dbfa3) 35%, var(--nx-teal-dim, #1a8470) 75%, #0d4438 100%)',
+            'radial-gradient(circle at 35% 30%, #E6C98A 0%, var(--nx-teal, #CDA14B) 35%, var(--nx-teal-dim, #8C6830) 75%, #2D2112 100%)',
           boxShadow: [
-            '0 0 60px rgba(45,191,163,0.45)',
-            '0 0 100px rgba(45,191,163,0.25)',
+            '0 0 60px rgba(205, 161, 75,0.45)',
+            '0 0 100px rgba(205, 161, 75,0.25)',
             'inset -10px -20px 40px rgba(0,0,0,0.4)',
             'inset 10px 15px 30px rgba(255,255,255,0.15)',
           ].join(', '),

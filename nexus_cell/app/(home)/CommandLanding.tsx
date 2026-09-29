@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { BRAND } from '@/lib/brand'
 import AIDrawer from '@/components/AIDrawer'
 import NexusCharacter, { type AttentionTarget } from '@/components/NexusCharacter'
 import NexusEnergyOrb from '@/components/NexusEnergyOrb'
@@ -79,24 +80,18 @@ export default function CommandLanding({ metrics, heroGreeting, contextStrip, op
   return (
     <main
       className="relative w-full min-h-screen overflow-hidden"
-      style={{ background: 'var(--nx-bg)', color: 'var(--nx-text)', fontFamily: 'var(--font-inter), Inter, sans-serif', fontFeatureSettings: '"ss01", "cv11"' }}
+      style={{ background: 'var(--nx-bg)', color: 'var(--nx-text)', fontFamily: 'var(--font-body), system-ui, sans-serif', fontFeatureSettings: '"ss01", "cv11"' }}
     >
       {/* Top bar */}
       <header className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between" style={{ padding: '20px 32px' }}>
         <div className="flex items-center gap-2.5">
-          <div
-            className="w-[22px] h-[22px] rounded-md"
-            style={{
-              background: 'radial-gradient(circle at 30% 30%, var(--nx-teal), var(--nx-teal-dim))',
-              boxShadow: '0 0 12px var(--nx-teal-glow)',
-            }}
-            aria-hidden
-          />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={BRAND.mark} alt="" aria-hidden className="h-[26px] w-auto" />
           <span
-            className="uppercase font-medium"
-            style={{ fontSize: 14, letterSpacing: '0.14em', color: 'var(--nx-text-dim)' }}
+            className="uppercase font-display"
+            style={{ fontSize: 14, letterSpacing: '0.22em', color: 'var(--nx-text-dim)' }}
           >
-            Nexus Cell
+            {BRAND.fullName}
           </span>
         </div>
       </header>
@@ -148,8 +143,8 @@ export default function CommandLanding({ metrics, heroGreeting, contextStrip, op
               padding: '14px 18px',
               borderRadius: 12,
               background: 'rgba(20,24,33,0.7)',
-              border: '1px solid rgba(45,191,163,0.35)',
-              boxShadow: '0 0 30px rgba(45,191,163,0.12)',
+              border: '1px solid rgba(205, 161, 75,0.35)',
+              boxShadow: '0 0 30px rgba(205, 161, 75,0.12)',
               maxWidth: 380,
               cursor: 'text',
             }}
@@ -315,8 +310,8 @@ export default function CommandLanding({ metrics, heroGreeting, contextStrip, op
           }
         }
         :global(.nx-section-row:hover) {
-          background: rgba(45, 191, 163, 0.04);
-          border-bottom-color: rgba(45, 191, 163, 0.3) !important;
+          background: rgba(205, 161, 75, 0.04);
+          border-bottom-color: rgba(205, 161, 75, 0.3) !important;
         }
         :global(.nx-section-row:hover .nx-section-label) {
           color: var(--nx-teal) !important;

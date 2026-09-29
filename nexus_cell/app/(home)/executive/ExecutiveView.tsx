@@ -1,4 +1,5 @@
 import { createClient } from '@/utils/supabase/server'
+import { BRAND } from '@/lib/brand'
 import { DEFAULT_PRINCIPAL_WIDGETS, getWidgetEntry, type WidgetId } from '@/lib/widgets'
 import { renderWidget } from './widgets/registry'
 import type { WidgetConfig } from '@/lib/types'
@@ -78,24 +79,18 @@ export default async function ExecutiveView({ firstName, orgId, principalId }: P
   return (
     <main
       className="min-h-screen w-full"
-      style={{ background: 'var(--nx-bg)', color: 'var(--nx-text)', fontFamily: 'var(--font-inter), Inter, sans-serif', fontFeatureSettings: '"ss01", "cv11"' }}
+      style={{ background: 'var(--nx-bg)', color: 'var(--nx-text)', fontFamily: 'var(--font-body), system-ui, sans-serif', fontFeatureSettings: '"ss01", "cv11"' }}
     >
       {/* Top bar — brand only, no nav. The principal can't navigate. */}
       <header className="flex items-center" style={{ padding: '20px 32px' }}>
         <div className="flex items-center gap-2.5">
-          <div
-            className="w-[22px] h-[22px] rounded-md"
-            style={{
-              background: 'radial-gradient(circle at 30% 30%, var(--nx-teal), var(--nx-teal-dim))',
-              boxShadow: '0 0 12px var(--nx-teal-glow)',
-            }}
-            aria-hidden
-          />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={BRAND.mark} alt="" aria-hidden className="h-[26px] w-auto" />
           <span
-            className="uppercase font-medium"
-            style={{ fontSize: 14, letterSpacing: '0.14em', color: 'var(--nx-text-dim)' }}
+            className="uppercase font-display"
+            style={{ fontSize: 14, letterSpacing: '0.22em', color: 'var(--nx-text-dim)' }}
           >
-            Nexus Cell
+            {BRAND.fullName}
           </span>
         </div>
       </header>

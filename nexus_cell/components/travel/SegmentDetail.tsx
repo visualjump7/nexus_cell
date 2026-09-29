@@ -26,7 +26,7 @@ function DetailRow({ label, value, mono }: { label: string; value: string | null
   return (
     <div className="flex items-start justify-between py-2.5 border-b border-white/5 last:border-0">
       <span className="text-xs text-gray-500 uppercase tracking-wider shrink-0 mt-0.5">{label}</span>
-      <span className={`text-sm text-white text-right ml-4 ${mono ? 'font-mono text-[#5eead4]' : ''}`}>{value}</span>
+      <span className={`text-sm text-white text-right ml-4 ${mono ? 'font-mono text-[#E0BF7B]' : ''}`}>{value}</span>
     </div>
   )
 }
@@ -157,14 +157,14 @@ export default function SegmentDetail({ segment: initialSegment, canWrite, onClo
             onChange={e => setNotes(e.target.value)}
             readOnly={!canWrite}
             placeholder={canWrite ? 'Add notes — meeting details, special requests, reminders...' : 'No notes'}
-            className="w-full bg-white/[0.03] border border-white/5 rounded-xl px-4 py-3 text-sm text-gray-200 placeholder-gray-600 resize-none focus:outline-none focus:border-[#5eead4]/30 min-h-[80px]"
+            className="w-full bg-white/[0.03] border border-white/5 rounded-xl px-4 py-3 text-sm text-gray-200 placeholder-gray-600 resize-none focus:outline-none focus:border-[#E0BF7B]/30 min-h-[80px]"
             rows={3}
           />
           {canWrite && notes !== (seg.notes || '') && (
             <button
               onClick={saveNotes}
               disabled={saving}
-              className="mt-2 px-4 py-1.5 bg-[#5eead4]/15 text-[#5eead4] text-xs font-medium rounded-lg hover:bg-[#5eead4]/25 transition-colors disabled:opacity-50"
+              className="mt-2 px-4 py-1.5 bg-[#E0BF7B]/15 text-[#E0BF7B] text-xs font-medium rounded-lg hover:bg-[#E0BF7B]/25 transition-colors disabled:opacity-50"
             >
               Save Notes
             </button>

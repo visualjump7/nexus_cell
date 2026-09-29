@@ -266,7 +266,7 @@ export default function TripMap({ segments, selectedSegmentId, onSegmentSelect }
       {!loaded && (
         <div className="absolute inset-0 bg-[#0f1117] flex items-center justify-center rounded-xl pointer-events-none">
           <div className="flex items-center gap-2">
-            <div className="w-2 h-2 bg-[#5eead4] rounded-full animate-pulse" />
+            <div className="w-2 h-2 bg-[#E0BF7B] rounded-full animate-pulse" />
             <p className="text-xs text-gray-500">Loading map...</p>
           </div>
         </div>
@@ -274,7 +274,7 @@ export default function TripMap({ segments, selectedSegmentId, onSegmentSelect }
 
       <div className="absolute bottom-3 left-3 bg-[#08090f]/80 backdrop-blur-sm rounded-lg px-3 py-2 flex gap-3 pointer-events-none">
         {[
-          { color: '#5eead4', label: 'Flight' },
+          { color: '#A4CC5C', label: 'Flight' },
           { color: '#a78bfa', label: 'Hotel' },
           { color: '#fb923c', label: 'Ground' },
         ].map(item => (

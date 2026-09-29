@@ -1,5 +1,5 @@
 export const segmentColors: Record<string, string> = {
-  flight: '#5eead4',
+  flight: '#A4CC5C',
   hotel: '#a78bfa',
   car: '#fb923c',
   ground_transport: '#fb923c',
