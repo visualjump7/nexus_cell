@@ -51,7 +51,7 @@ export default function GiftsList({ gifts, role }: Props) {
       <header className="rp-head">
         <div className="flex items-end justify-between gap-4 flex-wrap">
         <div className="flex flex-col gap-2.5">
-          <span className="rp-eyebrow">Club Life</span>
+          <span className="rp-eyebrow">Clubhouse</span>
           <h1 className="rp-title">Gifts</h1>
           <p className="rp-caption">{filtered.length} gift{filtered.length !== 1 ? 's' : ''}</p>
         </div>

@@ -20,9 +20,11 @@ interface Props {
   subscriptions: Subscription[]
   memberships: Membership[]
   role: UserRole
+  // Rendered inside the Site Map "Clubhouse" tab, which supplies its own header.
+  embedded?: boolean
 }
 
-function LifestyleTabsInner({ gifts, subscriptions, memberships, role }: Props) {
+function LifestyleTabsInner({ gifts, subscriptions, memberships, role, embedded }: Props) {
   const searchParams = useSearchParams()
   const router = useRouter()
   const pathname = usePathname()
@@ -35,12 +37,14 @@ function LifestyleTabsInner({ gifts, subscriptions, memberships, role }: Props) 
 
   return (
     <div>
-      <header className="rp-head">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={BRAND.pines} alt="" aria-hidden className="rp-pines rp-pines--head" />
-        <span className="rp-eyebrow">Members &amp; partners</span>
-        <h1 className="rp-title">Club Life</h1>
-      </header>
+      {!embedded && (
+        <header className="rp-head">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={BRAND.pines} alt="" aria-hidden className="rp-pines rp-pines--head" />
+          <span className="rp-eyebrow">Members &amp; partners</span>
+          <h1 className="rp-title">Clubhouse</h1>
+        </header>
+      )}
 
       {/* Tabs */}
       <div className="rp-tabs mb-6" role="tablist">

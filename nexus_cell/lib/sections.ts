@@ -37,6 +37,6 @@ export const SECTIONS: SectionDef[] = [
   { id: 'calendar',  label: 'Calendar',  href: '/calendar',  dotColor: '#A4CC5C', defaultHint: 'Today' },
   { id: 'tasks',     label: 'Tasks',     href: '/tasks',     dotColor: '#A4CC5C', defaultHint: 'Punch list' },
   { id: 'alerts',    label: 'Alerts',    href: '/alerts',    dotColor: '#E0BF7B', defaultHint: 'Action req.' },
-  { id: 'lifestyle', label: 'Club Life', href: '/lifestyle', dotColor: '#9AA0A4', defaultHint: 'Members & partners' },
+  { id: 'site-map',  label: 'Site Map',  href: '/site-map',  dotColor: '#9AA0A4', defaultHint: '443 acres' },
   { id: 'comms',     label: 'Comms',     href: '/comms',     dotColor: '#6E7578', defaultHint: 'Coming soon' },
 ]
