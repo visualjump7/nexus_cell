@@ -1,5 +1,8 @@
 import { getAuthContext } from '@/lib/auth'
+import { RpPage, RpPageHeader } from '@/components/rp'
 import SettingsTabs from './SettingsTabs'
+
+export const metadata = { title: 'Settings' }
 
 export default async function SettingsPage() {
   const { supabase, user, role } = await getAuthContext()
@@ -17,18 +20,18 @@ export default async function SettingsPage() {
   const heroStyle = (profile?.hero_style as 'orb' | 'character') || 'orb'
 
   return (
-    <div className="max-w-2xl">
-      <header className="rp-head">
-        <span className="rp-eyebrow">Account</span>
-        <h1 className="rp-title">Settings</h1>
-        <p className="rp-lede">Manage your profile and password.</p>
-      </header>
+    <RpPage>
+      <RpPageHeader
+        eyebrow="Account"
+        title="Your account"
+        line="Profile, password and how Nexus appears on your home screen."
+      />
       <SettingsTabs
         initialFullName={profile?.full_name || ''}
         email={profile?.email || user.email || ''}
         canSuggestUsers={canSuggestUsers}
         initialHeroStyle={heroStyle}
       />
-    </div>
+    </RpPage>
   )
 }

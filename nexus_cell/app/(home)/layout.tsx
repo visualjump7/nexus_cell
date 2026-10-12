@@ -1,6 +1,6 @@
 import { createClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation'
-import HamburgerMount from '@/components/shared/HamburgerMount'
+import AppShell from '@/components/shared/AppShell'
 
 export default async function HomeLayout({
   children,
@@ -17,10 +17,9 @@ export default async function HomeLayout({
   if (!user) redirect('/login')
 
   return (
-    <div className="min-h-screen bg-nexus text-white">
-      {children}
+    <>
+      <AppShell footNav={false}>{children}</AppShell>
       {modal}
-      <HamburgerMount />
-    </div>
+    </>
   )
 }

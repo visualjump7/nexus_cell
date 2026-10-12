@@ -1,8 +1,7 @@
 import { createClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation'
-import NexusCorner from '@/components/NexusCorner'
+import AppShell from '@/components/shared/AppShell'
 import FloatingAdd from '@/components/shared/FloatingAdd'
-import HamburgerMount from '@/components/shared/HamburgerMount'
 import type { UserRole } from '@/lib/types'
 
 export default async function ModulesLayout({ children }: { children: React.ReactNode }) {
@@ -20,14 +19,13 @@ export default async function ModulesLayout({ children }: { children: React.Reac
   const role = (membership?.role || 'viewer') as UserRole
   const canWrite = ['ea', 'admin'].includes(role)
 
+  // Sidebar (≥1024) or top bar + hamburger sheet (<1024), the page in the
+  // main column, and the footer pager. NexusCorner is retired: the badge in
+  // the sidebar / top bar is the way home.
   return (
-    <div className="min-h-screen bg-nexus text-white">
-      <NexusCorner />
-      <main className="pl-20 pr-6 pt-8 pb-8">
-        {children}
-      </main>
+    <>
+      <AppShell fab={canWrite}>{children}</AppShell>
       {canWrite && <FloatingAdd />}
-      <HamburgerMount />
-    </div>
+    </>
   )
 }

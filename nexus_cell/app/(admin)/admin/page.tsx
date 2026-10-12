@@ -1,9 +1,21 @@
 import Link from 'next/link'
 import { getAuthContext } from '@/lib/auth'
 import type { PendingInvitation } from '@/lib/types'
-import { BRAND } from '@/lib/brand'
+import {
+  RpPage,
+  RpPageHeader,
+  RpStatStrip,
+  RpStat,
+  RpSubhead,
+  RpTable,
+  RpStatus,
+  RpButton,
+  RpEmpty,
+  fmtDate,
+  pad2,
+} from '@/components/rp'
 
-const ROLE_LABEL: Record<string, string> = { admin: 'Administrator', ea: "Owner's Rep", cfo: 'CFO', principal: 'Owner', viewer: 'Viewer' }
+export const metadata = { title: 'Administrator' }
 
 export default async function AdminOverviewPage() {
   const { supabase, orgId } = await getAuthContext()
@@ -15,63 +27,65 @@ export default async function AdminOverviewPage() {
     supabase.from('pending_invitations').select('*').eq('organization_id', orgId).eq('status', 'pending').order('created_at', { ascending: false }).limit(5),
   ])
 
-  const stats = [
-    { label: 'Active members', value: (membersRes.count ?? 0).toString(), href: '/admin/users' },
-    { label: 'Owners', value: (principalsRes.count ?? 0).toString(), href: '/admin/principals' },
-    { label: 'Pending invitations', value: (pendingInvitesRes.count ?? 0).toString(), href: '/admin/users' },
-  ]
-
+  const members = membersRes.count ?? 0
+  const owners = principalsRes.count ?? 0
+  const pendingCount = pendingInvitesRes.count ?? 0
   const pending = (recentInvitesRes.data || []) as PendingInvitation[]
 
   return (
-    <div className="max-w-4xl">
-      <header className="rp-head">
-        <span className="rp-eyebrow">{BRAND.fullName}</span>
-        <h1 className="rp-title">Administrator</h1>
-        <p className="rp-lede">Manage users, owners, and what they see.</p>
-      </header>
+    <RpPage>
+      <RpPageHeader
+        eyebrow="01 · Administrator"
+        title="Members, owners and access"
+        line="Who can see the build, and what the owner sees."
+      />
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-8">
-        {stats.map(s => (
-          <Link
-            key={s.label}
-            href={s.href}
-            className="rp-panel p-5 hover:border-[#3A3E42] transition-colors"
-          >
-            <p className="rp-eyebrow--muted mb-2">{s.label}</p>
-            <p className="rp-stat-value text-white">{s.value}</p>
-          </Link>
-        ))}
-      </div>
+      <RpStatStrip cols={3}>
+        <RpStat label="Active members" value={members} sub="Accounts with access to the portal" href="/admin/users" />
+        <RpStat label="Owners" value={owners} sub="Each with a curated home view" href="/admin/principals" />
+        <RpStat
+          label="Pending invitations"
+          value={pendingCount}
+          sub={pendingCount > 0 ? 'Waiting for your approval' : 'Nothing waiting'}
+          href="/admin/users"
+        />
+      </RpStatStrip>
 
-      <section className="rp-panel p-5">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="rp-eyebrow--muted">Pending invitations</h2>
-          <Link href="/admin/users" className="text-xs text-gray-500 hover:text-white transition-colors">
-            View all →
-          </Link>
-        </div>
+      <section className="flex flex-col gap-5">
+        <RpSubhead
+          title="Pending invitations"
+          spec="Proposed by the owner's rep · approve or decline under Members"
+          aside={<RpButton variant="text" arrow href="/admin/users">Review all</RpButton>}
+        />
         {pending.length === 0 ? (
-          <p className="text-sm text-[#6E7578] py-4">No invitations awaiting approval.</p>
+          <RpEmpty compact title="Nothing waiting." line="New accounts proposed by the owner's rep appear here for approval." />
         ) : (
-          <ul className="space-y-2 m-0 p-0 list-none">
-            {pending.map(inv => (
-              <li key={inv.id} className="bg-[#141618] border border-[#1F1F1F] p-3 flex items-center gap-3">
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm text-white font-medium truncate">{inv.full_name}</p>
-                  <p className="text-xs text-gray-500 truncate">{inv.email} · {ROLE_LABEL[inv.role] || inv.role}</p>
-                </div>
-                <Link
-                  href="/admin/users"
-                  className="rp-btn-ghost shrink-0"
-                >
-                  Review
-                </Link>
-              </li>
-            ))}
-          </ul>
+          <RpTable minWidth={720} caption="Pending invitations">
+            <thead>
+              <tr>
+                <th className="idx">#</th>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Role</th>
+                <th>Proposed</th>
+                <th className="num relative"><span className="sr-only">Action</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              {pending.map((inv, i) => (
+                <tr key={inv.id}>
+                  <td className="idx">{pad2(i + 1)}</td>
+                  <td><Link href="/admin/users">{inv.full_name}</Link></td>
+                  <td className="text-rp-muted">{inv.email}</td>
+                  <td><RpStatus kind="role" value={inv.role} /></td>
+                  <td className="whitespace-nowrap text-rp-muted">{fmtDate(inv.created_at)}</td>
+                  <td className="num"><RpButton variant="ghost" size="sm" href="/admin/users">Review</RpButton></td>
+                </tr>
+              ))}
+            </tbody>
+          </RpTable>
         )}
       </section>
-    </div>
+    </RpPage>
   )
 }

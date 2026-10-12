@@ -18,15 +18,14 @@ export default async function FinancialPage() {
   const paidThisMonth = allBills.filter(b => b.status === 'paid' && b.paid_date && b.paid_date >= firstOfMonth).length
   const overdue = allBills.filter(b => b.status === 'overdue').length
 
+  // CashFlowView renders its own RpPage + RpPageHeader (it is also used by the (.)financial overlay).
   return (
-    <div>
-      <CashFlowView
-        bills={allBills}
-        role={role}
-        stats={{ totalOutstanding, paidThisMonth, overdue }}
-        qbConnection={qbRes.data as QuickBooksConnection | null}
-        qbConfigured={qbIsConfigured()}
-      />
-    </div>
+    <CashFlowView
+      bills={allBills}
+      role={role}
+      stats={{ totalOutstanding, paidThisMonth, overdue }}
+      qbConnection={qbRes.data as QuickBooksConnection | null}
+      qbConfigured={qbIsConfigured()}
+    />
   )
 }

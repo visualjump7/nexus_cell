@@ -4,16 +4,52 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import type { Membership, UserRole } from '@/lib/types'
 import DeleteConfirm from '@/components/DeleteConfirm'
+import {
+  RpPage,
+  RpPageHeader,
+  RpGroup,
+  RpGroupHead,
+  RpTabs,
+  RpFilterBar,
+  RpTable,
+  RpStatus,
+  RpTag,
+  RpButton,
+  RpEmpty,
+  RpModal,
+  RpField,
+  RpInput,
+  RpSelect,
+  RpTextarea,
+  RpFormGrid,
+  Plus,
+  fmtMoney,
+  fmtDate,
+  daysUntil,
+} from '@/components/rp'
 
-const statusColors: Record<string, string> = {
-  active: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
-  expired: 'bg-red-500/15 text-red-400 border-red-500/30',
-  cancelled: 'bg-gray-500/15 text-gray-400 border-gray-500/30',
+const STATUSES: { id: Membership['status']; label: string }[] = [
+  { id: 'active', label: 'Active' },
+  { id: 'expired', label: 'Expired' },
+  { id: 'cancelled', label: 'Cancelled' },
+]
+
+interface Props {
+  memberships: Membership[]
+  role: UserRole
+  /** Rendered inside the Clubhouse view: a group head instead of a page header. */
+  embedded?: boolean
 }
 
-interface Props { memberships: Membership[]; role: UserRole }
+/** Expiry: a gold tag inside 60 days, otherwise the date. */
+function Expiry({ date }: { date: string | null }) {
+  if (!date) return <span className="text-rp-dim">—</span>
+  const d = daysUntil(date)
+  if (Number.isFinite(d) && d > 0 && d <= 60) return <RpTag tone="gold">Expires {fmtDate(date, 'short')}</RpTag>
+  return <span className="text-rp-muted">{fmtDate(date)}</span>
+}
 
-export default function MembershipsList({ memberships, role }: Props) {
+export default function MembershipsList({ memberships, role, embedded }: Props) {
   const router = useRouter()
   const canWrite = ['ea', 'admin'].includes(role)
 
@@ -26,18 +62,7 @@ export default function MembershipsList({ memberships, role }: Props) {
 
   function formatCurrency(amt: number | null) {
     if (!amt) return '—'
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amt)
-  }
-
-  function formatDate(d: string | null) {
-    if (!d) return '—'
-    return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-  }
-
-  function isExpiringSoon(d: string | null) {
-    if (!d) return false
-    const diff = new Date(d).getTime() - Date.now()
-    return diff > 0 && diff < 60 * 86400000
+    return fmtMoney(amt)
   }
 
   async function handleDelete() {
@@ -47,91 +72,96 @@ export default function MembershipsList({ memberships, role }: Props) {
     router.refresh()
   }
 
-  const selectClass = 'px-3 py-1.5 bg-card border border-white/10 rounded-lg text-sm text-gray-300 focus:outline-none focus:ring-2 focus:ring-emerald-500/50'
-  const inputClass = 'w-full px-3 py-2 bg-card border border-white/10 rounded-lg text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 text-sm'
+  const openNew = () => { setEditingMem(null); setShowForm(true) }
+  const newButton = canWrite && (
+    <RpButton size="sm" icon={<Plus size={14} strokeWidth={1.5} />} onClick={openNew}>New membership</RpButton>
+  )
+  const countLabel = `${filtered.length} membership${filtered.length !== 1 ? 's' : ''}`
 
-  return (
-    <div className="max-w-6xl">
-      <header className="rp-head">
-        <div className="flex items-end justify-between gap-4 flex-wrap">
-        <div className="flex flex-col gap-2.5">
-          <span className="rp-eyebrow">Clubhouse</span>
-          <h1 className="rp-title">Memberships</h1>
-          <p className="rp-caption">{filtered.length} membership{filtered.length !== 1 ? 's' : ''}</p>
-        </div>
-        {canWrite && (
-          <button onClick={() => { setEditingMem(null); setShowForm(true) }} className="rp-btn-solid">
-            New membership
-          </button>
-        )}
-        </div>
-      </header>
-
-      <div className="flex gap-3 mb-6">
-        <select className={selectClass} value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
-          <option value="all">All Statuses</option>
-          <option value="active">Active</option>
-          <option value="expired">Expired</option>
-          <option value="cancelled">Cancelled</option>
-        </select>
-      </div>
+  const body = (
+    <>
+      <RpFilterBar count={countLabel}>
+        <RpTabs
+          size="sm"
+          ariaLabel="Membership status"
+          value={statusFilter}
+          onChange={setStatusFilter}
+          items={[
+            { id: 'all', label: 'All', count: memberships.length },
+            ...STATUSES.map(s => ({ id: s.id, label: s.label, count: memberships.filter(m => m.status === s.id).length })),
+          ]}
+        />
+      </RpFilterBar>
 
       {filtered.length === 0 ? (
-        <div className="rp-panel p-12 text-center">
-          <p className="text-gray-500">No memberships found.</p>
-        </div>
+        <RpEmpty
+          compact
+          title={memberships.length === 0 ? 'Nothing logged yet.' : 'No memberships here.'}
+          line="Sanctioning bodies, club affiliations and the cards that come with them."
+          action={memberships.length === 0 ? newButton : undefined}
+        />
       ) : (
-        <div className="rp-panel overflow-hidden">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-[#1F1F1F] text-left rp-eyebrow--muted">
-                <th className="px-4 py-3 font-medium">Name</th>
-                <th className="px-4 py-3 font-medium">Organization</th>
-                <th className="px-4 py-3 font-medium">Tier</th>
-                <th className="px-4 py-3 font-medium">Expiry</th>
-                <th className="px-4 py-3 font-medium">Renewal</th>
-                <th className="px-4 py-3 font-medium">Status</th>
-                {canWrite && <th className="px-4 py-3 font-medium text-right">Actions</th>}
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map(mem => (
-                <tr key={mem.id} className="border-b border-[#1F1F1F] hover:bg-[#141618] transition-colors">
-                  <td className="px-4 py-3">
-                    <p className="text-white font-medium">{mem.name}</p>
-                    {mem.member_id && <p className="text-xs text-gray-600 font-mono">#{mem.member_id}</p>}
-                  </td>
-                  <td className="px-4 py-3 text-gray-400">{mem.organization_name || '—'}</td>
-                  <td className="px-4 py-3 text-gray-400">{mem.tier || '—'}</td>
-                  <td className="px-4 py-3">
-                    <span className={isExpiringSoon(mem.expiry_date) ? 'text-amber-400' : mem.status === 'expired' ? 'text-red-400' : 'text-gray-400'}>
-                      {formatDate(mem.expiry_date)}
+        <RpTable minWidth={760} caption="Memberships">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Organization</th>
+              <th>Tier</th>
+              <th>Expiry</th>
+              <th className="num">Renewal</th>
+              <th>Status</th>
+              {canWrite && <th className="num relative"><span className="sr-only">Actions</span></th>}
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.map(mem => (
+              <tr key={mem.id}>
+                <td>
+                  <span className="font-medium text-rp-text">{mem.name}</span>
+                  {mem.member_id && <span className="sub tabular-nums">No. {mem.member_id}</span>}
+                </td>
+                <td className="text-rp-muted">{mem.organization_name || '—'}</td>
+                <td className="text-rp-muted">{mem.tier || '—'}</td>
+                <td className="whitespace-nowrap"><Expiry date={mem.expiry_date} /></td>
+                <td className="num">{formatCurrency(mem.renewal_amount)}</td>
+                <td><RpStatus kind="membership" value={mem.status} /></td>
+                {canWrite && (
+                  <td className="num">
+                    <span className="inline-flex gap-4">
+                      <RpButton variant="text" size="sm" onClick={() => { setEditingMem(mem); setShowForm(true) }}>Edit</RpButton>
+                      <RpButton variant="text" size="sm" onClick={() => setDeletingMem(mem)}>Delete</RpButton>
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-white font-mono">{formatCurrency(mem.renewal_amount)}</td>
-                  <td className="px-4 py-3">
-                    <span className={`text-[11px] font-medium px-2 py-0.5 rounded border ${statusColors[mem.status] || ''}`}>{mem.status}</span>
-                  </td>
-                  {canWrite && (
-                    <td className="px-4 py-3 text-right">
-                      <button onClick={() => { setEditingMem(mem); setShowForm(true) }} className="text-gray-500 hover:text-white text-xs mr-3 transition-colors">Edit</button>
-                      <button onClick={() => setDeletingMem(mem)} className="text-gray-500 hover:text-red-400 text-xs transition-colors">Delete</button>
-                    </td>
-                  )}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                )}
+              </tr>
+            ))}
+          </tbody>
+        </RpTable>
       )}
 
-      {showForm && <MemFormModal mem={editingMem} onClose={() => { setShowForm(false); setEditingMem(null) }} inputClass={inputClass} />}
+      {showForm && <MemFormModal mem={editingMem} onClose={() => { setShowForm(false); setEditingMem(null) }} />}
       {deletingMem && <DeleteConfirm itemName={deletingMem.name} onConfirm={handleDelete} onCancel={() => setDeletingMem(null)} />}
-    </div>
+    </>
+  )
+
+  if (embedded) {
+    return (
+      <RpGroup>
+        <RpGroupHead title="Memberships" line="Club and sanctioning-body memberships, by expiry" aside={newButton || undefined} />
+        {body}
+      </RpGroup>
+    )
+  }
+
+  return (
+    <RpPage>
+      <RpPageHeader eyebrow="Clubhouse" title="Memberships" line={`${countLabel} · club and sanctioning-body memberships`} actions={newButton || undefined} />
+      {body}
+    </RpPage>
   )
 }
 
-function MemFormModal({ mem, onClose, inputClass }: { mem: Membership | null; onClose: () => void; inputClass: string }) {
+function MemFormModal({ mem, onClose }: { mem: Membership | null; onClose: () => void }) {
   const router = useRouter()
   const isEditing = !!mem
   const [form, setForm] = useState({
@@ -175,45 +205,55 @@ function MemFormModal({ mem, onClose, inputClass }: { mem: Membership | null; on
     onClose()
   }
 
-  const labelClass = 'block text-sm text-gray-400 mb-1'
-
   return (
-    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4" onClick={onClose}>
-      <div className="rp-panel w-full max-w-lg max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between px-6 py-4 border-b border-white/5">
-          <h2 className="rp-eyebrow">{isEditing ? 'Edit Membership' : 'New Membership'}</h2>
-          <button onClick={onClose} className="text-gray-500 hover:text-white text-xl leading-none">&times;</button>
-        </div>
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          <div><label className={labelClass}>Name *</label><input className={inputClass} value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} placeholder="e.g. SCCA" required /></div>
-          <div className="grid grid-cols-2 gap-4">
-            <div><label className={labelClass}>Organization</label><input className={inputClass} value={form.organization_name} onChange={e => setForm(p => ({ ...p, organization_name: e.target.value }))} placeholder="Club or sanctioning body" /></div>
-            <div><label className={labelClass}>Member ID</label><input className={inputClass} value={form.member_id} onChange={e => setForm(p => ({ ...p, member_id: e.target.value }))} /></div>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div><label className={labelClass}>Tier</label><input className={inputClass} value={form.tier} onChange={e => setForm(p => ({ ...p, tier: e.target.value }))} placeholder="e.g. Founding" /></div>
-            <div><label className={labelClass}>Category</label><input className={inputClass} value={form.category} onChange={e => setForm(p => ({ ...p, category: e.target.value }))} placeholder="e.g. Motorsport" /></div>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div><label className={labelClass}>Expiry Date</label><input className={inputClass} type="date" value={form.expiry_date} onChange={e => setForm(p => ({ ...p, expiry_date: e.target.value }))} /></div>
-            <div><label className={labelClass}>Renewal Amount</label><input className={inputClass} type="number" step="0.01" min="0" value={form.renewal_amount} onChange={e => setForm(p => ({ ...p, renewal_amount: e.target.value }))} placeholder="0.00" /></div>
-          </div>
-          <div>
-            <label className={labelClass}>Status</label>
-            <select className={inputClass} value={form.status} onChange={e => setForm(p => ({ ...p, status: e.target.value as typeof p.status }))}>
+    <RpModal
+      open
+      onClose={onClose}
+      eyebrow={isEditing ? 'Edit membership' : 'New membership'}
+      title={form.name || 'Membership'}
+      footer={
+        <>
+          <RpButton variant="ghost" onClick={onClose}>Cancel</RpButton>
+          <RpButton type="submit" form="mem-form" disabled={saving}>
+            {saving ? 'Saving…' : isEditing ? 'Save' : 'Create'}
+          </RpButton>
+        </>
+      }
+    >
+      <form id="mem-form" onSubmit={handleSubmit}>
+        <RpFormGrid>
+          <RpField label="Name" htmlFor="mem-name" required className="sm:col-span-2">
+            <RpInput id="mem-name" value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} placeholder="e.g. SCCA" required />
+          </RpField>
+          <RpField label="Organization" htmlFor="mem-org">
+            <RpInput id="mem-org" value={form.organization_name} onChange={e => setForm(p => ({ ...p, organization_name: e.target.value }))} placeholder="Club or sanctioning body" />
+          </RpField>
+          <RpField label="Member ID" htmlFor="mem-id">
+            <RpInput id="mem-id" value={form.member_id} onChange={e => setForm(p => ({ ...p, member_id: e.target.value }))} />
+          </RpField>
+          <RpField label="Tier" htmlFor="mem-tier">
+            <RpInput id="mem-tier" value={form.tier} onChange={e => setForm(p => ({ ...p, tier: e.target.value }))} placeholder="e.g. Founding" />
+          </RpField>
+          <RpField label="Category" htmlFor="mem-category">
+            <RpInput id="mem-category" value={form.category} onChange={e => setForm(p => ({ ...p, category: e.target.value }))} placeholder="e.g. Motorsport" />
+          </RpField>
+          <RpField label="Expiry date" htmlFor="mem-expiry">
+            <RpInput id="mem-expiry" type="date" value={form.expiry_date} onChange={e => setForm(p => ({ ...p, expiry_date: e.target.value }))} />
+          </RpField>
+          <RpField label="Renewal amount" htmlFor="mem-renewal">
+            <RpInput id="mem-renewal" type="number" step="0.01" min="0" value={form.renewal_amount} onChange={e => setForm(p => ({ ...p, renewal_amount: e.target.value }))} placeholder="0.00" />
+          </RpField>
+          <RpField label="Status" htmlFor="mem-status" className="sm:col-span-2">
+            <RpSelect id="mem-status" value={form.status} onChange={e => setForm(p => ({ ...p, status: e.target.value as typeof p.status }))}>
               <option value="active">Active</option><option value="expired">Expired</option><option value="cancelled">Cancelled</option>
-            </select>
-          </div>
-          <div><label className={labelClass}>Notes</label><textarea className={`${inputClass} resize-none`} rows={2} value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} /></div>
-          {error && <p className="text-red-400 text-sm">{error}</p>}
-          <div className="flex gap-3 pt-2">
-            <button type="button" onClick={onClose} className="rp-btn-ghost flex-1 justify-center">Cancel</button>
-            <button type="submit" disabled={saving} className="rp-btn-solid flex-1 disabled:cursor-not-allowed justify-center">
-              {saving ? 'Saving...' : isEditing ? 'Update' : 'Create'}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+            </RpSelect>
+          </RpField>
+          <RpField label="Notes" htmlFor="mem-notes" className="sm:col-span-2">
+            <RpTextarea id="mem-notes" rows={2} value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} />
+          </RpField>
+          {error && <p className="rp-error sm:col-span-2" role="alert">{error}</p>}
+        </RpFormGrid>
+      </form>
+    </RpModal>
   )
 }

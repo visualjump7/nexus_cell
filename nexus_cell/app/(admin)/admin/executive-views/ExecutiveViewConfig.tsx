@@ -3,7 +3,36 @@
 import { useEffect, useMemo, useState } from 'react'
 import { WIDGET_CATALOG, getWidgetEntry, type WidgetId, DEFAULT_PRINCIPAL_WIDGETS } from '@/lib/widgets'
 import { useToast } from '@/components/shared/Toast'
+import {
+  RpChips,
+  RpTabs,
+  RpButton,
+  RpTag,
+  RpCapNum,
+  RpGroup,
+  RpGroupHead,
+  RpCardGrid,
+  RpEmpty,
+  RpLoading,
+  RpSelect,
+  RpInput,
+  RpSubhead,
+  ArrowUp,
+  ArrowDown,
+  X,
+  Plus,
+  pad2,
+} from '@/components/rp'
 import PreviewPrincipalModal from './PreviewPrincipalModal'
+
+const GREETINGS: { id: SavedConfigGreeting; label: string }[] = [
+  { id: 'time_of_day', label: 'Time of day' },
+  { id: 'custom', label: 'Custom message' },
+  { id: 'none', label: 'No greeting' },
+]
+type SavedConfigGreeting = 'none' | 'time_of_day' | 'custom'
+
+const SETTING_LABEL = 'font-display text-[11px] uppercase tracking-[.16em] text-rp-muted'
 
 interface Principal {
   user_id: string
@@ -153,59 +182,49 @@ export default function ExecutiveViewConfig({
 
   if (principals.length === 0) {
     return (
-      <div className="rp-panel p-8 text-center">
-        <p className="text-gray-400">No owners in this organization yet.</p>
-        <p className="text-xs text-gray-600 mt-1">Invite an owner first, then come back here to configure their view.</p>
-      </div>
+      <RpEmpty
+        title="No owner accounts yet."
+        line="Invite an owner first, then come back here to set up their view."
+        action={<RpButton variant="ghost" href="/admin/users" arrow>Members</RpButton>}
+      />
     )
   }
 
   return (
-    <div className="space-y-6">
-      {/* Principal selector + actions */}
-      <div className="rp-panel p-4 flex flex-wrap items-center gap-3">
-        <label className="text-xs text-gray-500 uppercase tracking-wider">Configuring for</label>
-        <select
-          value={selectedPrincipalId}
-          onChange={e => setSelectedPrincipalId(e.target.value)}
-          className="bg-[#141618] border border-[#26292C] rounded-sm px-3 py-2 text-sm text-white focus:outline-none focus:border-[#CDA14B]"
-        >
-          {principals.map(p => (
-            <option key={p.user_id} value={p.user_id}>{p.name}</option>
-          ))}
-        </select>
-        <div className="flex-1" />
-        <button
-          onClick={() => setPreviewOpen(true)}
-          className="rp-btn-ghost"
-        >
-          Preview as owner
-        </button>
-        <button
-          onClick={save}
-          disabled={saving || loading}
-          className="rp-btn-solid"
-        >
-          {saving ? 'Saving…' : 'Save'}
-        </button>
+    <div className="flex flex-col gap-[var(--rp-gap)]">
+      {/* Owner picker + actions */}
+      <div className="flex flex-wrap items-end justify-between gap-x-8 gap-y-4">
+        <div className="flex min-w-0 flex-col gap-3">
+          <span className={SETTING_LABEL}>Configuring for</span>
+          <RpChips
+            ariaLabel="Owner"
+            value={selectedPrincipalId}
+            onChange={setSelectedPrincipalId}
+            items={principals.map((p, i) => ({ id: p.user_id, num: pad2(i + 1), label: p.name }))}
+          />
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <RpButton variant="ghost" onClick={() => setPreviewOpen(true)}>Preview</RpButton>
+          <RpButton onClick={save} disabled={saving || loading}>{saving ? 'Saving…' : 'Save'}</RpButton>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid gap-x-10 gap-y-[var(--rp-gap)] lg:grid-cols-2">
         {/* Enabled widgets — ordered list */}
-        <section className="rp-panel p-5">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="rp-eyebrow--muted">Owner sees</h2>
-            <span className="text-xs text-gray-500">{config.widgets.length} widget{config.widgets.length !== 1 ? 's' : ''}</span>
-          </div>
+        <RpGroup className="min-w-0">
+          <RpGroupHead
+            as="h2"
+            title="Owner sees"
+            line="In order, top to bottom · drag or use the arrows"
+            aside={<span className="rp-counter">{config.widgets.length} widget{config.widgets.length !== 1 ? 's' : ''}</span>}
+          />
 
           {loading ? (
-            <p className="text-sm text-gray-500 py-8 text-center">Loading…</p>
+            <RpLoading rows={5} label="Loading the saved view" />
           ) : config.widgets.length === 0 ? (
-            <p className="text-sm text-gray-500 py-8 text-center">
-              No widgets enabled. Add one from the catalog.
-            </p>
+            <RpEmpty compact pines={false} title="Nothing on screen yet." line="Add a widget from the catalog." />
           ) : (
-            <ul className="space-y-2 m-0 p-0 list-none">
+            <ol className="m-0 list-none border-t border-rp-line p-0">
               {config.widgets.map((w, i) => {
                 const entry = getWidgetEntry(w.widget_id)
                 if (!entry) return null
@@ -216,120 +235,131 @@ export default function ExecutiveViewConfig({
                     onDragStart={() => handleDragStart(i)}
                     onDragOver={e => handleDragOver(e, i)}
                     onDragEnd={handleDragEnd}
-                    className={`bg-[#141618] border border-[#1F1F1F] p-3 ${dragIndex === i ? 'opacity-50' : ''}`}
+                    className={`border-b border-rp-line py-3.5 transition-colors duration-200 hover:bg-rp-surface ${dragIndex === i ? 'bg-rp-surface opacity-60' : ''}`}
                   >
-                    <div className="flex items-center gap-3">
-                      <span className="text-gray-600 cursor-grab select-none" aria-hidden>⋮⋮</span>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <p className="text-sm text-white font-medium">{entry.label}</p>
-                          {entry.pinned && <span className="text-[10px] text-emerald-400 uppercase tracking-wider">Always on</span>}
-                          {entry.interactive && <span className="text-[10px] text-blue-400 uppercase tracking-wider">Interactive</span>}
+                    <div className="flex items-start gap-3 px-1">
+                      <span className="mt-0.5 cursor-grab select-none text-[13px] text-rp-dim" aria-hidden title="Drag to reorder">
+                        <RpCapNum n={i + 1} className="text-[13px]" />
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="text-[15px] font-medium text-rp-text">{entry.label}</p>
+                          {entry.pinned && <RpTag tone="gold">Always on</RpTag>}
+                          {entry.interactive && <RpTag tone="blue">Interactive</RpTag>}
                         </div>
-                        <p className="text-xs text-gray-500 mt-0.5">{entry.description}</p>
+                        <p className="mt-1 text-[13px] leading-snug text-rp-muted">{entry.description}</p>
                       </div>
-                      <div className="flex items-center gap-1 shrink-0">
-                        <button onClick={() => move(i, -1)} disabled={i === 0} className="text-gray-500 hover:text-white disabled:opacity-30 w-7 h-7 rounded hover:bg-white/5">↑</button>
-                        <button onClick={() => move(i, 1)} disabled={i === config.widgets.length - 1} className="text-gray-500 hover:text-white disabled:opacity-30 w-7 h-7 rounded hover:bg-white/5">↓</button>
+                      <div className="flex shrink-0 items-center gap-1">
+                        <RpButton variant="icon" size="sm" aria-label={`Move ${entry.label} up`} onClick={() => move(i, -1)} disabled={i === 0}>
+                          <ArrowUp size={14} strokeWidth={1.5} />
+                        </RpButton>
+                        <RpButton variant="icon" size="sm" aria-label={`Move ${entry.label} down`} onClick={() => move(i, 1)} disabled={i === config.widgets.length - 1}>
+                          <ArrowDown size={14} strokeWidth={1.5} />
+                        </RpButton>
                         {!entry.pinned && (
-                          <button onClick={() => removeWidget(i)} className="text-gray-500 hover:text-red-400 w-7 h-7 rounded hover:bg-white/5" title="Remove">×</button>
+                          <RpButton variant="icon" size="sm" aria-label={`Remove ${entry.label}`} title="Remove" onClick={() => removeWidget(i)}>
+                            <X size={14} strokeWidth={1.5} />
+                          </RpButton>
                         )}
                       </div>
                     </div>
 
                     {/* Per-widget settings */}
                     {w.widget_id === 'bills_due' && (
-                      <div className="mt-3 pt-3 border-t border-white/5 flex items-center gap-2">
-                        <label className="text-xs text-gray-500">Window:</label>
-                        <select
+                      <div className="ml-9 mt-3 flex flex-wrap items-center gap-3">
+                        <label htmlFor={`setting-window-${i}`} className={SETTING_LABEL}>Window</label>
+                        <RpSelect
+                          id={`setting-window-${i}`}
                           value={(w.settings?.window as string) || '7d'}
                           onChange={e => updateSettings(i, { ...w.settings, window: e.target.value })}
-                          className="bg-[#141618] border border-white/10 rounded px-2 py-1 text-xs text-white focus:outline-none"
+                          className="!min-h-9 w-[180px] text-[14px]"
                         >
                           <option value="today">Today only</option>
                           <option value="7d">Next 7 days</option>
                           <option value="30d">Next 30 days</option>
-                        </select>
+                        </RpSelect>
                       </div>
                     )}
                     {w.widget_id === 'briefings' && (
-                      <div className="mt-3 pt-3 border-t border-white/5 flex items-center gap-2">
-                        <label className="text-xs text-gray-500">Show latest:</label>
-                        <select
+                      <div className="ml-9 mt-3 flex flex-wrap items-center gap-3">
+                        <label htmlFor={`setting-limit-${i}`} className={SETTING_LABEL}>Show latest</label>
+                        <RpSelect
+                          id={`setting-limit-${i}`}
                           value={String((w.settings?.limit as number) || 3)}
                           onChange={e => updateSettings(i, { ...w.settings, limit: parseInt(e.target.value, 10) })}
-                          className="bg-[#141618] border border-white/10 rounded px-2 py-1 text-xs text-white focus:outline-none"
+                          className="!min-h-9 w-[96px] text-[14px]"
                         >
                           <option value="1">1</option>
                           <option value="3">3</option>
                           <option value="5">5</option>
                           <option value="10">10</option>
-                        </select>
-                        <span className="text-xs text-gray-600">briefs marked &ldquo;visible to owner&rdquo;</span>
+                        </RpSelect>
+                        <span className="text-[13px] text-rp-dim">briefs marked &ldquo;visible to owner&rdquo;</span>
                       </div>
                     )}
                   </li>
                 )
               })}
-            </ul>
+            </ol>
           )}
-        </section>
+        </RpGroup>
 
-        {/* Available catalog */}
-        <section className="rp-panel p-5">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="rp-eyebrow--muted">Add a widget</h2>
-            <span className="text-xs text-gray-500">{availableWidgets.length} available</span>
-          </div>
+        {/* Available catalog (side by side at lg: no stacked-group rule there) */}
+        <RpGroup className="min-w-0 lg:!border-t-0 lg:!pt-0">
+          <RpGroupHead
+            as="h2"
+            title="Catalog"
+            line="Widgets not on this owner's screen"
+            aside={<span className="rp-counter">{availableWidgets.length} available</span>}
+          />
 
           {availableWidgets.length === 0 ? (
-            <p className="text-sm text-gray-500 py-8 text-center">
-              All widgets are already enabled.
-            </p>
+            <RpEmpty compact pines={false} title="Everything is on." line="Every widget is already on this owner's screen." />
           ) : (
-            <ul className="space-y-2 m-0 p-0 list-none">
+            <RpCardGrid max={2} min={220}>
               {availableWidgets.map(w => (
-                <li key={w.id} className="bg-[#141618] border border-[#1F1F1F] p-3 flex items-start gap-3">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm text-white font-medium">{w.label}</p>
-                    <p className="text-xs text-gray-500 mt-0.5">{w.description}</p>
-                  </div>
-                  <button
-                    onClick={() => addWidget(w.id)}
-                    className="rp-btn-ghost shrink-0"
-                  >
+                <div key={w.id} className="flex flex-col gap-2.5 p-5">
+                  <p className="font-display text-[18px] uppercase leading-[1.1] tracking-[.03em] text-rp-text">{w.label}</p>
+                  <p className="flex-1 text-[14px] leading-[1.4] text-rp-muted">{w.description}</p>
+                  <RpButton variant="ghost" size="sm" className="self-start" icon={<Plus size={14} strokeWidth={1.5} />} onClick={() => addWidget(w.id)}>
                     Add
-                  </button>
-                </li>
+                  </RpButton>
+                </div>
               ))}
-            </ul>
+            </RpCardGrid>
           )}
-        </section>
+        </RpGroup>
       </div>
 
       {/* Greeting */}
-      <section className="rp-panel p-5">
-        <h2 className="rp-eyebrow--muted mb-3">Greeting</h2>
-        <div className="flex flex-wrap items-center gap-3">
-          <select
+      <section className="flex flex-col gap-5">
+        <RpSubhead
+          size="md"
+          title="Greeting"
+          spec="The line above the owner's widgets"
+        />
+        <div className="flex flex-wrap items-center gap-4">
+          <RpTabs
+            size="sm"
+            ariaLabel="Greeting style"
+            items={GREETINGS}
             value={config.greeting_style}
-            onChange={e => setConfig(c => ({ ...c, greeting_style: e.target.value as SavedConfig['greeting_style'] }))}
-            className="bg-[#141618] border border-[#26292C] rounded-sm px-3 py-2 text-sm text-white focus:outline-none focus:border-[#CDA14B]"
-          >
-            <option value="time_of_day">Time of day (e.g. Good morning, Sarah)</option>
-            <option value="custom">Custom message</option>
-            <option value="none">No greeting</option>
-          </select>
+            onChange={id => setConfig(c => ({ ...c, greeting_style: id as SavedConfig['greeting_style'] }))}
+          />
           {config.greeting_style === 'custom' && (
-            <input
+            <RpInput
               type="text"
+              aria-label="Custom greeting"
               value={config.custom_greeting || ''}
               onChange={e => setConfig(c => ({ ...c, custom_greeting: e.target.value }))}
               placeholder="e.g. Welcome back."
-              className="flex-1 min-w-[200px] bg-[#141618] border border-[#26292C] rounded-sm px-3 py-2 text-sm text-white focus:outline-none focus:border-[#CDA14B]"
+              className="min-w-[220px] max-w-[420px] flex-1"
             />
           )}
         </div>
+        {config.greeting_style === 'time_of_day' && (
+          <p className="text-[13px] text-rp-dim">For example: Good morning, Sarah.</p>
+        )}
       </section>
 
       {previewOpen && (

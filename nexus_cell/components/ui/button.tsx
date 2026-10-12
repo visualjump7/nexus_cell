@@ -2,23 +2,25 @@ import * as React from "react";
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
+// Legacy shadcn-style Button, restyled onto the Roaring Pines kit classes.
+// Variant names are kept; new code should use RpButton from '@/components/rp'.
 const buttonVariants = cva(
-  "inline-flex items-center justify-center rounded-none text-sm font-medium whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3989CB] focus-visible:ring-offset-2 focus-visible:ring-offset-nexus disabled:pointer-events-none disabled:opacity-50",
+  "disabled:pointer-events-none",
   {
     variants: {
       variant: {
-        default: "bg-[#F5F5F5] text-[#0A0B0C] hover:bg-[#CDA14B] font-display font-medium uppercase tracking-[0.16em] text-[13px]",
-        destructive: "bg-red-600 text-white hover:bg-red-500 font-display uppercase tracking-[0.16em] text-[13px]",
-        outline: "border border-[#26292C] bg-transparent text-[#9AA0A4] hover:border-[#CDA14B] hover:text-white font-display font-normal uppercase tracking-[0.14em] text-[11px]",
-        secondary: "bg-[#141618] border border-[#1F1F1F] text-white hover:border-[#26292C]",
-        ghost: "bg-transparent text-[#9AA0A4] hover:text-white hover:bg-[#141618]",
-        link: "text-accent underline-offset-4 hover:underline",
+        default: "rp-btn-solid",
+        destructive: "rp-btn-danger",
+        outline: "rp-btn-ghost",
+        secondary: "rp-btn-ghost",
+        ghost: "rp-btn-text",
+        link: "rp-link inline-flex items-center gap-2 text-rp-text underline-offset-4 hover:underline",
       },
       size: {
-        default: "h-9 px-4 py-2",
-        sm: "h-8 px-3",
-        lg: "h-[42px] px-8",
-        icon: "h-9 w-9 p-0",
+        default: "",
+        sm: "rp-btn--sm",
+        lg: "",
+        icon: "rp-btn-icon",
       },
     },
     defaultVariants: {

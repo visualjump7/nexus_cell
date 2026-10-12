@@ -4,18 +4,44 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import type { Gift, UserRole } from '@/lib/types'
 import DeleteConfirm from '@/components/DeleteConfirm'
+import {
+  RpPage,
+  RpPageHeader,
+  RpGroup,
+  RpGroupHead,
+  RpTabs,
+  RpFilterBar,
+  RpTable,
+  RpStatus,
+  RpButton,
+  RpEmpty,
+  RpModal,
+  RpField,
+  RpInput,
+  RpSelect,
+  RpTextarea,
+  RpFormGrid,
+  Plus,
+  fmtMoney,
+  fmtDate,
+} from '@/components/rp'
 
-const statusColors: Record<string, string> = {
-  idea: 'bg-gray-500/15 text-gray-400 border-gray-500/30',
-  purchased: 'bg-blue-500/15 text-blue-400 border-blue-500/30',
-  shipped: 'bg-yellow-500/15 text-yellow-400 border-yellow-500/30',
-  delivered: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
-  thanked: 'bg-purple-500/15 text-purple-400 border-purple-500/30',
+const STATUSES: { id: Gift['status']; label: string }[] = [
+  { id: 'idea', label: 'Idea' },
+  { id: 'purchased', label: 'Purchased' },
+  { id: 'shipped', label: 'Shipped' },
+  { id: 'delivered', label: 'Delivered' },
+  { id: 'thanked', label: 'Thanked' },
+]
+
+interface Props {
+  gifts: Gift[]
+  role: UserRole
+  /** Rendered inside the Clubhouse view: a group head instead of a page header. */
+  embedded?: boolean
 }
 
-interface Props { gifts: Gift[]; role: UserRole }
-
-export default function GiftsList({ gifts, role }: Props) {
+export default function GiftsList({ gifts, role, embedded }: Props) {
   const router = useRouter()
   const canWrite = ['ea', 'admin'].includes(role)
 
@@ -28,12 +54,12 @@ export default function GiftsList({ gifts, role }: Props) {
 
   function formatCurrency(amt: number | null) {
     if (!amt) return '—'
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amt)
+    return fmtMoney(amt)
   }
 
   function formatDate(d: string | null) {
     if (!d) return '—'
-    return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+    return fmtDate(d)
   }
 
   async function handleDelete() {
@@ -43,86 +69,97 @@ export default function GiftsList({ gifts, role }: Props) {
     router.refresh()
   }
 
-  const selectClass = 'px-3 py-1.5 bg-card border border-white/10 rounded-lg text-sm text-gray-300 focus:outline-none focus:ring-2 focus:ring-emerald-500/50'
-  const inputClass = 'w-full px-3 py-2 bg-card border border-white/10 rounded-lg text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 text-sm'
+  const openNew = () => { setEditingGift(null); setShowForm(true) }
+  const newButton = canWrite && (
+    <RpButton size="sm" icon={<Plus size={14} strokeWidth={1.5} />} onClick={openNew}>New gift</RpButton>
+  )
+  const countLabel = `${filtered.length} gift${filtered.length !== 1 ? 's' : ''}`
 
-  return (
-    <div className="max-w-6xl">
-      <header className="rp-head">
-        <div className="flex items-end justify-between gap-4 flex-wrap">
-        <div className="flex flex-col gap-2.5">
-          <span className="rp-eyebrow">Clubhouse</span>
-          <h1 className="rp-title">Gifts</h1>
-          <p className="rp-caption">{filtered.length} gift{filtered.length !== 1 ? 's' : ''}</p>
-        </div>
-        {canWrite && (
-          <button onClick={() => { setEditingGift(null); setShowForm(true) }} className="rp-btn-solid">
-            New gift
-          </button>
-        )}
-        </div>
-      </header>
-
-      <div className="flex gap-3 mb-6">
-        <select className={selectClass} value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
-          <option value="all">All Statuses</option>
-          <option value="idea">Idea</option>
-          <option value="purchased">Purchased</option>
-          <option value="shipped">Shipped</option>
-          <option value="delivered">Delivered</option>
-          <option value="thanked">Thanked</option>
-        </select>
-      </div>
+  const body = (
+    <>
+      <RpFilterBar count={countLabel}>
+        <RpTabs
+          size="sm"
+          ariaLabel="Gift status"
+          value={statusFilter}
+          onChange={setStatusFilter}
+          items={[
+            { id: 'all', label: 'All', count: gifts.length },
+            ...STATUSES.map(s => ({ id: s.id, label: s.label, count: gifts.filter(g => g.status === s.id).length })),
+          ]}
+        />
+      </RpFilterBar>
 
       {filtered.length === 0 ? (
-        <div className="rp-panel p-12 text-center">
-          <p className="text-gray-500">No gifts found.</p>
-        </div>
+        <RpEmpty
+          compact
+          title={gifts.length === 0 ? 'Nothing logged yet.' : 'No gifts at this stage.'}
+          line="Thank-yous for trades, topping-out gifts and club presentations are logged here."
+          action={gifts.length === 0 ? newButton : undefined}
+        />
       ) : (
-        <div className="rp-panel overflow-hidden">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-[#1F1F1F] text-left rp-eyebrow--muted">
-                <th className="px-4 py-3 font-medium">Recipient</th>
-                <th className="px-4 py-3 font-medium">Occasion</th>
-                <th className="px-4 py-3 font-medium">Description</th>
-                <th className="px-4 py-3 font-medium">Amount</th>
-                <th className="px-4 py-3 font-medium">Date</th>
-                <th className="px-4 py-3 font-medium">Status</th>
-                {canWrite && <th className="px-4 py-3 font-medium text-right">Actions</th>}
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map(gift => (
-                <tr key={gift.id} className="border-b border-[#1F1F1F] hover:bg-[#141618] transition-colors">
-                  <td className="px-4 py-3 text-white font-medium">{gift.recipient}</td>
-                  <td className="px-4 py-3 text-gray-400">{gift.occasion || '—'}</td>
-                  <td className="px-4 py-3 text-gray-400 max-w-[200px] truncate">{gift.description || '—'}</td>
-                  <td className="px-4 py-3 text-white font-mono">{formatCurrency(gift.amount)}</td>
-                  <td className="px-4 py-3 text-gray-400">{formatDate(gift.date)}</td>
-                  <td className="px-4 py-3">
-                    <span className={`text-[11px] font-medium px-2 py-0.5 rounded border ${statusColors[gift.status] || ''}`}>{gift.status}</span>
+        <RpTable minWidth={760} caption="Gifts">
+          <thead>
+            <tr>
+              <th>Recipient</th>
+              <th>Occasion</th>
+              <th>Description</th>
+              <th className="num">Amount</th>
+              <th>Date</th>
+              <th>Status</th>
+              {canWrite && <th className="num relative"><span className="sr-only">Actions</span></th>}
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.map(gift => (
+              <tr key={gift.id}>
+                <td className="font-medium text-rp-text">{gift.recipient}</td>
+                <td className="text-rp-muted">{gift.occasion || '—'}</td>
+                <td className="max-w-[240px] truncate text-rp-muted" title={gift.description || undefined}>{gift.description || '—'}</td>
+                <td className="num">{formatCurrency(gift.amount)}</td>
+                <td className="whitespace-nowrap text-rp-muted">{formatDate(gift.date)}</td>
+                <td><RpStatus kind="gift" value={gift.status} /></td>
+                {canWrite && (
+                  <td className="num">
+                    <span className="inline-flex gap-4">
+                      <RpButton variant="text" size="sm" onClick={() => { setEditingGift(gift); setShowForm(true) }}>Edit</RpButton>
+                      <RpButton variant="text" size="sm" onClick={() => setDeletingGift(gift)}>Delete</RpButton>
+                    </span>
                   </td>
-                  {canWrite && (
-                    <td className="px-4 py-3 text-right">
-                      <button onClick={() => { setEditingGift(gift); setShowForm(true) }} className="text-gray-500 hover:text-white text-xs mr-3 transition-colors">Edit</button>
-                      <button onClick={() => setDeletingGift(gift)} className="text-gray-500 hover:text-red-400 text-xs transition-colors">Delete</button>
-                    </td>
-                  )}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                )}
+              </tr>
+            ))}
+          </tbody>
+        </RpTable>
       )}
 
-      {showForm && <GiftFormModal gift={editingGift} onClose={() => { setShowForm(false); setEditingGift(null) }} inputClass={inputClass} />}
+      {showForm && <GiftFormModal gift={editingGift} onClose={() => { setShowForm(false); setEditingGift(null) }} />}
       {deletingGift && <DeleteConfirm itemName={`gift for ${deletingGift.recipient}`} onConfirm={handleDelete} onCancel={() => setDeletingGift(null)} />}
-    </div>
+    </>
+  )
+
+  if (embedded) {
+    return (
+      <RpGroup>
+        <RpGroupHead
+          title="Gifts"
+          line="From idea to thank-you note"
+          aside={newButton || undefined}
+        />
+        {body}
+      </RpGroup>
+    )
+  }
+
+  return (
+    <RpPage>
+      <RpPageHeader eyebrow="Clubhouse" title="Gifts" line={`${countLabel} · from idea to thank-you note`} actions={newButton || undefined} />
+      {body}
+    </RpPage>
   )
 }
 
-function GiftFormModal({ gift, onClose, inputClass }: { gift: Gift | null; onClose: () => void; inputClass: string }) {
+function GiftFormModal({ gift, onClose }: { gift: Gift | null; onClose: () => void }) {
   const router = useRouter()
   const isEditing = !!gift
   const [form, setForm] = useState({
@@ -162,45 +199,49 @@ function GiftFormModal({ gift, onClose, inputClass }: { gift: Gift | null; onClo
     onClose()
   }
 
-  const labelClass = 'block text-sm text-gray-400 mb-1'
-
   return (
-    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4" onClick={onClose}>
-      <div className="rp-panel w-full max-w-lg max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between px-6 py-4 border-b border-white/5">
-          <h2 className="rp-eyebrow">{isEditing ? 'Edit Gift' : 'New Gift'}</h2>
-          <button onClick={onClose} className="text-gray-500 hover:text-white text-xl leading-none">&times;</button>
-        </div>
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          <div><label className={labelClass}>Recipient *</label><input className={inputClass} value={form.recipient} onChange={e => setForm(p => ({ ...p, recipient: e.target.value }))} placeholder="e.g. Lead architect" required /></div>
-          <div className="grid grid-cols-2 gap-4">
-            <div><label className={labelClass}>Occasion</label><input className={inputClass} value={form.occasion} onChange={e => setForm(p => ({ ...p, occasion: e.target.value }))} placeholder="e.g. Topping-out" /></div>
-            <div><label className={labelClass}>Date</label><input className={inputClass} type="date" value={form.date} onChange={e => setForm(p => ({ ...p, date: e.target.value }))} /></div>
-          </div>
-          <div><label className={labelClass}>Description</label><input className={inputClass} value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} placeholder="e.g. Club jacket, satin silver" /></div>
-          <div className="grid grid-cols-2 gap-4">
-            <div><label className={labelClass}>Amount</label><input className={inputClass} type="number" step="0.01" min="0" value={form.amount} onChange={e => setForm(p => ({ ...p, amount: e.target.value }))} placeholder="0.00" /></div>
-            <div>
-              <label className={labelClass}>Status</label>
-              <select className={inputClass} value={form.status} onChange={e => setForm(p => ({ ...p, status: e.target.value as typeof p.status }))}>
-                <option value="idea">Idea</option>
-                <option value="purchased">Purchased</option>
-                <option value="shipped">Shipped</option>
-                <option value="delivered">Delivered</option>
-                <option value="thanked">Thanked</option>
-              </select>
-            </div>
-          </div>
-          <div><label className={labelClass}>Notes</label><textarea className={`${inputClass} resize-none`} rows={2} value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} /></div>
-          {error && <p className="text-red-400 text-sm">{error}</p>}
-          <div className="flex gap-3 pt-2">
-            <button type="button" onClick={onClose} className="rp-btn-ghost flex-1 justify-center">Cancel</button>
-            <button type="submit" disabled={saving} className="rp-btn-solid flex-1 disabled:cursor-not-allowed justify-center">
-              {saving ? 'Saving...' : isEditing ? 'Update' : 'Create Gift'}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+    <RpModal
+      open
+      onClose={onClose}
+      eyebrow={isEditing ? 'Edit gift' : 'New gift'}
+      title={form.recipient || 'Gift'}
+      footer={
+        <>
+          <RpButton variant="ghost" onClick={onClose}>Cancel</RpButton>
+          <RpButton type="submit" form="gift-form" disabled={saving}>
+            {saving ? 'Saving…' : isEditing ? 'Save' : 'Create gift'}
+          </RpButton>
+        </>
+      }
+    >
+      <form id="gift-form" onSubmit={handleSubmit}>
+        <RpFormGrid>
+          <RpField label="Recipient" htmlFor="gift-recipient" required className="sm:col-span-2">
+            <RpInput id="gift-recipient" value={form.recipient} onChange={e => setForm(p => ({ ...p, recipient: e.target.value }))} placeholder="e.g. Lead architect" required />
+          </RpField>
+          <RpField label="Occasion" htmlFor="gift-occasion">
+            <RpInput id="gift-occasion" value={form.occasion} onChange={e => setForm(p => ({ ...p, occasion: e.target.value }))} placeholder="e.g. Topping-out" />
+          </RpField>
+          <RpField label="Date" htmlFor="gift-date">
+            <RpInput id="gift-date" type="date" value={form.date} onChange={e => setForm(p => ({ ...p, date: e.target.value }))} />
+          </RpField>
+          <RpField label="Description" htmlFor="gift-description" className="sm:col-span-2">
+            <RpInput id="gift-description" value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} placeholder="e.g. Club jacket, satin silver" />
+          </RpField>
+          <RpField label="Amount" htmlFor="gift-amount">
+            <RpInput id="gift-amount" type="number" step="0.01" min="0" value={form.amount} onChange={e => setForm(p => ({ ...p, amount: e.target.value }))} placeholder="0.00" />
+          </RpField>
+          <RpField label="Status" htmlFor="gift-status">
+            <RpSelect id="gift-status" value={form.status} onChange={e => setForm(p => ({ ...p, status: e.target.value as typeof p.status }))}>
+              {STATUSES.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
+            </RpSelect>
+          </RpField>
+          <RpField label="Notes" htmlFor="gift-notes" className="sm:col-span-2">
+            <RpTextarea id="gift-notes" rows={2} value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} />
+          </RpField>
+          {error && <p className="rp-error sm:col-span-2" role="alert">{error}</p>}
+        </RpFormGrid>
+      </form>
+    </RpModal>
   )
 }

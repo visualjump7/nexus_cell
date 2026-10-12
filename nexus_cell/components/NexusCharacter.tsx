@@ -306,7 +306,7 @@ export default function NexusCharacter({
       onClick={onClick}
       aria-label={label}
       title={label}
-      className="relative cursor-pointer focus:outline-none flex items-end justify-center"
+      className="relative cursor-pointer focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#3989CB] flex items-end justify-center"
       style={{
         width: totalW,
         height: totalH,
@@ -315,7 +315,7 @@ export default function NexusCharacter({
         padding: 0,
       }}
     >
-      {/* Outer halo — large teal blur that bleeds beyond the dome.
+      {/* Outer halo — large gold blur that bleeds beyond the dome.
           Masked at the same baseline as everything else so no soft arc
           appears below — character is strictly top-half. The dome baseline
           sits at (size*0.5 + size*0.55) / (size*2) = 52.5% of this halo's
@@ -329,7 +329,7 @@ export default function NexusCharacter({
           width: size * 2,
           height: size * 2,
           background:
-            'radial-gradient(circle at 50% 50%, rgba(94,234,212,0.45) 0%, rgba(205, 161, 75,0.25) 25%, transparent 55%)',
+            'radial-gradient(circle at 50% 50%, rgba(224,191,123,0.4) 0%, rgba(205,161,75,0.25) 25%, transparent 55%)',
           borderRadius: '50%',
           filter: 'blur(8px)',
           maskImage: 'linear-gradient(to bottom, black 52.5%, transparent 52.5%)',
@@ -350,7 +350,7 @@ export default function NexusCharacter({
           width: size * 1.36,
           height: size * 1.36,
           background:
-            'radial-gradient(circle at 50% 50%, transparent 35%, rgba(94,234,212,0.5) 50%, transparent 70%)',
+            'radial-gradient(circle at 50% 50%, transparent 35%, rgba(205,161,75,0.5) 50%, transparent 70%)',
           borderRadius: '50%',
           filter: 'blur(6px)',
           // Cut at the same vertical line as the dome. The halo extends
@@ -367,6 +367,7 @@ export default function NexusCharacter({
           upper portion — no rectangular boundary, no soft fade. */}
       <span
         aria-hidden
+        data-nx-core
         className="absolute rounded-full"
         style={{
           left: domeOriginX,
@@ -374,8 +375,8 @@ export default function NexusCharacter({
           width: size,
           height: size,
           background: [
-            // Subtle mint highlight on upper-left for dimensionality
-            'radial-gradient(circle at 35% 25%, rgba(167,243,208,0.14) 0%, transparent 30%)',
+            // Subtle warm highlight on upper-left for dimensionality
+            'radial-gradient(circle at 35% 25%, rgba(245,227,184,0.14) 0%, transparent 30%)',
             // Darker interior with teal only at the rim — most of the dome
             // is near-black so the bright teal ring reads strongly. Stops
             // are pushed outward (90% before the rim) compared to before.
@@ -383,10 +384,10 @@ export default function NexusCharacter({
           ].join(', '),
           boxShadow: [
             // Inset rim glow — narrow bright ring
-            'inset 0 0 12px rgba(167,243,208,0.7)',
-            'inset 0 0 30px rgba(94,234,212,0.55)',
+            'inset 0 0 12px rgba(245,227,184,0.7)',
+            'inset 0 0 30px rgba(205,161,75,0.55)',
             // Immediate outer rim
-            '0 0 16px rgba(94,234,212,0.65)',
+            '0 0 16px rgba(224,191,123,0.65)',
             '0 0 40px rgba(205, 161, 75,0.55)',
             '0 0 80px rgba(205, 161, 75,0.35)',
           ].join(', '),

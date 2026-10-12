@@ -2,29 +2,14 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { motion } from "framer-motion";
 import {
-  ArrowLeft,
-  Loader2,
   Plus,
   X,
-  ChevronUp,
-  ChevronDown,
-  Send,
-  Save,
-  DollarSign,
-  Receipt,
-  Building2,
-  AlertTriangle,
-  FileUp,
-  Type,
-  GripVertical,
+  ArrowUp,
+  ArrowDown,
   Download,
 } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import {
   fetchBrief,
   updateBrief,
@@ -44,11 +29,32 @@ import { BriefBlockEditor } from "@/components/brief/BriefBlockEditor";
 import { BriefPreview } from "@/components/brief/BriefPreview";
 import { BriefReaderView } from "@/components/brief/BriefReaderView";
 import { CoverPageSettings } from "@/components/brief/CoverPageSettings";
+import {
+  RpPage,
+  RpPageHeader,
+  RpBox,
+  RpButton,
+  RpCapNum,
+  RpTag,
+  RpStatus,
+  RpField,
+  RpInput,
+  RpFormGrid,
+  RpLoading,
+  RP_ICON,
+  dot,
+  pad2,
+  pushEscapeLayer,
+} from "@/components/rp";
+import { sectionEyebrow } from "@/lib/sections";
 
-const statusColors: Record<string, string> = {
-  draft: "bg-yellow-600/20 text-yellow-400 border-yellow-600/30",
-  published: "bg-emerald-600/20 text-emerald-400 border-emerald-600/30",
-  archived: "bg-zinc-600/20 text-zinc-400 border-zinc-600/30",
+const BLOCK_LABEL: Record<BriefBlock["type"], string> = {
+  text: "Text",
+  cashflow: "Cash",
+  bills: "Bills due",
+  projects: "Projects",
+  decisions: "Decisions",
+  document: "Document",
 };
 
 export default function BriefDetailPage() {
@@ -276,119 +282,109 @@ export default function BriefDetailPage() {
     setIsDownloading(false);
   };
 
-  const blockTypes: { type: BriefBlock["type"]; label: string; icon: typeof Type; desc: string }[] = [
-    { type: "text", label: "Text Block", icon: Type, desc: "Rich text commentary" },
-    { type: "cashflow", label: "Cash Flow", icon: DollarSign, desc: "Monthly cash flow summary" },
-    { type: "bills", label: "Upcoming Bills", icon: Receipt, desc: "Bills due soon" },
-    { type: "projects", label: "Projects", icon: Building2, desc: "Projects snapshot" },
-    { type: "decisions", label: "Decisions", icon: AlertTriangle, desc: "Pending decisions" },
-    { type: "document", label: "Document", icon: FileUp, desc: "Upload .docx file" },
+  const blockTypes: { type: BriefBlock["type"]; label: string; desc: string }[] = [
+    { type: "text", label: "Text", desc: "The week in words" },
+    { type: "cashflow", label: "Cash", desc: "This month, paid and pending" },
+    { type: "bills", label: "Bills due", desc: "Payables in a 7, 14 or 30-day window" },
+    { type: "projects", label: "Projects", desc: "Package status snapshot" },
+    { type: "decisions", label: "Decisions", desc: "Sign-offs waiting on the owner" },
+    { type: "document", label: "Document", desc: "Upload a .docx" },
   ];
+
+  // Esc closes the add-block menu.
+  useEffect(() => {
+    if (!showBlockPicker) return;
+    return pushEscapeLayer(() => setShowBlockPicker(false));
+  }, [showBlockPicker]);
 
   if (isLoading || !brief) {
     return (
-      <div className="flex min-h-[40vh] items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
+      <RpPage>
+        <RpPageHeader
+          back={{ href: "/brief", label: "Briefs" }}
+          eyebrow={sectionEyebrow("brief")}
+          title="The owner's brief"
+          pines={false}
+        />
+        <RpLoading rows={6} label="Loading brief" />
+      </RpPage>
     );
   }
 
   // Reader view for principal / cfo
   if (!isStaff) {
     return (
-      <motion.main
-        initial={{ opacity: 0, y: 16 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="mx-auto max-w-[680px] px-4 py-10 sm:px-6"
-      >
-        <button
-          onClick={() => router.push("/brief")}
-          className="mb-6 flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Back
-        </button>
-        <BriefReaderView brief={brief} liveData={liveData} />
-      </motion.main>
+      <RpPage>
+        <BriefReaderView
+          brief={brief}
+          liveData={liveData}
+          principalName={principalName || undefined}
+          back={{ href: "/brief", label: "Briefs" }}
+        />
+      </RpPage>
     );
   }
 
+  const blocks = brief.blocks || [];
+
   // Composer for ea / admin
   return (
-    <div className="mx-auto max-w-6xl space-y-6 px-4 py-8 sm:px-6">
-      <div className="flex items-center justify-between">
-        <button
-          onClick={() => router.push("/brief")}
-          className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Back to Briefs
-        </button>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleDownloadPDF}
-            disabled={isDownloading}
-          >
-            {isDownloading ? (
-              <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <Download className="mr-2 h-3.5 w-3.5" />
-            )}
-            Download PDF
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleSave}
-            disabled={isSaving}
-          >
-            {isSaving ? (
-              <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <Save className="mr-2 h-3.5 w-3.5" />
-            )}
-            Save Draft
-          </Button>
-          <Button size="sm" onClick={handlePublish} disabled={isSaving}>
-            <Send className="mr-2 h-3.5 w-3.5" />
-            Publish
-          </Button>
-        </div>
-      </div>
+    <RpPage>
+      <RpPageHeader
+        back={{ href: "/brief", label: "Briefs" }}
+        eyebrow={sectionEyebrow("brief", "Editor")}
+        tags={<RpStatus kind="brief" value={brief.status} />}
+        title={brief.title || "Untitled brief"}
+        spec={dot(
+          `${blocks.length} ${blocks.length === 1 ? "block" : "blocks"}`,
+          brief.principal_visible ? "Visible to owner" : "Hidden from owner",
+        )}
+        pines={false}
+        actions={
+          <>
+            <RpButton
+              variant="ghost"
+              icon={<Download {...RP_ICON} />}
+              onClick={handleDownloadPDF}
+              disabled={isDownloading}
+            >
+              {isDownloading ? "Preparing PDF…" : "Download PDF"}
+            </RpButton>
+            <RpButton variant="ghost" onClick={handleSave} disabled={isSaving}>
+              {isSaving ? "Saving…" : "Save draft"}
+            </RpButton>
+            <RpButton onClick={handlePublish} disabled={isSaving}>
+              Publish
+            </RpButton>
+          </>
+        }
+      />
 
-      <div className="grid grid-cols-1 gap-6 xl:grid-cols-5">
-        <div className="xl:col-span-3 space-y-4">
-          <Card>
-            <CardContent className="space-y-4 p-4">
-              <div className="flex items-center gap-3">
-                <input
+      <div className="grid items-start gap-8 lg:grid-cols-[3fr_2fr]">
+        {/* Composer */}
+        <div className="flex min-w-0 flex-col gap-5">
+          <RpBox pad="lg" as="section" className="flex flex-col gap-5">
+            <span className="rp-eyebrow--muted">Brief</span>
+            <RpFormGrid>
+              <RpField label="Title" htmlFor="brief-title" className="sm:col-span-2">
+                <RpInput
+                  id="brief-title"
                   type="text"
                   value={brief.title}
                   onChange={(e) => handleTitleChange(e.target.value)}
-                  className="flex-1 bg-transparent font-display text-xl font-medium uppercase tracking-[0.02em] text-foreground outline-none placeholder:text-muted-foreground"
-                  placeholder="e.g. Weekly build update"
+                  placeholder="e.g. Owner Brief No. 36 — 29 Sep 2026"
                 />
-                <Badge
-                  variant="outline"
-                  className={statusColors[brief.status] || ""}
-                >
-                  {brief.status}
-                </Badge>
-              </div>
-              <div className="flex items-center gap-2">
-                <label className="rp-eyebrow--muted">Date</label>
-                <input
+              </RpField>
+              <RpField label="Brief date" htmlFor="brief-date">
+                <RpInput
+                  id="brief-date"
                   type="date"
                   value={brief.brief_date}
                   onChange={(e) => handleDateChange(e.target.value)}
-                  className="rounded-md border border-border bg-background px-3 py-1.5 text-sm text-foreground"
                 />
-              </div>
-            </CardContent>
-          </Card>
+              </RpField>
+            </RpFormGrid>
+          </RpBox>
 
           {orgId && (
             <CoverPageSettings
@@ -399,124 +395,113 @@ export default function BriefDetailPage() {
             />
           )}
 
-          {brief.blocks?.map((block, index) => (
-            <motion.div
-              key={block.id}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.05 }}
-            >
-              <Card>
-                <CardContent className="p-4">
-                  <div className="mb-3 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <GripVertical className="h-4 w-4 text-muted-foreground/50" />
-                      <span className="text-sm font-medium capitalize text-foreground">
-                        {block.type === "cashflow"
-                          ? "Cash Flow"
-                          : block.type === "bills"
-                          ? "Upcoming Bills"
-                          : block.type}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <button
-                        onClick={() => handleMoveBlock(block.id, "up")}
-                        disabled={index === 0}
-                        className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-30 transition-colors"
-                      >
-                        <ChevronUp className="h-4 w-4" />
-                      </button>
-                      <button
-                        onClick={() => handleMoveBlock(block.id, "down")}
-                        disabled={index === (brief.blocks?.length || 0) - 1}
-                        className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-30 transition-colors"
-                      >
-                        <ChevronDown className="h-4 w-4" />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteBlock(block.id)}
-                        className="rounded p-1 text-muted-foreground hover:bg-red-500/10 hover:text-red-400 transition-colors"
-                      >
-                        <X className="h-4 w-4" />
-                      </button>
-                    </div>
-                  </div>
+          {blocks.map((block, index) => (
+            <RpBox key={block.id} as="section">
+              <div className="flex items-center gap-3 border-b border-rp-line px-5 py-3">
+                <RpCapNum n={index + 1} className="text-[13px]" />
+                <RpTag tone={block.type === "text" || block.type === "document" ? "neutral" : "blue"}>
+                  {BLOCK_LABEL[block.type] ?? block.type}
+                </RpTag>
+                <div className="ml-auto flex items-center gap-1.5">
+                  <RpButton
+                    variant="icon"
+                    size="sm"
+                    aria-label="Move block up"
+                    onClick={() => handleMoveBlock(block.id, "up")}
+                    disabled={index === 0}
+                  >
+                    <ArrowUp {...RP_ICON} />
+                  </RpButton>
+                  <RpButton
+                    variant="icon"
+                    size="sm"
+                    aria-label="Move block down"
+                    onClick={() => handleMoveBlock(block.id, "down")}
+                    disabled={index === blocks.length - 1}
+                  >
+                    <ArrowDown {...RP_ICON} />
+                  </RpButton>
+                  <RpButton
+                    variant="icon"
+                    size="sm"
+                    aria-label="Remove block"
+                    onClick={() => handleDeleteBlock(block.id)}
+                  >
+                    <X {...RP_ICON} />
+                  </RpButton>
+                </div>
+              </div>
 
-                  {orgId && (
-                    <BriefBlockEditor
-                      block={block}
-                      liveData={liveData}
-                      orgId={orgId}
-                      onUpdate={(updates) =>
-                        handleUpdateBlock(block.id, updates)
-                      }
-                    />
-                  )}
-                </CardContent>
-              </Card>
-            </motion.div>
+              <div className="p-5">
+                {orgId && (
+                  <BriefBlockEditor
+                    block={block}
+                    liveData={liveData}
+                    orgId={orgId}
+                    onUpdate={(updates) =>
+                      handleUpdateBlock(block.id, updates)
+                    }
+                  />
+                )}
+              </div>
+            </RpBox>
           ))}
 
           <div className="relative">
-            <Button
-              variant="outline"
-              className="w-full border-dashed"
+            <RpButton
+              variant="ghost"
+              icon={<Plus {...RP_ICON} />}
+              aria-expanded={showBlockPicker}
+              aria-haspopup="menu"
               onClick={() => setShowBlockPicker(!showBlockPicker)}
             >
-              <Plus className="mr-2 h-4 w-4" />
-              Add Block
-            </Button>
+              Add block
+            </RpButton>
 
             {showBlockPicker && (
-              <motion.div
-                initial={{ opacity: 0, y: -4 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="absolute left-0 right-0 top-full z-10 mt-2 grid grid-cols-2 gap-2 rounded-lg border border-border bg-card p-3 shadow-lg sm:grid-cols-3"
+              <div
+                role="menu"
+                aria-label="Block type"
+                className="absolute left-0 top-full z-20 mt-2 w-full max-w-[420px] border border-rp-line2 bg-rp-bg"
               >
-                {blockTypes.map((bt) => (
+                {blockTypes.map((bt, i) => (
                   <button
                     key={bt.type}
+                    type="button"
+                    role="menuitem"
                     onClick={() => handleAddBlock(bt.type)}
-                    className="flex items-center gap-2 rounded-lg p-3 text-left transition-colors hover:bg-muted"
+                    className="flex w-full items-baseline gap-4 border-b border-rp-line px-4 py-3 text-left transition-colors last:border-b-0 hover:bg-rp-surface focus-visible:bg-rp-surface"
                   >
-                    <bt.icon className="h-4 w-4 text-primary" />
-                    <div>
-                      <p className="text-sm font-medium text-foreground">
-                        {bt.label}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {bt.desc}
-                      </p>
-                    </div>
+                    <RpCapNum n={pad2(i + 1)} className="text-[13px]" />
+                    <span className="flex min-w-0 flex-col gap-0.5">
+                      <span className="font-display text-[15px] uppercase tracking-[.06em] text-rp-text">{bt.label}</span>
+                      <span className="text-[13px] text-rp-muted">{bt.desc}</span>
+                    </span>
                   </button>
                 ))}
-              </motion.div>
+              </div>
             )}
           </div>
         </div>
 
-        <div className="xl:col-span-2">
-          <div className="sticky top-24">
-            <Card>
-              <CardContent className="p-0">
-                <div className="border-b border-border px-4 py-3">
-                  <p className="rp-eyebrow--muted">
-                    Live Preview
-                  </p>
-                </div>
-                <div className="max-h-[calc(100vh-200px)] overflow-y-auto p-4">
-                  <BriefPreview
-                    brief={brief}
-                    liveData={liveData}
-                    compact
-                  />
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
+        {/* Live preview */}
+        <aside className="min-w-0 lg:sticky lg:top-6">
+          <RpBox>
+            <div className="flex items-center justify-between gap-3 border-b border-rp-line px-5 py-3">
+              <span className="rp-eyebrow--muted">Live preview</span>
+              <span className="text-[12px] text-rp-dim">As the owner reads it</span>
+            </div>
+            <div className="max-h-[calc(100vh-160px)] overflow-y-auto p-5">
+              <BriefPreview
+                brief={brief}
+                liveData={liveData}
+                principalName={principalName || undefined}
+                compact
+              />
+            </div>
+          </RpBox>
+        </aside>
       </div>
-    </div>
+    </RpPage>
   );
 }

@@ -1,3 +1,5 @@
+import { RpSubhead, RpList, RpRow, RpTag, RpEmpty, timeAgo, dot } from '@/components/rp'
+
 interface ActivityItem {
   type: 'bill' | 'alert' | 'task'
   title: string
@@ -5,44 +7,50 @@ interface ActivityItem {
   timestamp: string
 }
 
-const typeDots: Record<string, string> = {
-  bill: 'bg-[#CDA14B]',
-  alert: 'bg-[#3989CB]',
-  task: 'bg-[#A4CC5C]',
+const TYPE_LABEL: Record<ActivityItem['type'], string> = {
+  bill: 'Bill',
+  alert: 'Alert',
+  task: 'Task',
 }
 
-function timeAgo(dateStr: string) {
-  const diff = Date.now() - new Date(dateStr).getTime()
-  const mins = Math.floor(diff / 60000)
-  if (mins < 1) return 'just now'
-  if (mins < 60) return `${mins}m ago`
-  const hrs = Math.floor(mins / 60)
-  if (hrs < 24) return `${hrs}h ago`
-  const days = Math.floor(hrs / 24)
-  if (days === 1) return 'yesterday'
-  return `${days}d ago`
+const TYPE_HREF: Record<ActivityItem['type'], string> = {
+  bill: '/financial',
+  alert: '/alerts',
+  task: '/tasks',
 }
 
-export default function DashboardActivity({ items }: { items: ActivityItem[] }) {
+export default function DashboardActivity({ items, num }: { items: ActivityItem[]; num?: number }) {
+  const counts = items.reduce<Record<string, number>>((acc, it) => {
+    acc[it.type] = (acc[it.type] || 0) + 1
+    return acc
+  }, {})
+
   return (
-    <div className="rp-panel p-5">
-      <h3 className="rp-eyebrow--muted mb-4">Recent Activity</h3>
+    <section className="flex flex-col gap-5">
+      <RpSubhead
+        num={num}
+        title="Recent activity"
+        spec={items.length > 0
+          ? dot(counts.bill && `${counts.bill} bills`, counts.alert && `${counts.alert} alerts`, counts.task && `${counts.task} tasks`)
+          : undefined}
+      />
       {items.length === 0 ? (
-        <p className="text-sm text-gray-600">No recent activity</p>
+        <RpEmpty compact title="Nothing logged yet." line="Bills, alerts and tasks show here as they move." />
       ) : (
-        <div className="space-y-3">
+        <RpList>
           {items.map((item, i) => (
-            <div key={i} className="flex items-start gap-3">
-              <div className={`w-1.5 h-1.5 mt-2 shrink-0 ${typeDots[item.type]}`} />
-              <div className="flex-1 min-w-0">
-                <p className="text-sm text-white leading-snug">{item.title}</p>
-                <p className="text-xs text-gray-500 mt-0.5">{item.description}</p>
-              </div>
-              <span className="text-[11px] text-gray-600 shrink-0">{timeAgo(item.timestamp)}</span>
-            </div>
+            <RpRow
+              key={`${item.type}-${item.timestamp}-${i}`}
+              index={i + 1}
+              lead={<RpTag className="w-[60px] justify-center">{TYPE_LABEL[item.type]}</RpTag>}
+              title={item.title}
+              meta={item.description}
+              href={TYPE_HREF[item.type]}
+              aside={<span className="whitespace-nowrap text-xs text-rp-dim">{timeAgo(item.timestamp)}</span>}
+            />
           ))}
-        </div>
+        </RpList>
       )}
-    </div>
+    </section>
   )
 }

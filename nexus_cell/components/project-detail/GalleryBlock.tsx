@@ -1,9 +1,12 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/utils/supabase/client'
 import type { ProjectImage } from '@/lib/types'
+import { cn } from '@/lib/utils'
+import { demoMeta, toRpImage } from '@/lib/project-imagery'
+import { RpButton, RpFigure, frameClass, isMatAspect, pairedAspects, useRpLightbox } from '@/components/rp'
 
 interface Props {
   blockId: string
@@ -13,11 +16,27 @@ interface Props {
   projectId: string
 }
 
+/**
+ * Concept gallery: one full-width lead frame, then pairs. Numbered captions
+ * under each frame, one shared lightbox (← →), concept badges and drawing mats
+ * from the catalog. Writers get a striped "Add images" plate and Remove links.
+ */
 export default function GalleryBlock({ blockId, images, canWrite, orgId, projectId }: Props) {
   const router = useRouter()
   const fileRef = useRef<HTMLInputElement>(null)
   const [uploading, setUploading] = useState(false)
-  const [lightboxIdx, setLightboxIdx] = useState<number | null>(null)
+  const [dragOver, setDragOver] = useState(false)
+
+  const sorted = useMemo(
+    () => [...images].sort((a, b) => (a.position ?? 0) - (b.position ?? 0)),
+    [images],
+  )
+  const rpImages = useMemo(
+    // Caption: the stored one, else the concept caption for /demo images, else the file name.
+    () => sorted.map(img => toRpImage(img.url, img.caption || demoMeta(img.url)?.caption || img.file_name)),
+    [sorted],
+  )
+  const lb = useRpLightbox(rpImages)
 
   async function handleUpload(files: FileList) {
     setUploading(true)
@@ -55,64 +74,91 @@ export default function GalleryBlock({ blockId, images, canWrite, orgId, project
     router.refresh()
   }
 
-  const pad = (n: number) => String(n).padStart(2, '0')
+  if (sorted.length === 0 && !canWrite) {
+    return <p className="text-[15px] text-rp-muted">No images yet. Renders and site photos will appear here.</p>
+  }
+
+  // The lead spans both columns; an odd trailing image spans too unless the add plate fills the row.
+  const last = sorted.length - 1
+  const restCount = sorted.length - 1 + (canWrite ? 1 : 0)
+  // Both frames of a pair share one aspect (the add plate is a 16:10 frame).
+  const aspects = pairedAspects(
+    rpImages.map(img => ({ aspect: img.aspect ?? 'aerial', mat: img.mat ?? isMatAspect(img.aspect ?? 'aerial') })),
+    1,
+    canWrite ? 'aerial' : undefined,
+  )
 
   return (
-    <div>
-      {images.length === 0 && !canWrite && (
-        <p className="text-sm text-[#6E7578]">No images yet. Renderings and site photos will appear here.</p>
-      )}
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-        {images.map((img, idx) => (
-          <div key={img.id} className="group rp-frame aspect-[4/3]">
-            <img
-              src={img.url}
-              alt={img.caption || img.file_name || 'Project image'}
-              className="w-full h-full object-cover cursor-pointer"
-              onClick={() => setLightboxIdx(idx)}
+    <div className="grid grid-cols-1 gap-x-4 gap-y-6 min-[640px]:grid-cols-2">
+      {sorted.map((img, i) => {
+        const rp = rpImages[i]
+        const span = i === 0 || (i === last && restCount % 2 === 1 && !canWrite)
+        return (
+          <div key={img.id} className={cn('group/img flex min-w-0 flex-col gap-2', span && 'min-[640px]:col-span-2')}>
+            <RpFigure
+              {...rp}
+              aspect={aspects[i]}
+              mat={rp.mat ?? isMatAspect(rp.aspect ?? 'aerial')}
+              num={i + 1}
+              onOpen={() => lb.open(i)}
             />
-            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-[rgba(8,9,10,.85)] to-transparent p-3 opacity-0 group-hover:opacity-100 transition-opacity">
-              <p className="rp-caption truncate"><span className="rp-num">{pad(idx + 1)}</span>{img.caption || img.file_name}</p>
-              {canWrite && (
-                <button onClick={() => handleDelete(img.id)} className="font-display text-[10px] uppercase tracking-[0.14em] text-red-400 hover:text-red-300 mt-1">Delete</button>
-              )}
-            </div>
+            {/* Remove: always shown on touch; on hover screens from 768px, on hover or focus only. */}
+            {canWrite && (
+              <RpButton
+                variant="text"
+                size="sm"
+                className="self-start text-rp-dim transition-opacity duration-200 hover:text-rp-alert md:[@media(hover:hover)]:opacity-0 md:[@media(hover:hover)]:focus-visible:opacity-100 md:[@media(hover:hover)]:group-hover/img:opacity-100"
+                onClick={() => handleDelete(img.id)}
+                aria-label={`Remove image ${i + 1}`}
+              >
+                Remove
+              </RpButton>
+            )}
           </div>
-        ))}
+        )
+      })}
 
-        {/* Upload zone */}
-        {canWrite && (
-          <div
+      {/* Add plate */}
+      {canWrite && (
+        <div className={cn('flex min-w-0 flex-col gap-2', sorted.length === 0 && 'min-[640px]:col-span-2')}>
+          <button
+            type="button"
             onClick={() => fileRef.current?.click()}
-            className="aspect-[4/3] border border-dashed border-[#26292C] bg-[#0E0F11] flex flex-col items-center justify-center gap-2 cursor-pointer hover:border-[#CDA14B] transition-colors"
+            onDragOver={e => { e.preventDefault(); setDragOver(true) }}
+            onDragLeave={() => setDragOver(false)}
+            onDrop={e => {
+              e.preventDefault()
+              setDragOver(false)
+              if (e.dataTransfer.files?.length) handleUpload(e.dataTransfer.files)
+            }}
+            disabled={uploading}
+            className={cn(
+              frameClass(sorted.length === 0 ? 'banner' : 'aerial'),
+              'rp-frame--static transition-colors duration-200',
+              dragOver ? 'border-rp-gold' : 'hover:border-rp-line3',
+            )}
+            aria-label="Add images"
           >
-            <svg className="w-6 h-6 text-[#6E7578]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-            </svg>
-            <p className="rp-eyebrow--muted">{uploading ? 'Uploading…' : 'Add images'}</p>
-            <input ref={fileRef} type="file" accept="image/*" multiple className="hidden" onChange={e => e.target.files && handleUpload(e.target.files)} />
-          </div>
-        )}
-      </div>
-
-      {/* Lightbox (pitch-site style) */}
-      {lightboxIdx !== null && (
-        <div className="fixed inset-0 z-50 bg-[rgba(8,9,10,.96)] flex flex-col" onClick={() => setLightboxIdx(null)}>
-          <div className="flex items-center justify-between gap-4 px-5 py-4 shrink-0" onClick={e => e.stopPropagation()}>
-            <p className="rp-caption truncate">
-              <span className="rp-num">{pad(lightboxIdx + 1)} / {pad(images.length)}</span>
-              {images[lightboxIdx].caption || images[lightboxIdx].file_name}
-            </p>
-            <button onClick={() => setLightboxIdx(null)} className="rp-btn-ghost shrink-0">Close</button>
-          </div>
-          <div className="relative flex-1 min-h-0 flex items-center justify-center px-14 pb-8">
-            <button aria-label="Previous image" onClick={e => { e.stopPropagation(); setLightboxIdx(Math.max(0, lightboxIdx - 1)) }} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#9AA0A4] hover:text-white text-4xl p-2 transition-colors">&#8249;</button>
-            <img src={images[lightboxIdx].url} alt={images[lightboxIdx].caption || ''} className="max-w-full max-h-full object-contain" onClick={e => e.stopPropagation()} />
-            <button aria-label="Next image" onClick={e => { e.stopPropagation(); setLightboxIdx(Math.min(images.length - 1, lightboxIdx + 1)) }} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#9AA0A4] hover:text-white text-4xl p-2 transition-colors">&#8250;</button>
-          </div>
+            <span className={cn('rp-pending', dragOver && 'bg-[rgba(205,161,75,.06)]')}>
+              <span className="rp-pending-label">{uploading ? 'Uploading' : 'Add images'}</span>
+              <span className="rp-pending-name">Renders and site photos · drop here or choose</span>
+              <span className="rp-btn-ghost rp-btn--sm mt-1" aria-hidden>Choose files</span>
+            </span>
+          </button>
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/*"
+            multiple
+            className="hidden"
+            onChange={e => {
+              if (e.target.files?.length) handleUpload(e.target.files)
+            }}
+          />
         </div>
       )}
+
+      {lb.node}
     </div>
   )
 }

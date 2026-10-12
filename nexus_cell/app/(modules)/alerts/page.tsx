@@ -10,9 +10,5 @@ export default async function AlertsPage() {
     .eq('organization_id', orgId)
     .order('created_at', { ascending: false })
 
-  return (
-    <div>
-      <AlertsList alerts={alerts || []} role={role} />
-    </div>
-  )
+  return <AlertsList alerts={alerts || []} role={role} />
 }

@@ -1,16 +1,16 @@
 'use client'
 
-import Link from 'next/link'
 import {
   STATUS_META,
   zoneForLocation,
   isPinned,
   pctSpent,
-  formatMoneyShort,
   type SiteProject,
   type SiteProjectStatus,
 } from '@/lib/site-map'
-import { formatCurrency } from '@/lib/utils'
+import { RpMeter, RpFigure, RpButton, RpStatus, RpKV, RpInput, fmtMoney, dot, Search } from '@/components/rp'
+import { projectHero } from '@/lib/project-imagery'
+import { cn } from '@/lib/utils'
 import { zoneColor, type ZoneStat } from './utils'
 
 const STATUSES: SiteProjectStatus[] = ['active', 'completed', 'on_hold', 'archived']
@@ -30,31 +30,34 @@ interface Props {
   onClear: () => void
 }
 
-export function BudgetBar({ budgeted, actual, height = 6 }: { budgeted: number; actual: number; height?: number }) {
-  const pct = pctSpent(budgeted, actual)
-  const over = pct > 100
-  return (
-    <div className="w-full bg-[#1F2225]" style={{ height }} aria-hidden>
-      <div className="h-full" style={{ width: `${Math.min(100, pct)}%`, background: over ? '#E0BF7B' : '#CDA14B' }} />
-    </div>
-  )
+const money = (n: number) => fmtMoney(n, { compact: true })
+const ratio = (budgeted: number, actual: number) => (budgeted > 0 ? actual / budgeted : 0)
+
+/** Spend meter (gold; alert once over budget). Kept as an export for callers of the old bar. */
+export function BudgetBar({ budgeted, actual, height = 3 }: { budgeted: number; actual: number; height?: number }) {
+  const size = (height >= 4 ? 4 : height <= 2 ? 2 : 3) as 2 | 3 | 4
+  return <RpMeter value={ratio(budgeted, actual)} size={size} label="Share of budget spent" />
 }
 
-function ProjectRow({ p, onClick, active }: { p: SiteProject; onClick: () => void; active: boolean }) {
+const BACK_BTN = 'font-display text-[11px] uppercase tracking-[.14em] text-rp-muted transition-colors duration-200 hover:text-rp-text'
+
+function ProjectRow({ p, onClick }: { p: SiteProject; onClick: () => void }) {
   const meta = STATUS_META[p.status]
   const pct = pctSpent(p.budgeted, p.actual)
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`w-full text-left px-4 py-2.5 flex items-start gap-3 border-b border-[#1A1C1E] transition-colors hover:bg-[#141618] ${active ? 'bg-[#141618]' : ''}`}
+      className="flex w-full items-start gap-3 border-b border-rp-line px-4 py-3 text-left transition-colors duration-200 hover:bg-rp-surface"
     >
-      <span className="mt-1.5 w-2 h-2 rounded-full shrink-0" style={{ background: meta.color, opacity: p.status === 'archived' ? 0.7 : 1 }} />
-      <span className="flex-1 min-w-0">
-        <span className="block text-[13px] text-[#E6E6E6] leading-snug truncate">{p.name}</span>
-        <span className="flex items-center gap-2 mt-1">
-          <span className="flex-1"><BudgetBar budgeted={p.budgeted} actual={p.actual} height={3} /></span>
-          <span className="text-[11px] text-[#9AA0A4] tabular-nums whitespace-nowrap">{formatMoneyShort(p.budgeted)} · {pct.toFixed(0)}%</span>
+      <i aria-hidden className="mt-[7px] block h-1.5 w-1.5 shrink-0" style={{ background: meta.color }} />
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-[14px] leading-snug text-rp-text">{p.name}</span>
+        <span className="mt-1.5 flex items-center gap-3">
+          <span className="flex-1"><BudgetBar budgeted={p.budgeted} actual={p.actual} height={2} /></span>
+          <span className={cn('whitespace-nowrap text-[12px] tabular-nums', pct > 100 ? 'text-rp-alert' : 'text-rp-muted')}>
+            {money(p.budgeted)} · {pct.toFixed(0)}%
+          </span>
         </span>
       </span>
     </button>
@@ -64,14 +67,14 @@ function ProjectRow({ p, onClick, active }: { p: SiteProject; onClick: () => voi
 function GroupHeader({ title, sub, onClick, swatch }: { title: string; sub: string; onClick?: () => void; swatch?: string }) {
   const inner = (
     <>
-      {swatch && <span className="w-2.5 h-2.5 shrink-0 border border-[#3A3E42]" style={{ background: swatch }} />}
-      <span className="rp-eyebrow--muted !text-[10.5px] !text-[#C9CCCE] flex-1 truncate">{title}</span>
-      <span className="text-[11px] text-[#6E7578] tabular-nums whitespace-nowrap">{sub}</span>
+      {swatch && <span className="h-2.5 w-2.5 shrink-0 border border-rp-line3" style={{ background: swatch }} />}
+      <span className="flex-1 truncate font-display text-[11px] uppercase tracking-[.16em] text-rp-segtext transition-colors duration-200 group-hover:text-rp-gold">{title}</span>
+      <span className="whitespace-nowrap text-[12px] tabular-nums text-rp-dim">{sub}</span>
     </>
   )
-  const cls = 'w-full flex items-center gap-2 px-4 pt-4 pb-2 text-left'
+  const cls = 'group flex w-full items-center gap-2 border-b border-rp-line px-4 pb-2 pt-5 text-left'
   return onClick
-    ? <button type="button" onClick={onClick} className={`${cls} hover:[&>span]:!text-[#F5F5F5]`}>{inner}</button>
+    ? <button type="button" onClick={onClick} className={cls}>{inner}</button>
     : <div className={cls}>{inner}</div>
 }
 
@@ -83,62 +86,66 @@ export default function SidePanel({
   const visibleIds = new Set(visible.map(p => p.id))
 
   return (
-    <div className="flex flex-col h-full min-h-0">
+    <div className="flex h-full min-h-0 flex-col">
       {/* Filters */}
-      <div className="px-4 pt-3 pb-3 border-b border-[#1F1F1F] space-y-2.5 shrink-0">
-        <input
-          type="search"
-          value={search}
-          onChange={e => onSearch(e.target.value)}
-          placeholder="Search projects…"
-          className="w-full px-3 py-2 bg-[#0A0B0C] border border-[#26292C] text-sm text-[#F5F5F5] placeholder-[#6E7578] focus:outline-none focus:border-[#CDA14B]"
-          aria-label="Search projects by name"
-        />
-        <div className="flex flex-wrap gap-1.5">
+      <div className="shrink-0 space-y-3 border-b border-rp-line px-4 pb-3 pt-3">
+        <div className="relative">
+          <Search size={16} strokeWidth={1.5} aria-hidden className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-rp-dim" />
+          <RpInput
+            type="search"
+            value={search}
+            onChange={e => onSearch(e.target.value)}
+            placeholder="Search packages"
+            className="!min-h-[40px] pl-9 text-[14px]"
+            aria-label="Search projects by name"
+          />
+        </div>
+        <div className="flex flex-wrap gap-1.5" role="group" aria-label="Filter by status">
           {STATUSES.map(s => {
             const on = statusFilter.has(s)
-            const meta = STATUS_META[s]
             return (
               <button
                 key={s}
                 type="button"
                 onClick={() => onToggleStatus(s)}
                 aria-pressed={on}
-                className="rp-tag !text-[10px] !px-2 !py-1 transition-colors"
-                style={on ? { color: '#F5F5F5', borderColor: `${meta.color}99` } : { opacity: 0.5 }}
+                className={cn(
+                  'inline-flex items-center gap-1.5 transition-opacity duration-200 focus-visible:outline-offset-2',
+                  on ? 'opacity-100' : 'opacity-45 hover:opacity-80',
+                )}
               >
-                <span className="w-1.5 h-1.5 rounded-full" style={{ background: meta.color }} />
-                {meta.label} <span className="text-[#6E7578]">{counts[s]}</span>
+                <RpStatus kind="project" value={s} square />
+                <span className="font-display text-[11px] tabular-nums text-rp-dim">{counts[s]}</span>
               </button>
             )
           })}
         </div>
       </div>
 
-      <div className="flex-1 min-h-0 overflow-y-auto">
+      <div className="min-h-0 flex-1 overflow-y-auto">
         {selectedProject ? (
           <ProjectCard p={selectedProject} onBack={onClear} onZone={onSelectZone} />
         ) : selectedZone ? (
           <div>
-            <div className="px-4 pt-4 pb-3 border-b border-[#1F1F1F]">
-              <button type="button" onClick={onClear} className="rp-eyebrow--muted !text-[10px] hover:!text-[#F5F5F5] mb-2">← All zones</button>
-              <div className="flex items-center gap-2 mb-1">
-                <span className="w-3 h-3 border border-[#3A3E42]" style={{ background: zoneColor(selectedZone.pct, selectedZone.projects.length > 0) }} />
-                <span className="rp-eyebrow">{selectedZone.zone.short}</span>
+            <div className="border-b border-rp-line px-4 pb-4 pt-4">
+              <button type="button" onClick={onClear} className={`${BACK_BTN} mb-3`}>← All zones</button>
+              <div className="mb-1.5 flex items-center gap-2">
+                <span className="h-3 w-3 border border-rp-line3" style={{ background: zoneColor(selectedZone.pct, selectedZone.projects.length > 0) }} />
+                <span className="font-display text-[12px] uppercase tracking-[.2em] text-rp-gold">{selectedZone.zone.short}</span>
               </div>
-              <h3 className="font-display uppercase text-[20px] leading-tight tracking-[0.02em] text-[#F5F5F5]">{selectedZone.zone.name}</h3>
-              <p className="rp-caption mt-1.5 tabular-nums">
-                {selectedZone.projects.length} project{selectedZone.projects.length !== 1 ? 's' : ''} · {formatMoneyShort(selectedZone.budgeted)} · {selectedZone.pct.toFixed(0)}% spent
+              <h3 className="font-display text-[22px] uppercase leading-[1.05] tracking-[0.02em] text-rp-text">{selectedZone.zone.name}</h3>
+              <p className="mt-1.5 text-[13px] tabular-nums text-rp-muted">
+                {dot(`${selectedZone.projects.length} package${selectedZone.projects.length !== 1 ? 's' : ''}`, money(selectedZone.budgeted), `${selectedZone.pct.toFixed(0)}% spent`)}
               </p>
-              <div className="mt-3"><BudgetBar budgeted={selectedZone.budgeted} actual={selectedZone.actual} /></div>
-              <div className="flex justify-between mt-1.5 text-[11px] text-[#9AA0A4] tabular-nums">
-                <span>{formatCurrency(selectedZone.actual)} spent</span>
-                <span>{formatCurrency(selectedZone.budgeted)} budget</span>
+              <div className="mt-3"><BudgetBar budgeted={selectedZone.budgeted} actual={selectedZone.actual} height={4} /></div>
+              <div className="mt-1.5 flex justify-between text-[12px] tabular-nums text-rp-muted">
+                <span>{fmtMoney(selectedZone.actual)} spent</span>
+                <span>{fmtMoney(selectedZone.budgeted)} budget</span>
               </div>
             </div>
-            {selectedZone.projects.length === 0 && <p className="px-4 py-6 text-sm text-[#6E7578]">No projects in this zone yet.</p>}
+            {selectedZone.projects.length === 0 && <p className="px-4 py-6 text-[14px] text-rp-dim">Nothing in this zone yet.</p>}
             {selectedZone.projects.map(p => (
-              <ProjectRow key={p.id} p={p} active={false} onClick={() => onSelectProject(p.id)} />
+              <ProjectRow key={p.id} p={p} onClick={() => onSelectProject(p.id)} />
             ))}
           </div>
         ) : (
@@ -171,7 +178,12 @@ function GroupedList({ zones, visible, visibleIds, onSelectProject, onSelectZone
   const other = visible.filter(p => !softIds.has(p.id) && !zoneForLocation(p.location))
 
   if (visible.length === 0) {
-    return <p className="px-4 py-8 text-sm text-[#6E7578] text-center">No projects match these filters.</p>
+    return (
+      <div className="px-4 py-8">
+        <p className="font-display text-[11px] uppercase tracking-[.18em] text-rp-muted">Empty</p>
+        <p className="mt-2 text-[14px] text-rp-dim">No packages match these filters.</p>
+      </div>
+    )
   }
 
   const sum = (ps: SiteProject[]) => ps.reduce((s, p) => s + p.budgeted, 0)
@@ -182,23 +194,23 @@ function GroupedList({ zones, visible, visibleIds, onSelectProject, onSelectZone
         <div key={z.zone.id}>
           <GroupHeader
             title={z.zone.name}
-            sub={`${formatMoneyShort(z.budgeted)} · ${z.pct.toFixed(0)}%`}
+            sub={`${money(z.budgeted)} · ${z.pct.toFixed(0)}%`}
             swatch={zoneColor(z.pct, true)}
             onClick={() => onSelectZone(z.zone.id)}
           />
-          {items.map(p => <ProjectRow key={p.id} p={p} active={false} onClick={() => onSelectProject(p.id)} />)}
+          {items.map(p => <ProjectRow key={p.id} p={p} onClick={() => onSelectProject(p.id)} />)}
         </div>
       ))}
       {other.length > 0 && (
         <div>
-          <GroupHeader title="Perimeter & other" sub={formatMoneyShort(sum(other))} />
-          {other.map(p => <ProjectRow key={p.id} p={p} active={false} onClick={() => onSelectProject(p.id)} />)}
+          <GroupHeader title="Perimeter & other" sub={money(sum(other))} />
+          {other.map(p => <ProjectRow key={p.id} p={p} onClick={() => onSelectProject(p.id)} />)}
         </div>
       )}
       {soft.length > 0 && (
         <div>
-          <GroupHeader title="Sitewide & soft costs" sub={`${formatMoneyShort(sum(soft))} · not pinned`} />
-          {soft.map(p => <ProjectRow key={p.id} p={p} active={false} onClick={() => onSelectProject(p.id)} />)}
+          <GroupHeader title="Sitewide & soft costs" sub={`${money(sum(soft))} · not pinned`} />
+          {soft.map(p => <ProjectRow key={p.id} p={p} onClick={() => onSelectProject(p.id)} />)}
         </div>
       )}
     </div>
@@ -206,51 +218,74 @@ function GroupedList({ zones, visible, visibleIds, onSelectProject, onSelectZone
 }
 
 function ProjectCard({ p, onBack, onZone }: { p: SiteProject; onBack: () => void; onZone: (id: string) => void }) {
-  const meta = STATUS_META[p.status]
   const pct = pctSpent(p.budgeted, p.actual)
   const zone = zoneForLocation(p.location)
   const remaining = p.budgeted - p.actual
+  const hero = projectHero(p)
   return (
-    <div className="px-4 pt-4 pb-5">
-      <button type="button" onClick={onBack} className="rp-eyebrow--muted !text-[10px] hover:!text-[#F5F5F5] mb-3">← Back</button>
-      <div className="flex items-start justify-between gap-3 mb-1.5">
-        <h3 className="font-display uppercase text-[20px] leading-tight tracking-[0.02em] text-[#F5F5F5]">{p.name}</h3>
-        <span className="rp-tag !text-[10px] shrink-0" style={{ color: meta.color, borderColor: `${meta.color}66` }}>{meta.label}</span>
+    <div className="flex flex-col gap-4 px-4 pb-5 pt-4">
+      <button type="button" onClick={onBack} className={`${BACK_BTN} self-start`}>← Back</button>
+
+      <RpFigure
+        {...hero}
+        aspect="card"
+        lightbox={false}
+        caption={undefined}
+        num={undefined}
+        qualifier={hero.qualifier}
+      />
+
+      <div className="flex flex-col gap-2">
+        <div className="flex items-start justify-between gap-3">
+          <h3 className="font-display text-[22px] uppercase leading-[1.05] tracking-[0.02em] text-rp-text">{p.name}</h3>
+          <RpStatus kind="project" value={p.status} className="shrink-0" />
+        </div>
+        {p.project_type && <p className="text-[13px] text-rp-muted">{p.project_type}</p>}
       </div>
-      {p.project_type && <p className="rp-caption">{p.project_type}</p>}
 
-      <div className="mt-4 rp-surface p-3">
-        <div className="flex items-baseline justify-between mb-2">
-          <span className="rp-eyebrow--muted !text-[10px]">Budget</span>
-          <span className="font-display text-[20px] text-[#F5F5F5] tabular-nums">{pct.toFixed(0)}%<span className="text-[11px] text-[#6E7578] ml-1 tracking-[0.12em] uppercase">spent</span></span>
+      <div className="border border-rp-line bg-rp-panel p-3">
+        <div className="mb-2 flex items-baseline justify-between">
+          <span className="font-display text-[11px] uppercase tracking-[.16em] text-rp-muted">Budget</span>
+          <span className={cn('font-display text-[22px] font-medium tabular-nums', pct > 100 ? 'text-rp-alert' : 'text-rp-text')}>
+            {pct.toFixed(0)}%<span className="ml-1.5 text-[11px] font-normal uppercase tracking-[.14em] text-rp-dim">spent</span>
+          </span>
         </div>
-        <BudgetBar budgeted={p.budgeted} actual={p.actual} />
-        <div className="grid grid-cols-3 gap-2 mt-3 text-[11px] tabular-nums">
-          <div><div className="text-[#6E7578] uppercase tracking-[0.12em] text-[9.5px] mb-0.5">Budget</div><div className="text-[#E6E6E6]">{formatMoneyShort(p.budgeted)}</div></div>
-          <div><div className="text-[#6E7578] uppercase tracking-[0.12em] text-[9.5px] mb-0.5">Spent</div><div className="text-[#E6E6E6]">{formatMoneyShort(p.actual)}</div></div>
-          <div><div className="text-[#6E7578] uppercase tracking-[0.12em] text-[9.5px] mb-0.5">{remaining < 0 ? 'Over' : 'Left'}</div><div className={remaining < 0 ? 'text-[#E0BF7B]' : 'text-[#E6E6E6]'}>{formatMoneyShort(Math.abs(remaining))}</div></div>
+        <BudgetBar budgeted={p.budgeted} actual={p.actual} height={4} />
+        <div className="mt-3 grid grid-cols-3 gap-2">
+          {[
+            { l: 'Budget', v: money(p.budgeted), alert: false },
+            { l: 'Spent', v: money(p.actual), alert: false },
+            { l: remaining < 0 ? 'Over' : 'Left', v: money(Math.abs(remaining)), alert: remaining < 0 },
+          ].map(c => (
+            <div key={c.l}>
+              <div className="mb-0.5 font-display text-[10px] uppercase tracking-[.16em] text-rp-dim">{c.l}</div>
+              <div className={cn('font-display text-[15px] tabular-nums', c.alert ? 'text-rp-alert' : 'text-rp-text')}>{c.v}</div>
+            </div>
+          ))}
         </div>
       </div>
 
-      <dl className="mt-4 space-y-2.5 text-[13px]">
-        <div className="flex justify-between gap-3">
-          <dt className="text-[#6E7578]">Location</dt>
-          <dd className="text-right text-[#E6E6E6]">
-            {zone ? <button type="button" onClick={() => onZone(zone.id)} className="hover:text-[#CDA14B] text-right">{p.location}</button> : (p.location || '—')}
-          </dd>
-        </div>
-        {p.openTasks != null && (
-          <div className="flex justify-between gap-3"><dt className="text-[#6E7578]">Open tasks</dt><dd className="text-[#E6E6E6] tabular-nums">{p.openTasks}</dd></div>
-        )}
-        <div className="flex justify-between gap-3">
-          <dt className="text-[#6E7578]">Active alerts</dt>
-          <dd className={`tabular-nums ${p.activeAlerts > 0 ? 'text-[#CDA14B]' : 'text-[#E6E6E6]'}`}>{p.activeAlerts}</dd>
-        </div>
-      </dl>
+      <RpKV
+        items={[
+          {
+            label: 'Location',
+            value: zone
+              ? <button type="button" onClick={() => onZone(zone.id)} className="text-right transition-colors duration-200 hover:text-rp-blue">{p.location}</button>
+              : (p.location || '—'),
+          },
+          ...(p.openTasks != null ? [{ label: 'Open tasks', value: p.openTasks, num: true }] : []),
+          {
+            label: 'Active alerts',
+            value: <span className={p.activeAlerts > 0 ? 'text-rp-gold' : undefined}>{p.activeAlerts}</span>,
+            num: true,
+          },
+        ]}
+        className="text-[13px]"
+      />
 
-      {p.description && <p className="mt-4 text-[13px] leading-relaxed text-[#9AA0A4]">{p.description}</p>}
+      {p.description && <p className="text-[14px] leading-relaxed text-rp-muted">{p.description}</p>}
 
-      <Link href={`/projects/${p.id}`} className="rp-btn-ghost w-full mt-5">Open project →</Link>
+      <RpButton variant="text" arrow href={`/projects/${p.id}`} className="self-start">Open project</RpButton>
     </div>
   )
 }

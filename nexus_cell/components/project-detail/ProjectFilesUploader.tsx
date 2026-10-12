@@ -4,6 +4,8 @@ import { useCallback, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/utils/supabase/client'
 import type { ProjectFile } from '@/lib/types'
+import { cn } from '@/lib/utils'
+import { RpButton, RpMeter, RpTable, RpTag, fmtDate, pad2 } from '@/components/rp'
 
 // Accepted MIME types must match sql/010 bucket allowed_mime_types.
 const ACCEPTED_MIMES = new Set([
@@ -20,6 +22,10 @@ const ACCEPTED_MIMES = new Set([
 
 const ACCEPT_ATTR = '.pdf,.xlsx,.xls,.docx,.doc,.png,.jpg,.jpeg,.gif,.webp'
 const MAX_BYTES = 25 * 1024 * 1024 // 25 MB — matches bucket file_size_limit
+
+/** The striped "pending" ground the dropzones sit on. */
+export const DROPZONE_BG =
+  'bg-[repeating-linear-gradient(135deg,transparent_0_14px,rgba(205,161,75,.05)_14px_28px)]'
 
 interface Props {
   projectId: string
@@ -41,20 +47,87 @@ interface PendingFile {
   error?: string
 }
 
-function humanSize(bytes: number | null): string {
+export function humanSize(bytes: number | null): string {
   if (bytes == null) return ''
   if (bytes < 1024) return `${bytes} B`
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`
 }
 
-function fileIcon(mime: string | null): string {
-  if (!mime) return '📄'
-  if (mime.startsWith('image/')) return '🖼'
-  if (mime.includes('pdf')) return '📕'
-  if (mime.includes('sheet') || mime.includes('excel')) return '📊'
-  if (mime.includes('word') || mime.includes('msword')) return '📝'
-  return '📄'
+/** Short file-type tag: PDF, XLSX, DOCX, IMG or the extension. */
+export function fileKind(mime: string | null, name?: string | null): string {
+  const m = mime || ''
+  if (m.startsWith('image/')) return 'IMG'
+  if (m.includes('pdf')) return 'PDF'
+  if (m.includes('sheet') || m.includes('excel')) return 'XLSX'
+  if (m.includes('word') || m.includes('msword')) return 'DOCX'
+  const ext = (name || '').split('.').pop()?.toLowerCase() || ''
+  if (['png', 'jpg', 'jpeg', 'gif', 'webp'].includes(ext)) return 'IMG'
+  if (ext === 'pdf') return 'PDF'
+  if (ext === 'xlsx' || ext === 'xls' || ext === 'csv') return 'XLSX'
+  if (ext === 'docx' || ext === 'doc') return 'DOCX'
+  return ext ? ext.toUpperCase().slice(0, 4) : 'FILE'
+}
+
+/** Files as a ruled table: index, name (link + label), type tag, size, added, actions. */
+export function ProjectFilesTable({
+  files,
+  onDelete,
+  deleting,
+}: {
+  files: ProjectFile[]
+  onDelete?: (id: string) => void
+  deleting?: string | null
+}) {
+  return (
+    <RpTable minWidth={600} caption="Project files">
+      <thead>
+        <tr>
+          <th className="idx">#</th>
+          <th>Name</th>
+          <th>Type</th>
+          <th className="num">Size</th>
+          <th>Added</th>
+          <th className="num relative"><span className="sr-only">Actions</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        {files.map((f, i) => (
+          <tr key={f.id}>
+            <td className="idx">{pad2(i + 1)}</td>
+            <td className="max-w-[420px]">
+              <a href={f.file_url} target="_blank" rel="noopener noreferrer" className="break-words">
+                {f.file_name}
+              </a>
+              {f.label && <span className="sub">{f.label}</span>}
+            </td>
+            <td><RpTag>{fileKind(f.file_type, f.file_name)}</RpTag></td>
+            <td className="num text-rp-muted">{humanSize(f.file_size) || '—'}</td>
+            <td className="whitespace-nowrap text-rp-muted">{fmtDate(f.created_at)}</td>
+            <td className="num">
+              <span className="inline-flex items-center gap-4">
+                <RpButton variant="text" size="sm" href={f.file_url} target="_blank" rel="noopener noreferrer">
+                  Open
+                </RpButton>
+                {onDelete && (
+                  <RpButton
+                    variant="text"
+                    size="sm"
+                    className="text-rp-muted hover:text-rp-alert"
+                    onClick={() => onDelete(f.id)}
+                    disabled={deleting === f.id}
+                    aria-label={`Delete ${f.file_name}`}
+                  >
+                    {deleting === f.id ? 'Deleting…' : 'Delete'}
+                  </RpButton>
+                )}
+              </span>
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </RpTable>
+  )
 }
 
 export default function ProjectFilesUploader({
@@ -156,7 +229,7 @@ export default function ProjectFilesUploader({
   }
 
   return (
-    <div className="space-y-3">
+    <div className="flex flex-col gap-5">
       {/* Drop zone */}
       <div
         onClick={() => fileRef.current?.click()}
@@ -167,19 +240,21 @@ export default function ProjectFilesUploader({
           setDragOver(false)
           handleFiles(Array.from(e.dataTransfer.files))
         }}
-        className={`border border-dashed rounded-sm py-8 text-center cursor-pointer transition-colors ${
-          dragOver
-            ? 'border-[#CDA14B] bg-[#CDA14B]/[0.04]'
-            : 'border-[#26292C] bg-[#0E0F11] hover:border-[#CDA14B]'
-        }`}
+        className={cn(
+          'rp-box relative flex min-h-[140px] cursor-pointer flex-col items-center justify-center gap-3 px-6 py-8 text-center transition-colors duration-200',
+          DROPZONE_BG,
+          dragOver ? 'border-rp-gold bg-[rgba(205,161,75,.06)]' : 'hover:border-rp-line3',
+        )}
       >
-        <div className="w-10 h-10 mx-auto mb-2 rounded-sm border border-[#26292C] flex items-center justify-center">
-          <svg className="w-5 h-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
-          </svg>
-        </div>
-        <p className="text-sm text-white font-medium">Drop files here or click to choose</p>
-        <p className="text-xs text-gray-500 mt-1">PDF, Excel, Word, images · up to 25 MB each</p>
+        <RpTag tone="gold">Drop drawings or photos</RpTag>
+        <p className="text-[13px] text-rp-muted">PDF, XLSX, DOCX, JPG, PNG · up to 25 MB each</p>
+        <RpButton
+          variant="ghost"
+          size="sm"
+          onClick={e => { e.stopPropagation(); fileRef.current?.click() }}
+        >
+          Choose files
+        </RpButton>
         <input
           ref={fileRef}
           type="file"
@@ -196,70 +271,56 @@ export default function ProjectFilesUploader({
 
       {/* Pending uploads */}
       {pending.length > 0 && (
-        <div className="rp-surface p-3 space-y-1">
-          <div className="flex items-center justify-between mb-1">
-            <p className="rp-eyebrow--muted">Uploads</p>
+        <div className="flex flex-col">
+          <div className="flex items-center justify-between pb-2">
+            <span className="rp-eyebrow--muted">Uploads</span>
             {pending.some(p => p.progress === 'done') && (
-              <button onClick={clearCompleted} className="text-[10px] text-gray-500 hover:text-white transition-colors">
+              <RpButton variant="text" size="sm" className="text-rp-muted" onClick={clearCompleted}>
                 Clear done
-              </button>
+              </RpButton>
             )}
           </div>
-          {pending.map(p => (
-            <div key={p.id} className="flex items-center gap-3 py-1.5">
-              <span className="text-base shrink-0" aria-hidden>{fileIcon(p.file.type)}</span>
-              <div className="flex-1 min-w-0">
-                <p className="text-xs text-white truncate">{p.file.name}</p>
-                <p className="text-[10px] text-gray-500">{humanSize(p.file.size)}</p>
-              </div>
-              <span className={`text-[10px] uppercase tracking-wider shrink-0 ${
-                p.progress === 'done' ? 'text-[#A4CC5C]' :
-                p.progress === 'error' ? 'text-red-400' :
-                p.progress === 'uploading' ? 'text-amber-400' :
-                'text-gray-500'
-              }`}>
-                {p.progress === 'error' ? (p.error || 'Error') : p.progress}
-              </span>
-            </div>
-          ))}
+          <ul className="flex flex-col border-t border-rp-line">
+            {pending.map(p => {
+              const value = p.progress === 'done' ? 1 : p.progress === 'uploading' ? 0.5 : 0
+              return (
+                <li key={p.id} className="flex flex-col gap-2 border-b border-rp-line py-3">
+                  <div className="flex items-baseline gap-3">
+                    <RpTag className="shrink-0">{fileKind(p.file.type, p.file.name)}</RpTag>
+                    <span className="min-w-0 flex-1 truncate text-[15px] text-rp-text">{p.file.name}</span>
+                    <span className="shrink-0 text-[13px] tabular-nums text-rp-dim">{humanSize(p.file.size)}</span>
+                    <span
+                      className={cn(
+                        'shrink-0 font-display text-[11px] uppercase tracking-[.14em]',
+                        p.progress === 'done' ? 'text-rp-green'
+                          : p.progress === 'error' ? 'text-rp-alert'
+                          : p.progress === 'uploading' ? 'text-rp-blue'
+                          : 'text-rp-dim',
+                      )}
+                    >
+                      {p.progress === 'error' ? (p.error || 'Error')
+                        : p.progress === 'done' ? 'Uploaded'
+                        : p.progress === 'uploading' ? 'Uploading'
+                        : 'Queued'}
+                    </span>
+                  </div>
+                  {p.progress !== 'error' && (
+                    <RpMeter value={value} tone={p.progress === 'done' ? 'green' : 'blue'} size={2} label={`${p.file.name} upload`} />
+                  )}
+                </li>
+              )
+            })}
+          </ul>
         </div>
       )}
 
       {/* Existing files list */}
       {existingFiles.length > 0 && (
-        <div className="space-y-1.5">
-          <p className="rp-eyebrow--muted">Attached</p>
-          {existingFiles.map(f => (
-            <div key={f.id} className="rp-surface p-3 flex items-center gap-3">
-              <span className="text-lg shrink-0" aria-hidden>{fileIcon(f.file_type)}</span>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm text-white font-medium truncate">{f.file_name}</p>
-                <p className="text-[11px] text-gray-500">
-                  {humanSize(f.file_size)}
-                  {f.label && <> · {f.label}</>}
-                </p>
-              </div>
-              <a
-                href={f.file_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-[#CDA14B] text-xs hover:underline shrink-0"
-              >
-                Open
-              </a>
-              {canDelete && (
-                <button
-                  onClick={() => deleteFile(f.id)}
-                  disabled={deleting === f.id}
-                  className="text-gray-500 hover:text-red-400 text-xs transition-colors shrink-0 disabled:opacity-50"
-                  title="Delete file"
-                >
-                  {deleting === f.id ? '…' : 'Delete'}
-                </button>
-              )}
-            </div>
-          ))}
-        </div>
+        <ProjectFilesTable
+          files={existingFiles}
+          onDelete={canDelete ? deleteFile : undefined}
+          deleting={deleting}
+        />
       )}
     </div>
   )

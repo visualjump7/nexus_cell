@@ -1,8 +1,11 @@
 import { NextResponse } from 'next/server'
 import { getAuthContext } from '@/lib/auth'
 import { syncCalendar } from '@/lib/calendar-sync'
+import { BRAND } from '@/lib/brand'
 
-const PALETTE = ['#3b82f6', '#a855f7', '#22d3ee', '#f59e0b', '#ec4899', '#84cc16', '#eab308', '#6366f1']
+// Default colours for new calendars: the brand chart order (gold, blue, green,
+// light gold, light blue, steel), so swatches stay on palette.
+const PALETTE: readonly string[] = BRAND.chart
 
 // GET /api/external-calendars
 // Lists all non-archived calendars for the org, joined with the caller's

@@ -1,31 +1,46 @@
 import * as React from "react";
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
+import type { RpTone } from "@/components/rp/types";
 
-const badgeVariants = cva(
-  "inline-flex items-center rounded-sm border px-2 py-0.5 font-display text-[11px] font-normal uppercase tracking-[0.14em] leading-tight transition-colors focus:outline-none focus:ring-2 focus:ring-[#3989CB] focus:ring-offset-2 focus:ring-offset-nexus",
-  {
-    variants: {
-      variant: {
-        default: "border-[#CDA14B]/40 bg-transparent text-[#CDA14B]",
-        secondary: "border-[#26292C] bg-[#141618] text-[#9AA0A4]",
-        destructive: "border-transparent bg-red-600 text-white",
-        outline: "border-[#26292C] text-[#9AA0A4]",
-      },
+// Legacy Badge, restyled as an RpTag. Variants map to tones:
+// default → gold, secondary/outline → neutral, destructive → alert.
+// Pass `tone` to pick any RpTone directly.
+const badgeVariants = cva("rp-tag", {
+  variants: {
+    variant: {
+      default: "rp-tag--gold",
+      secondary: "",
+      destructive: "rp-tag--alert",
+      outline: "",
     },
-    defaultVariants: {
-      variant: "default",
-    },
-  }
-);
+  },
+  defaultVariants: {
+    variant: "default",
+  },
+});
+
+const TONE_CLASS: Record<RpTone, string> = {
+  neutral: "",
+  gold: "rp-tag--gold",
+  green: "rp-tag--green",
+  blue: "rp-tag--blue",
+  alert: "rp-tag--alert",
+  dim: "rp-tag--dim",
+};
 
 export interface BadgeProps
   extends React.HTMLAttributes<HTMLDivElement>,
-    VariantProps<typeof badgeVariants> {}
+    VariantProps<typeof badgeVariants> {
+  tone?: RpTone;
+}
 
-function Badge({ className, variant, ...props }: BadgeProps) {
+function Badge({ className, variant, tone, ...props }: BadgeProps) {
   return (
-    <div className={cn(badgeVariants({ variant }), className)} {...props} />
+    <div
+      className={cn(tone ? cn("rp-tag", TONE_CLASS[tone]) : badgeVariants({ variant }), className)}
+      {...props}
+    />
   );
 }
 

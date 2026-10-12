@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
+import { CalendarDays, ChevronLeft, ChevronRight } from 'lucide-react'
 
 interface Props {
   value: string
@@ -83,52 +84,62 @@ export default function DateTimePicker({ value, onChange, label, mode = 'datetim
 
   return (
     <div ref={ref} className={`relative ${className || ''}`}>
-      <label className="block text-sm text-gray-400 mb-1">{label}</label>
+      <label className="rp-label">{label}</label>
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        className="w-full px-3 py-2 bg-[#0E0F11] border border-[#26292C] rounded-sm text-left text-sm focus:outline-none focus:border-[#CDA14B] transition-colors flex items-center justify-between"
+        aria-haspopup="dialog"
+        aria-expanded={open}
+        className="rp-input flex items-center justify-between gap-3 text-left"
       >
-        <span className={displayVal ? 'text-white' : 'text-[#6E7578]'}>{displayVal || 'Select...'}</span>
-        <svg className="w-4 h-4 text-gray-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
-        </svg>
+        <span className={displayVal ? 'text-rp-text' : 'text-rp-dim'}>{displayVal || 'Select…'}</span>
+        <CalendarDays size={16} strokeWidth={1.5} className="shrink-0 text-rp-muted" aria-hidden />
       </button>
 
       {open && (
-        <div className="absolute top-full left-0 mt-2 z-50 bg-[#0E0F11] border border-[#26292C] rounded-sm shadow-2xl shadow-black/50 p-4 w-[280px]">
-          {/* Month/Year header */}
-          <div className="flex items-center justify-between mb-3">
-            <button type="button" onClick={prevMonth} className="text-gray-500 hover:text-white p-1">
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" /></svg>
+        <div
+          role="dialog"
+          aria-label={label}
+          className="absolute left-0 top-full z-50 mt-1 w-[296px] max-w-[calc(100vw-32px)] border border-rp-line2 bg-rp-bg p-4"
+        >
+          {/* Month / year */}
+          <div className="mb-3 flex items-center justify-between gap-2">
+            <button type="button" onClick={prevMonth} className="rp-btn-icon rp-btn--sm" aria-label="Previous month">
+              <ChevronLeft size={16} strokeWidth={1.5} aria-hidden />
             </button>
-            <span className="text-sm font-medium text-white">{MONTHS[viewMonth]} {viewYear}</span>
-            <button type="button" onClick={nextMonth} className="text-gray-500 hover:text-white p-1">
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" /></svg>
+            <span className="font-display text-[13px] uppercase tracking-[.14em] text-rp-text">{MONTHS[viewMonth]} {viewYear}</span>
+            <button type="button" onClick={nextMonth} className="rp-btn-icon rp-btn--sm" aria-label="Next month">
+              <ChevronRight size={16} strokeWidth={1.5} aria-hidden />
             </button>
           </div>
 
           {/* Day headers */}
-          <div className="grid grid-cols-7 gap-0 mb-1">
-            {DAYS.map(d => <div key={d} className="text-center text-[10px] text-gray-600 font-medium py-1">{d}</div>)}
+          <div className="grid grid-cols-7 pb-1.5">
+            {DAYS.map(d => (
+              <div key={d} className="text-center font-display text-[11px] uppercase tracking-[.16em] text-rp-dim">{d}</div>
+            ))}
           </div>
 
-          {/* Calendar grid */}
-          <div className="grid grid-cols-7 gap-0">
-            {Array.from({ length: firstDayOfMonth }).map((_, i) => <div key={`e-${i}`} />)}
+          {/* Ruled day grid */}
+          <div className="rp-ruled grid-cols-7">
+            {Array.from({ length: firstDayOfMonth }).map((_, i) => <div key={`e-${i}`} aria-hidden />)}
             {Array.from({ length: daysInMonth }).map((_, i) => {
               const day = i + 1
+              const selected = !!isSelected(day)
+              const today = isToday(day)
               return (
                 <button
                   key={day}
                   type="button"
                   onClick={() => selectDay(day)}
-                  className={`w-8 h-8 rounded-sm font-display text-xs tabular-nums flex items-center justify-center transition-all ${
-                    isSelected(day)
-                      ? 'bg-[#CDA14B] text-[#111] font-medium'
-                      : isToday(day)
-                        ? 'text-[#CDA14B] border border-[#CDA14B]/40 hover:bg-[#141618]'
-                        : 'text-gray-300 hover:bg-white/10'
+                  aria-pressed={selected}
+                  aria-current={today ? 'date' : undefined}
+                  className={`flex h-9 items-center justify-center font-display text-xs tabular-nums transition-colors ${
+                    selected
+                      ? '!bg-[rgba(205,161,75,.14)] text-rp-text shadow-[inset_0_0_0_1px_#CDA14B]'
+                      : today
+                        ? 'text-rp-gold hover:!bg-rp-surface'
+                        : 'text-rp-muted hover:!bg-rp-surface hover:text-rp-text'
                   }`}
                 >
                   {day}
@@ -137,24 +148,26 @@ export default function DateTimePicker({ value, onChange, label, mode = 'datetim
             })}
           </div>
 
-          {/* Time picker */}
+          {/* Time */}
           {mode === 'datetime' && (
-            <div className="mt-3 pt-3 border-t border-white/5">
+            <div className="mt-3 border-t border-rp-line pt-3">
               <div className="flex items-center justify-center gap-2">
                 <select
                   value={hour}
                   onChange={e => updateTime(parseInt(e.target.value), minute)}
-                  className="bg-[#141618] border border-[#26292C] rounded-sm px-2 py-1.5 text-sm text-white focus:outline-none focus:border-[#CDA14B] appearance-none text-center w-16"
+                  aria-label="Hour"
+                  className="rp-select !min-h-[38px] !w-20 tabular-nums"
                 >
                   {Array.from({ length: 24 }).map((_, h) => (
                     <option key={h} value={h}>{String(h).padStart(2, '0')}</option>
                   ))}
                 </select>
-                <span className="text-gray-500 font-bold">:</span>
+                <span className="font-display text-rp-dim">:</span>
                 <select
                   value={minute}
                   onChange={e => updateTime(hour, parseInt(e.target.value))}
-                  className="bg-[#141618] border border-[#26292C] rounded-sm px-2 py-1.5 text-sm text-white focus:outline-none focus:border-[#CDA14B] appearance-none text-center w-16"
+                  aria-label="Minute"
+                  className="rp-select !min-h-[38px] !w-20 tabular-nums"
                 >
                   {[0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55].map(m => (
                     <option key={m} value={m}>{String(m).padStart(2, '0')}</option>
@@ -164,7 +177,7 @@ export default function DateTimePicker({ value, onChange, label, mode = 'datetim
               <button
                 type="button"
                 onClick={() => setOpen(false)}
-                className="rp-btn-ghost w-full mt-3 !min-h-[32px]"
+                className="rp-btn-ghost rp-btn--sm mt-3 w-full"
               >
                 Done
               </button>

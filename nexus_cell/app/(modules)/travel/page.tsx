@@ -10,9 +10,5 @@ export default async function TravelPage() {
     .eq('organization_id', orgId)
     .order('start_date', { ascending: false })
 
-  return (
-    <div>
-      <TripsList trips={trips || []} role={role} />
-    </div>
-  )
+  return <TripsList trips={trips || []} role={role} />
 }

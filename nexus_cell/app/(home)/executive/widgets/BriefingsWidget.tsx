@@ -1,14 +1,10 @@
 import { createClient } from '@/utils/supabase/server'
-import Link from 'next/link'
 import WidgetCard, { WidgetEmpty } from './WidgetCard'
+import { RpList, RpRow, fmtDate } from '@/components/rp'
 
 interface Props {
   orgId: string
   settings?: { limit?: number }
-}
-
-function fmtDate(iso: string): string {
-  return new Date(iso + 'T00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
 export default async function BriefingsWidget({ orgId, settings }: Props) {
@@ -28,23 +24,24 @@ export default async function BriefingsWidget({ orgId, settings }: Props) {
   const briefs = data || []
 
   return (
-    <WidgetCard title="Recent Briefings" subtitle={briefs.length === 0 ? 'No briefs to show' : undefined}>
+    <WidgetCard title="Recent briefings" subtitle={briefs.length === 0 ? 'No briefs to show' : "The owner's brief, newest first"}>
       {briefs.length === 0 ? (
-        <WidgetEmpty message="Your team hasn't shared a briefing yet." />
+        <WidgetEmpty message="No briefing shared yet." />
       ) : (
-        <ul className="space-y-2 m-0 p-0 list-none">
-          {briefs.map(b => (
-            <li key={b.id}>
-              <Link
-                href={`/brief/${b.id}`}
-                className="block py-2 -my-1 hover:bg-[#141618] transition-colors"
-              >
-                <p className="text-sm text-white font-medium leading-tight">{b.title}</p>
-                <p className="text-xs text-gray-500 mt-0.5">{fmtDate(b.brief_date)}</p>
-              </Link>
-            </li>
+        <RpList as="ul">
+          {briefs.map((b, i) => (
+            <RpRow
+              key={b.id}
+              as="li"
+              index={i + 1}
+              href={`/brief/${b.id}`}
+              title={b.title}
+              meta={fmtDate(b.brief_date, 'medium')}
+              className="[&_.rp-row-end]:pointer-events-none"
+              aside={<span className="rp-btn-text" aria-hidden>Read →</span>}
+            />
           ))}
-        </ul>
+        </RpList>
       )}
     </WidgetCard>
   )

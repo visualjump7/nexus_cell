@@ -1,9 +1,12 @@
 import { createClient } from '@/utils/supabase/server'
-import { BRAND } from '@/lib/brand'
 import { DEFAULT_PRINCIPAL_WIDGETS, getWidgetEntry, type WidgetId } from '@/lib/widgets'
 import { renderWidget } from './widgets/registry'
 import type { WidgetConfig } from '@/lib/types'
 import { buildOpeningMessage, buildPrincipalSuggestions, type JarvisContext } from '@/lib/ai-context'
+import { RpPage, RpPageHeader, RpFilm, fmtDate, dot } from '@/components/rp'
+import { SECTION_HERO } from '@/lib/project-imagery'
+import { BRAND } from '@/lib/brand'
+import { cn } from '@/lib/utils'
 
 interface Props {
   firstName: string
@@ -20,6 +23,20 @@ function timeOfDayGreeting(date: Date): string {
   return 'Good night'
 }
 
+// Widgets that always take the full width of the grid.
+const WIDE: ReadonlySet<string> = new Set(['ai_ask'])
+// Sign-offs go full width once there are enough of them to make a tall cell
+// (a half-width column of approvals left the cell beside it mostly empty).
+const APPROVALS_WIDE_AT = 3
+
+const HERO = SECTION_HERO.overview
+
+/**
+ * The owner's view: the concept's opening panel for the principal. Eyebrow,
+ * the greeting as the title, today's date as the line, then the widgets the
+ * owner's rep chose, numbered in a ruled two-up grid (Ask Nexus across the
+ * top, sign-offs straight after), and the aerial of the whole club to close.
+ */
 export default async function ExecutiveView({ firstName, orgId, principalId }: Props) {
   const supabase = createClient()
   const today = new Date().toISOString().split('T')[0]
@@ -76,60 +93,69 @@ export default async function ExecutiveView({ firstName, orgId, principalId }: P
   const aiOpeningMessage = buildOpeningMessage(jarvisCtx)
   const aiSuggestions = buildPrincipalSuggestions(jarvisCtx)
 
-  return (
-    <main
-      className="relative min-h-screen w-full overflow-hidden"
-      style={{ background: 'var(--nx-bg)', color: 'var(--nx-text)', fontFamily: 'var(--font-body), system-ui, sans-serif', isolation: 'isolate' }}
+  const rendered = widgets.flatMap((w, i) => {
+    const entry = getWidgetEntry(w.widget_id)
+    if (!entry) return [] // skip removed widgets gracefully
+    const node = renderWidget(w.widget_id as WidgetId, {
+      orgId,
+      principalUserId: principalId,
+      settings: w.settings,
+      jarvis: { openingMessage: aiOpeningMessage, suggestions: aiSuggestions },
+    })
+    if (!node) return []
+    const wide = WIDE.has(w.widget_id) || (w.widget_id === 'approvals' && approvalsCount >= APPROVALS_WIDE_AT)
+    return [{ key: `${w.widget_id}-${i}`, node, wide }]
+  })
+
+  // Two-up runs between full-width cells: an odd run would leave its last
+  // cell alone beside an empty half row, so that cell spans the row instead.
+  let run: typeof rendered = []
+  const closeRun = () => {
+    if (run.length % 2 === 1) run[run.length - 1].wide = true
+    run = []
+  }
+  for (const cell of rendered) {
+    if (cell.wide) closeRun()
+    else run.push(cell)
+  }
+  closeRun()
+
+  const cells = rendered.map(cell => (
+    <div
+      key={cell.key}
+      className={cn('min-w-0 [counter-increment:widget]', cell.wide && '[grid-column:1/-1]')}
     >
-      {/* Quiet pine silhouettes behind the greeting */}
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={BRAND.pines} alt="" aria-hidden className="rp-pines rp-pines--hero" />
+      {cell.node}
+    </div>
+  ))
 
-      {/* Top bar — brand only, no nav. The principal can't navigate. */}
-      <header className="flex items-center" style={{ padding: '20px 32px' }}>
-        <div className="flex items-center gap-3">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={BRAND.badge} alt={BRAND.fullName} className="h-[38px] w-auto" />
-          <span className="flex flex-col" style={{ lineHeight: 1.15 }}>
-            <span
-              className="uppercase font-display"
-              style={{ fontSize: 15, letterSpacing: '0.12em', color: 'var(--rp-text)' }}
-            >
-              Roaring Pines
-            </span>
-            <span
-              className="uppercase"
-              style={{ fontSize: 11, letterSpacing: '0.18em', color: 'var(--rp-muted)' }}
-            >
-              Motor Club
-            </span>
-          </span>
-        </div>
-      </header>
+  return (
+    <RpPage>
+      {/* The widgets carry the 01, 02… numbers, so the eyebrow is unnumbered. */}
+      <RpPageHeader
+        eyebrow="Owner's view"
+        title={greeting || 'Where the build stands'}
+        line={`${fmtDate(today, 'weekday')} · here is what needs you`}
+      />
 
-      <div className="max-w-2xl mx-auto px-5 sm:px-8 pb-16">
-        {greeting && (
-          <div className="mt-6 mb-8 flex flex-col gap-2.5">
-            <span className="rp-eyebrow">Owner&apos;s view</span>
-            <h1 className="rp-title m-0">{greeting}</h1>
-          </div>
-        )}
-
-        <div className="space-y-4">
-          {widgets.map((w, i) => {
-            const entry = getWidgetEntry(w.widget_id)
-            if (!entry) return null // skip removed widgets gracefully
-            const node = renderWidget(w.widget_id as WidgetId, {
-              orgId,
-              principalUserId: principalId,
-              settings: w.settings,
-              jarvis: { openingMessage: aiOpeningMessage, suggestions: aiSuggestions },
-            })
-            if (!node) return null
-            return <div key={`${w.widget_id}-${i}`}>{node}</div>
-          })}
-        </div>
+      {/* Ruled grid: two-up from 1024px, one column below; numbered by a CSS counter */}
+      <div
+        className="rp-ruled [counter-reset:widget]"
+        style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(max(min(100%, 360px), calc((100% - 1px) / 2)), 1fr))' }}
+      >
+        {cells}
       </div>
-    </main>
+
+      {/* The aerial closes the page: what needs the owner comes first. */}
+      <RpFilm
+        src={HERO.src}
+        alt={HERO.alt ?? 'Aerial render of the whole Roaring Pines property'}
+        line={`${BRAND.site.acres} acres in the pines`}
+        meta={dot('State Road 100', 'Palatka, Florida', 'under construction')}
+        objectPosition="center 46%"
+        caption="The whole club in the pines · circuit, paddock and lakes"
+        className="[&_.rp-frame]:aspect-[3/1] max-sm:[&_.rp-frame]:aspect-[16/10]"
+      />
+    </RpPage>
   )
 }

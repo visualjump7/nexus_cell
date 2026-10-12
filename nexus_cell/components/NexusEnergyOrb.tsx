@@ -95,7 +95,7 @@ export default function NexusEnergyOrb({
       onClick={onClick}
       aria-label={label}
       title={label}
-      className="relative cursor-pointer focus:outline-none flex items-center justify-center"
+      className="group relative cursor-pointer focus:outline-none flex items-center justify-center"
       style={{
         width: totalW,
         height: totalH,
@@ -104,7 +104,7 @@ export default function NexusEnergyOrb({
         padding: 0,
       }}
     >
-      {/* Outer halo — wide diffuse teal glow. Pulses on its own slow rhythm. */}
+      {/* Outer halo — wide diffuse gold glow. Pulses on its own slow rhythm. */}
       <span
         aria-hidden
         className="absolute pointer-events-none animate-nx-pulse-slow"
@@ -114,13 +114,13 @@ export default function NexusEnergyOrb({
           width: size * 2,
           height: size * 2,
           background:
-            'radial-gradient(circle at 50% 50%, rgba(94,234,212,0.4) 0%, rgba(205, 161, 75,0.2) 25%, transparent 55%)',
+            'radial-gradient(circle at 50% 50%, rgba(224,191,123,0.38) 0%, rgba(205,161,75,0.2) 25%, transparent 55%)',
           borderRadius: '50%',
           filter: 'blur(8px)',
         }}
       />
 
-      {/* Particle layer — small mint dots drifting around the orb */}
+      {/* Particle layer — small gold motes drifting around the orb */}
       {particles.map(p => (
         <span
           key={p.id}
@@ -157,24 +157,26 @@ export default function NexusEnergyOrb({
             top: cy - size / 2,
             width: size,
             height: size,
-            border: '1.5px solid rgba(94,234,212,0.5)',
+            border: '1.5px solid rgba(205,161,75,0.5)',
             animationDelay: `${delay}s`,
           }}
         />
       ))}
 
-      {/* The orb itself — full sphere with the existing teal gradient.
-          Wrapped in a breath layer so the scale animation doesn't fight
-          with anything else. */}
+      {/* The orb itself — a burnished-gold sphere. Wrapped in a breath layer
+          so the scale animation doesn't fight with anything else. It is the
+          "core" (data-nx-core): hosts can limit clicks to it, and it carries
+          the blue focus ring when the button is keyboard-focused. */}
       <span
-        className="absolute rounded-full animate-nx-orb-breath"
+        data-nx-core
+        className="absolute rounded-full animate-nx-orb-breath group-focus-visible:outline group-focus-visible:outline-2 group-focus-visible:outline-offset-4 group-focus-visible:outline-[#3989CB]"
         style={{
           left: cx - size / 2,
           top: cy - size / 2,
           width: size,
           height: size,
           background:
-            'radial-gradient(circle at 35% 30%, #E6C98A 0%, var(--nx-teal, #CDA14B) 35%, var(--nx-teal-dim, #8C6830) 75%, #2D2112 100%)',
+            'radial-gradient(circle at 35% 30%, #E6C98A 0%, #CDA14B 35%, #8C6830 75%, #2D2112 100%)',
           boxShadow: [
             '0 0 60px rgba(205, 161, 75,0.45)',
             '0 0 100px rgba(205, 161, 75,0.25)',

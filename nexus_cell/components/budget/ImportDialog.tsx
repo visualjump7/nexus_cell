@@ -2,14 +2,6 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  X,
-  Upload,
-  FileSpreadsheet,
-  Loader2,
-  AlertTriangle,
-  Check,
-} from "lucide-react";
-import {
   buildImportPreview,
   commitImport,
   listSheetsInFile,
@@ -17,7 +9,17 @@ import {
 } from "@/lib/budget-import";
 import type { SheetInfo } from "@/lib/budget-parser";
 import { validateBudgetFile } from "@/lib/budget-parser";
-import { formatCurrency } from "@/lib/utils";
+import { cn } from "@/lib/utils";
+import {
+  RpButton,
+  RpKV,
+  RpLoading,
+  RpModal,
+  RpTable,
+  RpTag,
+  fmtMoney,
+  pad2,
+} from "@/components/rp";
 
 interface ImportDialogProps {
   open: boolean;
@@ -28,6 +30,9 @@ interface ImportDialogProps {
 }
 
 type Stage = "pick" | "sheet" | "preview" | "submitting" | "done" | "error";
+
+const DROPZONE_BG =
+  "bg-[repeating-linear-gradient(135deg,transparent_0_14px,rgba(205,161,75,.05)_14px_28px)]";
 
 export function ImportDialog({
   open,
@@ -59,14 +64,7 @@ export function ImportDialog({
     }
   }, [open]);
 
-  useEffect(() => {
-    if (!open) return;
-    const h = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    window.addEventListener("keydown", h);
-    return () => window.removeEventListener("keydown", h);
-  }, [open, onClose]);
+  // Esc is handled by RpModal (layered with any modal above it).
 
   const handleFile = useCallback(async (f: File) => {
     setError(null);
@@ -140,276 +138,226 @@ export function ImportDialog({
     setTimeout(onClose, 1500);
   }, [file, selectedSheet, projectId, organizationId, onImported, onClose]);
 
-  if (!open) return null;
+  const rowsLabel = (n: number) => `${n} row${n === 1 ? "" : "s"}`;
+
+  const footer =
+    stage === "preview" && preview ? (
+      <>
+        <RpButton variant="ghost" onClick={() => setStage("pick")}>
+          Choose a different file
+        </RpButton>
+        <RpButton
+          onClick={handleConfirm}
+          disabled={preview.lineItemCount === 0}
+        >
+          Import {rowsLabel(preview.lineItemCount)}
+        </RpButton>
+      </>
+    ) : stage === "error" ? (
+      <>
+        <RpButton variant="ghost" onClick={onClose}>
+          Close
+        </RpButton>
+        <RpButton onClick={() => setStage("pick")}>Try again</RpButton>
+      </>
+    ) : stage === "pick" || stage === "sheet" ? (
+      <RpButton variant="ghost" onClick={onClose}>
+        Cancel
+      </RpButton>
+    ) : undefined;
 
   return (
-    <div
-      className="fixed inset-0 z-[200] flex items-center justify-center bg-[rgba(8,9,10,.85)] backdrop-blur-sm"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
+    <RpModal
+      open={open}
+      onClose={onClose}
+      size="lg"
+      eyebrow="Import budget"
+      title={file?.name || "Budget workbook"}
+      footer={footer}
     >
-      <div className="w-[min(560px,calc(100vw-2rem))] max-h-[85vh] overflow-y-auto rp-panel">
-        <div className="flex items-center justify-between border-b border-border px-5 py-4">
-          <div className="flex items-center gap-2">
-            <Upload className="h-4 w-4 text-primary" />
-            <h2 className="rp-eyebrow">
-              Import budget spreadsheet
-            </h2>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-            aria-label="Close"
+      {stage === "pick" && (
+        <>
+          <p className="max-w-[60ch] text-[15px] leading-normal text-rp-muted">
+            Upload an .xlsx or .csv file with monthly budget columns. Line
+            items become categorised budget rows; the monthly breakdown is
+            kept.
+          </p>
+          <label
+            htmlFor="budget-import-file"
+            className={cn(
+              "rp-box relative flex min-h-[160px] cursor-pointer flex-col items-center justify-center gap-3 px-6 py-8 text-center transition-colors duration-200",
+              DROPZONE_BG,
+              isDragging
+                ? "border-rp-gold bg-[rgba(205,161,75,.06)]"
+                : "hover:border-rp-line3 has-[:focus-visible]:border-rp-blue"
+            )}
+            onDragOver={(e) => {
+              e.preventDefault();
+              setIsDragging(true);
+            }}
+            onDragLeave={() => setIsDragging(false)}
+            onDrop={(e) => {
+              e.preventDefault();
+              setIsDragging(false);
+              const f = e.dataTransfer.files?.[0];
+              if (f) void handleFile(f);
+            }}
           >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
+            <RpTag tone="gold">Drop the budget workbook</RpTag>
+            <span className="text-[13px] text-rp-muted">
+              .xlsx, .xls or .csv · up to 10 MB
+            </span>
+            <span className="rp-btn-ghost rp-btn--sm" aria-hidden>
+              Choose file
+            </span>
+            <input
+              ref={fileInputRef}
+              id="budget-import-file"
+              type="file"
+              accept=".xlsx,.xls,.csv"
+              className="sr-only"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) void handleFile(f);
+              }}
+            />
+          </label>
+        </>
+      )}
 
-        <div className="p-5">
-          {stage === "pick" && (
-            <>
-              <p className="mb-4 text-xs text-muted-foreground">
-                Upload an .xlsx or .csv file with monthly budget columns.
-                Line items parse into categorized budget rows; monthly
-                breakdown is preserved.
-              </p>
-              <label
-                htmlFor="budget-import-file"
-                className={`flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed px-6 py-10 text-center transition-colors cursor-pointer ${
-                  isDragging
-                    ? "border-primary bg-primary/5"
-                    : "border-border bg-background/50 hover:border-primary/60"
-                }`}
-                onDragOver={(e) => {
-                  e.preventDefault();
-                  setIsDragging(true);
-                }}
-                onDragLeave={() => setIsDragging(false)}
-                onDrop={(e) => {
-                  e.preventDefault();
-                  setIsDragging(false);
-                  const f = e.dataTransfer.files?.[0];
-                  if (f) void handleFile(f);
-                }}
-              >
-                <FileSpreadsheet className="h-7 w-7 text-muted-foreground/50" />
-                <p className="text-sm font-medium text-foreground">
-                  Drop a file here, or click to browse
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  .xlsx, .xls, or .csv · up to 10 MB
-                </p>
-                <input
-                  ref={fileInputRef}
-                  id="budget-import-file"
-                  type="file"
-                  accept=".xlsx,.xls,.csv"
-                  className="hidden"
-                  onChange={(e) => {
-                    const f = e.target.files?.[0];
-                    if (f) void handleFile(f);
-                  }}
-                />
-              </label>
-            </>
-          )}
+      {stage === "sheet" && (
+        <>
+          <p className="text-[15px] leading-normal text-rp-muted">
+            This workbook has {sheets.length} sheets. Choose the one to
+            import.
+          </p>
+          <ul className="flex flex-col border-t border-rp-line">
+            {sheets.map((s, i) => (
+              <li key={s.name} className="border-b border-rp-line">
+                <button
+                  type="button"
+                  onClick={() => handleSheetChoice(s.name)}
+                  className="flex min-h-[48px] w-full items-center gap-4 border-l-2 border-transparent px-3 text-left transition-colors duration-200 hover:border-rp-gold hover:bg-rp-surface"
+                >
+                  <span className="rp-cap-num text-[13px]">{pad2(i + 1)}</span>
+                  <span className="min-w-0 flex-1 truncate text-[15px] text-rp-text">
+                    {s.name}
+                  </span>
+                  {s.year && <RpTag>{s.year}</RpTag>}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
 
-          {stage === "sheet" && (
-            <>
-              <p className="mb-4 text-xs text-muted-foreground">
-                This workbook has multiple sheets. Choose the one to import.
-              </p>
-              <ul className="space-y-1.5">
-                {sheets.map((s) => (
-                  <li key={s.name}>
-                    <button
-                      type="button"
-                      onClick={() => handleSheetChoice(s.name)}
-                      className="flex w-full items-center justify-between rounded-lg border border-border bg-background/50 px-3 py-2.5 text-left text-sm text-foreground hover:border-primary transition-colors"
-                    >
-                      <span className="font-medium">{s.name}</span>
-                      {s.year && (
-                        <span className="rounded-md border border-border bg-muted px-2 py-0.5 text-xs text-muted-foreground">
-                          {s.year}
-                        </span>
-                      )}
-                    </button>
-                  </li>
+      {stage === "preview" && preview && (
+        <>
+          <div className="flex flex-wrap items-center gap-3">
+            <RpTag tone={preview.lineItemCount > 0 ? "green" : "neutral"}>
+              {preview.lineItemCount > 0 ? "Ready" : "Nothing to import"}
+            </RpTag>
+            <span className="text-[15px] text-rp-text">
+              {preview.lineItemCount} line item
+              {preview.lineItemCount === 1 ? "" : "s"} across{" "}
+              {preview.categoryCount} categor
+              {preview.categoryCount === 1 ? "y" : "ies"}
+            </span>
+          </div>
+
+          <RpKV
+            cols={2}
+            items={[
+              { label: "Sheet", value: preview.sheetName },
+              { label: "Year", value: preview.year ?? "—" },
+              {
+                label: "Total annual",
+                value: (
+                  <span className="font-display text-base font-medium tracking-[.02em]">
+                    {fmtMoney(preview.totalAnnualBudget)}
+                  </span>
+                ),
+                num: true,
+              },
+              { label: "Categories", value: preview.categoryCount, num: true },
+            ]}
+          />
+
+          {preview.categories.length > 0 && (
+            <div className="flex flex-col gap-2">
+              <span className="rp-eyebrow--muted">Categories</span>
+              <div className="flex flex-wrap gap-2">
+                {preview.categories.slice(0, 12).map((c) => (
+                  <RpTag key={c}>{c}</RpTag>
                 ))}
-              </ul>
-            </>
-          )}
-
-          {stage === "preview" && preview && (
-            <>
-              <p className="mb-4 text-xs text-muted-foreground">
-                Review before importing. Sheet:{" "}
-                <span className="text-foreground">{preview.sheetName}</span>
-                {preview.year && (
-                  <>
-                    {" "}
-                    · Year:{" "}
-                    <span className="text-foreground">{preview.year}</span>
-                  </>
-                )}
-              </p>
-
-              <div className="space-y-2">
-                <PreviewStat
-                  icon={<Check className="h-3.5 w-3.5 text-emerald-400" />}
-                  label={`${preview.lineItemCount} line item${
-                    preview.lineItemCount === 1 ? "" : "s"
-                  } across ${preview.categoryCount} categor${
-                    preview.categoryCount === 1 ? "y" : "ies"
-                  }`}
-                  subLabel={`Total annual: ${formatCurrency(preview.totalAnnualBudget)}`}
-                  tone="ok"
-                />
-                {preview.categories.length > 0 && (
-                  <div className="rounded-lg border border-border bg-background/40 px-3 py-2.5">
-                    <p className="text-xs text-muted-foreground">
-                      Categories
-                    </p>
-                    <ul className="mt-1 space-y-0.5">
-                      {preview.categories.slice(0, 8).map((c) => (
-                        <li
-                          key={c}
-                          className="truncate text-xs text-foreground/80"
-                        >
-                          · {c}
-                        </li>
-                      ))}
-                      {preview.categories.length > 8 && (
-                        <li className="text-xs text-muted-foreground">
-                          · …and {preview.categories.length - 8} more
-                        </li>
-                      )}
-                    </ul>
-                  </div>
-                )}
-                {preview.sampleLineItems.length > 0 && (
-                  <div className="rounded-lg border border-border bg-background/40 px-3 py-2.5">
-                    <p className="text-xs text-muted-foreground">
-                      Sample line items
-                    </p>
-                    <ul className="mt-1 space-y-0.5">
-                      {preview.sampleLineItems.map((li, i) => (
-                        <li
-                          key={i}
-                          className="flex items-center justify-between text-xs text-foreground/80"
-                        >
-                          <span className="truncate pr-2">{li.name}</span>
-                          <span className="shrink-0 tabular-nums text-muted-foreground">
-                            {formatCurrency(li.annual_total)}
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-                {preview.errors.length > 0 && (
-                  <PreviewStat
-                    icon={<AlertTriangle className="h-3.5 w-3.5 text-red-400" />}
-                    label={`${preview.errors.length} parser warning${
-                      preview.errors.length === 1 ? "" : "s"
-                    }`}
-                    tone="warn"
-                  />
+                {preview.categories.length > 12 && (
+                  <span className="self-center text-[13px] text-rp-dim">
+                    and {preview.categories.length - 12} more
+                  </span>
                 )}
               </div>
-
-              {preview.lineItemCount === 0 && (
-                <p className="mt-4 text-xs text-muted-foreground">
-                  Nothing to import — no line items were parsed from this
-                  sheet.
-                </p>
-              )}
-
-              <div className="mt-5 flex items-center justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setStage("pick")}
-                  className="rp-btn-ghost"
-                >
-                  Choose a different file
-                </button>
-                <button
-                  type="button"
-                  onClick={handleConfirm}
-                  disabled={preview.lineItemCount === 0}
-                  className="rp-btn-solid"
-                >
-                  Import {preview.lineItemCount} row
-                  {preview.lineItemCount === 1 ? "" : "s"}
-                </button>
-              </div>
-            </>
-          )}
-
-          {stage === "submitting" && (
-            <div className="flex flex-col items-center gap-3 py-10">
-              <Loader2 className="h-6 w-6 animate-spin text-primary" />
-              <p className="text-sm text-muted-foreground">Importing…</p>
             </div>
           )}
 
-          {stage === "done" && (
-            <div className="flex flex-col items-center gap-3 py-10">
-              <Check className="h-6 w-6 text-emerald-400" />
-              <p className="text-sm text-foreground">
-                Imported {rowsInserted} row{rowsInserted === 1 ? "" : "s"}
-              </p>
+          {preview.sampleLineItems.length > 0 && (
+            <div className="flex flex-col gap-2">
+              <span className="rp-eyebrow--muted">Sample line items</span>
+              <RpTable dense minWidth={420} caption="Sample line items">
+                <thead>
+                  <tr>
+                    <th className="idx">#</th>
+                    <th>Line</th>
+                    <th className="num">Annual</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {preview.sampleLineItems.map((li, i) => (
+                    <tr key={i}>
+                      <td className="idx">{pad2(i + 1)}</td>
+                      <td className="break-words">{li.name}</td>
+                      <td className="num">{fmtMoney(li.annual_total)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </RpTable>
             </div>
           )}
 
-          {stage === "error" && (
-            <div className="rounded-lg border border-red-500/30 bg-red-500/5 p-3 text-xs text-red-300">
-              {error || "Something went wrong"}
-              <div className="mt-3">
-                <button
-                  type="button"
-                  onClick={() => setStage("pick")}
-                  className="rp-btn-ghost"
-                >
-                  Try again
-                </button>
-              </div>
-            </div>
+          {preview.errors.length > 0 && (
+            <p className="text-[13px] text-rp-gold" role="status">
+              {preview.errors.length} parser warning
+              {preview.errors.length === 1 ? "" : "s"} · rows the parser
+              could not read are skipped
+            </p>
           )}
+
+          {preview.lineItemCount === 0 && (
+            <p className="text-[15px] text-rp-muted">
+              Nothing to import. No line items were parsed from this sheet.
+            </p>
+          )}
+        </>
+      )}
+
+      {stage === "submitting" && <RpLoading label="Importing" />}
+
+      {stage === "done" && (
+        <div className="flex flex-col items-start gap-3 py-6">
+          <RpTag tone="green">Imported</RpTag>
+          <p className="font-display text-2xl uppercase tracking-[.02em] text-rp-text">
+            {rowsLabel(rowsInserted)} added to the budget
+          </p>
         </div>
-      </div>
-    </div>
-  );
-}
+      )}
 
-function PreviewStat({
-  icon,
-  label,
-  subLabel,
-  tone,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  subLabel?: string;
-  tone: "ok" | "warn";
-}) {
-  const borderClass =
-    tone === "ok"
-      ? "border-emerald-500/30 bg-emerald-500/5"
-      : "border-amber-500/30 bg-amber-500/5";
-  return (
-    <div className={`rounded-lg border px-3 py-2.5 ${borderClass}`}>
-      <div className="flex items-start gap-2">
-        <div className="mt-0.5 shrink-0">{icon}</div>
-        <div className="min-w-0 flex-1">
-          <p className="text-xs text-foreground/90">{label}</p>
-          {subLabel && (
-            <p className="mt-0.5 text-xs text-muted-foreground">{subLabel}</p>
-          )}
+      {stage === "error" && (
+        <div className="flex flex-col items-start gap-2">
+          <span className="rp-eyebrow--muted">Import stopped</span>
+          <p className="rp-error text-[15px]" role="alert">
+            {error || "Something went wrong"}
+          </p>
         </div>
-      </div>
-    </div>
+      )}
+    </RpModal>
   );
 }

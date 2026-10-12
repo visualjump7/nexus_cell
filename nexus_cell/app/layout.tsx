@@ -1,29 +1,13 @@
-import type { Metadata } from "next";
-import localFont from "next/font/local";
-import { Inter, Oswald, Source_Sans_3 } from "next/font/google";
+import type { Metadata, Viewport } from "next";
+import { Oswald, Source_Sans_3 } from "next/font/google";
 import { BRAND } from "@/lib/brand";
 import { ToastProvider } from "@/components/shared/Toast";
 import "./globals.css";
 
-const geistSans = localFont({
-  src: "./fonts/GeistVF.woff",
-  variable: "--font-geist-sans",
-  weight: "100 900",
-});
-const geistMono = localFont({
-  src: "./fonts/GeistMonoVF.woff",
-  variable: "--font-geist-mono",
-  weight: "100 900",
-});
-const inter = Inter({
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"],
-  variable: "--font-inter",
-  display: "swap",
-});
+// Two faces only: Oswald labels things (display), Source Sans 3 is for reading.
 const sourceSans = Source_Sans_3({
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800"],
+  weight: ["400", "500", "600", "700"],
   variable: "--font-body",
   display: "swap",
 });
@@ -35,8 +19,16 @@ const oswald = Oswald({
 });
 
 export const metadata: Metadata = {
-  title: BRAND.fullName,
+  title: {
+    default: BRAND.fullName,
+    template: `%s · ${BRAND.name}`,
+  },
   description: `${BRAND.fullName} — ${BRAND.tagline}`,
+  icons: { icon: BRAND.mark },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#0A0B0C",
 };
 
 export default function RootLayout({
@@ -45,10 +37,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} ${inter.variable} ${sourceSans.variable} ${oswald.variable} font-sans antialiased`}
-      >
+    <html lang="en" suppressHydrationWarning className={`${sourceSans.variable} ${oswald.variable}`}>
+      <body className="bg-rp-bg text-rp-text font-sans antialiased">
         <ToastProvider>
           {children}
         </ToastProvider>

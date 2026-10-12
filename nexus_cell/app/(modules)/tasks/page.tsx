@@ -21,9 +21,5 @@ export default async function TasksPage() {
     return { id: m.user_id, name: profile?.full_name || profile?.email || m.user_id, role: m.role }
   })
 
-  return (
-    <div>
-      <TasksList tasks={tasks || []} role={role} userId={user.id} members={memberOptions} />
-    </div>
-  )
+  return <TasksList tasks={tasks || []} role={role} userId={user.id} members={memberOptions} />
 }

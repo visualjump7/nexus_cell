@@ -56,7 +56,8 @@ export default async function HomePage() {
     supabase.from('alerts').select('id', { count: 'exact', head: true }).eq('organization_id', orgId).eq('alert_type', 'approval').eq('status', 'open'),
     supabase.from('alerts').select('id', { count: 'exact', head: true }).eq('organization_id', orgId).eq('status', 'open'),
     supabase.from('tasks').select('id', { count: 'exact', head: true }).eq('organization_id', orgId).in('status', ['todo', 'in_progress', 'waiting']),
-    supabase.from('projects').select('id', { count: 'exact', head: true }).eq('organization_id', orgId).in('status', ['planning', 'in_progress', 'on_hold']),
+    // Project statuses are active / on_hold / completed / archived: count the packages in build.
+    supabase.from('projects').select('id', { count: 'exact', head: true }).eq('organization_id', orgId).eq('status', 'active'),
     supabase.from('trips').select('title, start_date').eq('organization_id', orgId).in('status', ['confirmed', 'in_progress']).gte('start_date', today).order('start_date', { ascending: true }).limit(1),
     supabase.from('bills').select('id', { count: 'exact', head: true }).eq('organization_id', orgId).eq('due_date', today).in('status', ['pending', 'approved', 'overdue']),
     supabase.from('bills').select('id', { count: 'exact', head: true }).eq('organization_id', orgId).eq('status', 'overdue'),

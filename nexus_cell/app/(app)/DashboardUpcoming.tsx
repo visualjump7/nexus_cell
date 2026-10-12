@@ -4,31 +4,48 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import type { Alert, Trip, TripSegment, UserRole } from '@/lib/types'
+import {
+  RpGroup, RpGroupHead, RpList, RpRow, RpButton, RpFigure, RpEmpty, RpStatus, RpTag,
+  Plane, BedDouble, Car, TrainFront, MapPin, RP_ICON,
+  timeAgo, fmtRange, fmtDate, dot,
+} from '@/components/rp'
+import { tripImage } from '@/lib/project-imagery'
 
 interface Props {
   approvals: Alert[]
   nextTrip: { trip: Trip; segments: TripSegment[] } | null
   role: UserRole
+  /** Section number for "Waiting on you"; "Next site visit" takes the next one. */
+  num?: number
 }
 
-function timeAgo(dateStr: string) {
-  const diff = Date.now() - new Date(dateStr).getTime()
-  const mins = Math.floor(diff / 60000)
-  if (mins < 1) return 'just now'
-  if (mins < 60) return `${mins}m ago`
-  const hrs = Math.floor(mins / 60)
-  if (hrs < 24) return `${hrs}h ago`
-  const days = Math.floor(hrs / 24)
-  if (days === 1) return 'yesterday'
-  return `${days}d ago`
+const SEGMENT_ICON: Record<TripSegment['segment_type'], typeof Plane> = {
+  flight: Plane,
+  hotel: BedDouble,
+  car: Car,
+  train: TrainFront,
+  ground_transport: Car,
+  other: MapPin,
 }
 
-function formatDate(d: string | null) {
-  if (!d) return '—'
-  return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+const SEGMENT_LABEL: Record<TripSegment['segment_type'], string> = {
+  flight: 'Flight',
+  hotel: 'Stay',
+  car: 'Car',
+  train: 'Train',
+  ground_transport: 'Ground',
+  other: 'Leg',
 }
 
-export default function DashboardUpcoming({ approvals, nextTrip, role }: Props) {
+// Date only, read from the ISO string itself so the server render and the
+// browser agree (local clock times would differ between time zones).
+function segmentWhen(seg: TripSegment) {
+  const at = seg.depart_at || seg.check_in
+  if (!at) return null
+  return fmtDate(at.slice(0, 10), 'short')
+}
+
+export default function DashboardUpcoming({ approvals, nextTrip, role, num }: Props) {
   const router = useRouter()
   const [approvingId, setApprovingId] = useState<string | null>(null)
   const canApprove = ['principal', 'ea', 'admin'].includes(role)
@@ -44,85 +61,119 @@ export default function DashboardUpcoming({ approvals, nextTrip, role }: Props) 
     router.refresh()
   }
 
-  const segmentIcons: Record<string, string> = {
-    flight: '✈', hotel: '🏨', car: '🚗', train: '🚆', ground_transport: '🚐', other: '📍',
-  }
+  const decide = (id: string) => (
+    <>
+      <RpButton size="sm" onClick={() => handleApproval(id, 'approved')} disabled={approvingId === id}>
+        Approve
+      </RpButton>
+      <RpButton variant="danger" size="sm" onClick={() => handleApproval(id, 'rejected')} disabled={approvingId === id}>
+        Reject
+      </RpButton>
+    </>
+  )
+
+  const trip = nextTrip?.trip
+  const segments = nextTrip?.segments ?? []
+  // Route from the travel legs (stays are not legs): 'Teterboro → Palatka'.
+  const legs = segments.filter(s => s.segment_type !== 'hotel')
+  const route = legs.length > 0
+    ? [legs[0].from_location, legs[legs.length - 1].to_location].filter(Boolean).join(' → ')
+    : ''
+  const img = trip ? tripImage(trip) : null
 
   return (
-    <div className="rp-panel p-5">
-      <h3 className="rp-eyebrow--muted mb-4">Upcoming</h3>
+    <RpGroup>
+      <RpGroupHead
+        num={num}
+        title="Waiting on you"
+        tag={approvals.length > 0 ? <RpTag tone="gold">{approvals.length} to sign</RpTag> : undefined}
+        aside={approvals.length > 0 ? <RpButton variant="text" arrow href="/alerts">All alerts</RpButton> : undefined}
+      />
 
-      {/* Pending Approvals */}
-      {approvals.length > 0 && (
-        <div className="mb-5">
-          <p className="rp-eyebrow--muted mb-3">Awaiting sign-off</p>
-          <div className="space-y-2">
-            {approvals.map(alert => (
-              <div key={alert.id} className="flex items-center justify-between py-2 border-b border-[#1F1F1F] last:border-0">
-                <div className="min-w-0 flex-1 mr-3">
-                  <p className="text-sm text-white truncate">{alert.title}</p>
-                  <p className="text-[11px] text-gray-500">{timeAgo(alert.created_at)}</p>
-                </div>
-                {canApprove && (
-                  <div className="flex gap-1.5 shrink-0">
-                    <button
-                      onClick={() => handleApproval(alert.id, 'approved')}
-                      disabled={approvingId === alert.id}
-                      className="rp-btn-solid" style={{ minHeight: 30, padding: '6px 12px', fontSize: 11 }}
-                    >
-                      Approve
-                    </button>
-                    <button
-                      onClick={() => handleApproval(alert.id, 'rejected')}
-                      disabled={approvingId === alert.id}
-                      className="rp-btn-ghost disabled:opacity-50 hover:!border-red-500 hover:!text-red-400" style={{ minHeight: 30, padding: '6px 12px' }}
-                    >
-                      Reject
-                    </button>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Next Trip */}
-      {nextTrip ? (
-        <div>
-          <p className="rp-eyebrow--muted mb-3">Next site visit</p>
-          <Link href={`/travel/${nextTrip.trip.id}`} className="block hover:border-[#3A3E42] transition-colors">
-            <p className="text-white font-medium">{nextTrip.trip.title}</p>
-            <p className="text-xs text-gray-400 mt-1">
-              {formatDate(nextTrip.trip.start_date)} → {formatDate(nextTrip.trip.end_date)}
-            </p>
-            {nextTrip.segments.length > 0 && (
-              <div className="mt-3 space-y-1.5">
-                {nextTrip.segments.slice(0, 3).map(seg => (
-                  <div key={seg.id} className="flex items-center gap-2 text-xs text-gray-500">
-                    <span>{segmentIcons[seg.segment_type] || '📍'}</span>
-                    <span>{seg.from_location || '—'} → {seg.to_location || '—'}</span>
-                    {seg.carrier && <span className="text-gray-600">· {seg.carrier}</span>}
-                  </div>
-                ))}
-              </div>
-            )}
-          </Link>
-        </div>
+      {/* Pending approvals */}
+      {approvals.length > 0 ? (
+        <RpList>
+          {approvals.map((alert, i) => (
+            <RpRow
+              key={alert.id}
+              index={i + 1}
+              edge="gold"
+              title={alert.title}
+              meta={canApprove ? (
+                <>
+                  <span suppressHydrationWarning>{dot('Sign-off', timeAgo(alert.created_at))}</span>
+                  {/* Phones: the decision buttons sit under the title instead of squeezing it. */}
+                  <span className="mt-3 flex gap-2 sm:hidden">{decide(alert.id)}</span>
+                </>
+              ) : <span suppressHydrationWarning>{dot('Sign-off', timeAgo(alert.created_at))}</span>}
+              aside={canApprove ? (
+                <div className="hidden shrink-0 gap-2 sm:flex">{decide(alert.id)}</div>
+              ) : (
+                <RpStatus kind="alertType" value={alert.alert_type} />
+              )}
+            />
+          ))}
+        </RpList>
       ) : (
-        <div>
-          <p className="rp-eyebrow--muted mb-3">Next site visit</p>
-          <p className="text-sm text-gray-600">No site visits scheduled</p>
-        </div>
+        <RpEmpty compact pines={false} title="Nothing to sign." line="Approvals land here when the team needs a decision." />
       )}
 
-      {/* View all link */}
-      {(approvals.length > 0 || nextTrip) && (
-        <div className="mt-4 pt-3 border-t border-[#1F1F1F] flex gap-4">
-          {approvals.length > 0 && <Link href="/alerts" className="text-xs text-[#CDA14B] hover:text-white">View all alerts →</Link>}
-          {nextTrip && <Link href="/travel" className="text-xs text-[#CDA14B] hover:text-white">All travel →</Link>}
-        </div>
-      )}
-    </div>
+      {/* Next site visit */}
+      <div className="mt-4 flex flex-col gap-4">
+        <RpGroupHead
+          num={num != null ? num + 1 : undefined}
+          title="Next site visit"
+          className="border-t border-rp-line pt-5"
+          aside={trip ? <RpButton variant="text" arrow href="/travel">All travel</RpButton> : undefined}
+        />
+
+        {trip && img ? (
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-[minmax(0,220px)_1fr]">
+            <RpFigure
+              {...img}
+              aspect="aerial"
+              caption={undefined}
+              qualifier={undefined}
+              href={`/travel/${trip.id}`}
+              alt={trip.title}
+            />
+            <div className="flex min-w-0 flex-col gap-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <RpStatus kind="trip" value={trip.status} />
+              </div>
+              <Link
+                href={`/travel/${trip.id}`}
+                className="font-display text-lg uppercase leading-tight tracking-[.02em] text-rp-text transition-colors hover:text-rp-gold"
+              >
+                {trip.title}
+              </Link>
+              <p className="text-[13px] text-rp-muted">
+                {dot(route, fmtRange(trip.start_date, trip.end_date))}
+              </p>
+            </div>
+          </div>
+        ) : (
+          <p className="text-[15px] text-rp-muted">No site visits scheduled.</p>
+        )}
+
+        {trip && segments.length > 0 && (
+          <RpList>
+            {segments.slice(0, 3).map(seg => {
+              const Icon = SEGMENT_ICON[seg.segment_type] || MapPin
+              return (
+                <RpRow
+                  key={seg.id}
+                  lead={<Icon size={RP_ICON.size} strokeWidth={RP_ICON.strokeWidth} className="mt-0.5 text-rp-muted" aria-hidden />}
+                  title={seg.segment_type === 'hotel'
+                    ? (seg.to_location || seg.from_location || 'Stay')
+                    : `${seg.from_location || '—'} → ${seg.to_location || '—'}`}
+                  meta={dot(SEGMENT_LABEL[seg.segment_type] || 'Leg', seg.carrier, segmentWhen(seg))}
+                />
+              )
+            })}
+          </RpList>
+        )}
+      </div>
+    </RpGroup>
   )
 }

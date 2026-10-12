@@ -3,23 +3,13 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import type { ProjectContact } from '@/lib/types'
-
-const statusColors: Record<string, string> = {
-  active: 'bg-[#A4CC5C]/15 text-[#A4CC5C]',
-  'on-leave': 'bg-amber-500/15 text-amber-400',
-  completed: 'bg-[#3989CB]/15 text-[#7FB3DE]',
-  terminated: 'bg-red-500/15 text-red-400',
-}
+import {
+  RpButton, RpCardGrid, RpField, RpFormGrid, RpInput, RpModal, RpStatus,
+  Plus, RP_ICON, dot,
+} from '@/components/rp'
 
 function getInitials(name: string) {
   return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
-}
-
-function getInitialColor(name: string) {
-  const colors = ['bg-[#8C6830]', 'bg-[#2C6699]', 'bg-[#5E7F2C]', 'bg-[#3A3E42]', 'bg-[#6B4F28]', 'bg-[#565C60]']
-  let hash = 0
-  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash)
-  return colors[Math.abs(hash) % colors.length]
 }
 
 interface Props { blockId: string; contacts: ProjectContact[]; canWrite: boolean }
@@ -50,58 +40,76 @@ export default function PersonnelBlock({ blockId, contacts, canWrite }: Props) {
     router.refresh()
   }
 
-  const inputClass = 'w-full px-3 py-2 bg-[#0A0B0C] border border-[#26292C] rounded-sm text-white placeholder-[#6E7578] focus:outline-none focus:border-[#CDA14B] text-sm'
+  if (contacts.length === 0 && !canWrite) {
+    return <p className="text-[15px] text-rp-muted">No one on the package yet.</p>
+  }
 
   return (
     <div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+      <RpCardGrid min={260} max={3}>
         {contacts.map(c => (
-          <div key={c.id} className="rp-surface p-4 flex items-start gap-3">
-            <div className={`w-10 h-10 rounded-sm ${getInitialColor(c.name)} flex items-center justify-center shrink-0`}>
-              <span className="font-display text-xs tracking-[0.08em] text-white">{getInitials(c.name)}</span>
+          <article key={c.id} className="flex flex-col gap-4 p-5">
+            <div className="flex items-start gap-4">
+              <span
+                aria-hidden
+                className="rp-inset grid h-10 w-10 shrink-0 place-items-center font-display text-sm tracking-[.08em] text-rp-muted"
+              >
+                {getInitials(c.name)}
+              </span>
+              <div className="flex min-w-0 flex-1 flex-col gap-1">
+                <h4 className="font-display text-lg uppercase leading-[1.15] tracking-[.02em] text-rp-text">{c.name}</h4>
+                {(c.role || c.company) && (
+                  <p className="text-sm leading-snug text-rp-muted">{dot(c.role, c.company)}</p>
+                )}
+              </div>
             </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2">
-                <p className="text-sm font-medium text-white truncate">{c.name}</p>
-                <span className={`font-display text-[10px] uppercase tracking-[0.12em] px-1.5 py-0.5 rounded-sm ${statusColors[c.status] || ''}`}>{c.status}</span>
+            {(c.email || c.phone) && (
+              <div className="flex flex-col gap-1 text-sm">
+                {c.email && <a href={`mailto:${c.email}`} className="rp-link truncate text-rp-text">{c.email}</a>}
+                {c.phone && <a href={`tel:${c.phone}`} className="rp-link tabular-nums text-rp-muted">{c.phone}</a>}
               </div>
-              {c.role && <p className="text-xs text-gray-400 mt-0.5">{c.role}{c.company ? ` · ${c.company}` : ''}</p>}
-              <div className="flex gap-3 mt-2">
-                {c.email && <a href={`mailto:${c.email}`} className="text-[11px] text-[#CDA14B] hover:text-[#E0BF7B]">{c.email}</a>}
-                {c.phone && <a href={`tel:${c.phone}`} className="text-[11px] text-gray-500">{c.phone}</a>}
-              </div>
+            )}
+            <div className="mt-auto flex flex-wrap items-center justify-between gap-3">
+              <RpStatus kind="contact" value={c.status} />
               {canWrite && (
-                <div className="flex gap-2 mt-2">
-                  <button onClick={() => { setEditing(c); setShowForm(true) }} className="text-[10px] text-gray-500 hover:text-white">Edit</button>
-                  <button onClick={() => handleDelete(c.id)} className="text-[10px] text-gray-500 hover:text-red-400">Delete</button>
-                </div>
+                <span className="flex items-center gap-4">
+                  <RpButton variant="text" size="sm" className="text-rp-muted" onClick={() => { setEditing(c); setShowForm(true) }}>Edit</RpButton>
+                  <RpButton variant="text" size="sm" className="text-rp-muted hover:text-rp-alert" onClick={() => handleDelete(c.id)}>Remove</RpButton>
+                </span>
               )}
             </div>
-          </div>
+          </article>
         ))}
-      </div>
-
-      {canWrite && !showForm && (
-        <button onClick={() => { setEditing(null); setShowForm(true) }} className="mt-3 rp-btn-ghost !min-h-[30px] !px-3 !py-1">Add personnel</button>
-      )}
+        {canWrite && (
+          <div className="flex min-h-[160px] flex-col items-start justify-center gap-3 p-5">
+            <span className="rp-eyebrow--muted">{contacts.length ? 'Add to the team' : 'No one listed yet'}</span>
+            <RpButton
+              variant="ghost"
+              size="sm"
+              icon={<Plus {...RP_ICON} size={14} />}
+              onClick={() => { setEditing(null); setShowForm(true) }}
+            >
+              Add person
+            </RpButton>
+          </div>
+        )}
+      </RpCardGrid>
 
       {showForm && (
         <PersonnelForm
           contact={editing}
           onSave={handleSave}
           onCancel={() => { setShowForm(false); setEditing(null) }}
-          inputClass={inputClass}
         />
       )}
     </div>
   )
 }
 
-function PersonnelForm({ contact, onSave, onCancel, inputClass }: {
+function PersonnelForm({ contact, onSave, onCancel }: {
   contact: ProjectContact | null
   onSave: (data: Record<string, unknown>) => void
   onCancel: () => void
-  inputClass: string
 }) {
   const [form, setForm] = useState({
     name: contact?.name || '',
@@ -114,22 +122,47 @@ function PersonnelForm({ contact, onSave, onCancel, inputClass }: {
     notes: contact?.notes || '',
   })
 
+  const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) =>
+    setForm(p => ({ ...p, [k]: e.target.value }))
+
   return (
-    <div className="mt-3 rp-surface p-4 space-y-3">
-      <div className="grid grid-cols-2 gap-3">
-        <input className={inputClass} placeholder="Name *" value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} />
-        <input className={inputClass} placeholder="Role * (e.g. GC, Architect, Civil engineer)" value={form.role} onChange={e => setForm(p => ({ ...p, role: e.target.value }))} />
-        <input className={inputClass} placeholder="Company" value={form.company} onChange={e => setForm(p => ({ ...p, company: e.target.value }))} />
-        <input className={inputClass} placeholder="Department" value={form.department} onChange={e => setForm(p => ({ ...p, department: e.target.value }))} />
-        <input className={inputClass} placeholder="Email" value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))} />
-        <input className={inputClass} placeholder="Phone" value={form.phone} onChange={e => setForm(p => ({ ...p, phone: e.target.value }))} />
-      </div>
-      <div className="flex gap-2">
-        <button onClick={() => form.name && onSave(form)} className="rp-btn-solid !min-h-[34px] !px-4 !py-1.5 !text-[11px]">
-          {contact ? 'Update' : 'Add'}
-        </button>
-        <button onClick={onCancel} className="rp-btn-ghost !min-h-[30px] !px-3 !py-1">Cancel</button>
-      </div>
-    </div>
+    <RpModal
+      open
+      onClose={onCancel}
+      eyebrow={contact ? 'Edit person' : 'Add person'}
+      title={form.name || 'Team member'}
+      footer={
+        <>
+          <RpButton variant="ghost" onClick={onCancel}>Cancel</RpButton>
+          <RpButton type="submit" form="personnel-form">{contact ? 'Save' : 'Add'}</RpButton>
+        </>
+      }
+    >
+      <form
+        id="personnel-form"
+        onSubmit={e => { e.preventDefault(); if (form.name) onSave(form) }}
+      >
+        <RpFormGrid>
+          <RpField label="Name" htmlFor="pc-name" required>
+            <RpInput id="pc-name" value={form.name} onChange={set('name')} required />
+          </RpField>
+          <RpField label="Role" htmlFor="pc-role">
+            <RpInput id="pc-role" value={form.role} onChange={set('role')} placeholder="GC, architect, civil engineer" />
+          </RpField>
+          <RpField label="Company" htmlFor="pc-company">
+            <RpInput id="pc-company" value={form.company} onChange={set('company')} />
+          </RpField>
+          <RpField label="Department" htmlFor="pc-dept">
+            <RpInput id="pc-dept" value={form.department} onChange={set('department')} />
+          </RpField>
+          <RpField label="Email" htmlFor="pc-email">
+            <RpInput id="pc-email" inputMode="email" value={form.email} onChange={set('email')} />
+          </RpField>
+          <RpField label="Phone" htmlFor="pc-phone">
+            <RpInput id="pc-phone" type="tel" value={form.phone} onChange={set('phone')} />
+          </RpField>
+        </RpFormGrid>
+      </form>
+    </RpModal>
   )
 }

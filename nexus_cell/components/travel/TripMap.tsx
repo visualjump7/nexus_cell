@@ -5,11 +5,27 @@ import mapboxgl from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import type { TripSegment } from '@/lib/types'
 import { segmentColors } from '@/lib/travel-constants'
+import { RpLoading, RpPending } from '@/components/rp'
 
 interface Props {
   segments: TripSegment[]
   selectedSegmentId?: string | null
   onSegmentSelect?: (id: string | null) => void
+  /** Rendered instead of the map when there is no Mapbox token, no coordinates, or the map fails to load. */
+  fallback?: React.ReactNode
+}
+
+// Routes are drawn as a gold thread on the dark style; stops keep their
+// segment colour (flight blue, hotel gold, ground green) as square markers.
+const GOLD = '#CDA14B'
+const GOLD_LIGHT = '#E0BF7B'
+
+function routeColor(type: string) {
+  return type === 'flight' || type === 'car' || type === 'ground_transport' ? GOLD : GOLD_LIGHT
+}
+
+function escapeHtml(s: string) {
+  return s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] as string))
 }
 
 function getArcPoints(from: [number, number], to: [number, number], numPoints = 50): [number, number][] {
@@ -21,11 +37,14 @@ function getArcPoints(from: [number, number], to: [number, number], numPoints = 
   return points
 }
 
-export default function TripMap({ segments, selectedSegmentId, onSegmentSelect }: Props) {
+export default function TripMap({ segments, selectedSegmentId, onSegmentSelect, fallback }: Props) {
   const mapContainer = useRef<HTMLDivElement>(null)
   const mapRef = useRef<mapboxgl.Map | null>(null)
   const markersRef = useRef<Map<string, { marker: mapboxgl.Marker; element: HTMLDivElement; color: string }[]>>(new Map())
   const [loaded, setLoaded] = useState(false)
+  const [failed, setFailed] = useState(false)
+
+  const token = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || ''
 
   // Build points and routes with segment ID tracking
   const points: { lat: number; lng: number; label: string; type: string; segmentId: string }[] = []
@@ -39,7 +58,8 @@ export default function TripMap({ segments, selectedSegmentId, onSegmentSelect }
       points.push({ lat: seg.to_lat, lng: seg.to_lng, label: seg.to_location || '', type: seg.segment_type === 'flight' ? 'airport' : seg.segment_type, segmentId: seg.id })
     }
     if (seg.from_lat && seg.from_lng && seg.to_lat && seg.to_lng) {
-      routes.push({ from: [seg.from_lng, seg.from_lat], to: [seg.to_lng, seg.to_lat], type: seg.segment_type, isDashed: seg.sort_order > 2, segmentId: seg.id })
+      // Flights draw solid; everything on the ground draws dashed.
+      routes.push({ from: [seg.from_lng, seg.from_lat], to: [seg.to_lng, seg.to_lat], type: seg.segment_type, isDashed: seg.segment_type !== 'flight', segmentId: seg.id })
     }
   }
 
@@ -48,23 +68,42 @@ export default function TripMap({ segments, selectedSegmentId, onSegmentSelect }
   )
 
   const hasCoords = uniquePoints.length > 0
+  const canMap = hasCoords && !!token && !failed
+
+  const restOpacity = (r: { isDashed: boolean }) => (r.isDashed ? 0.55 : 0.85)
+  const restWidth = (r: { type: string }) => (r.type === 'flight' ? 2 : 1.75)
 
   // ── Map initialization (runs once) ──
   useEffect(() => {
-    if (!mapContainer.current || !hasCoords || mapRef.current) return
+    if (!mapContainer.current || !hasCoords || !token || mapRef.current) return
 
-    mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || ''
+    mapboxgl.accessToken = token
 
-    const map = new mapboxgl.Map({
-      container: mapContainer.current,
-      style: 'mapbox://styles/mapbox/dark-v11',
-      center: [uniquePoints[0].lng, uniquePoints[0].lat],
-      zoom: 4,
-      attributionControl: false,
-      interactive: true,
-    })
+    let map: mapboxgl.Map
+    try {
+      map = new mapboxgl.Map({
+        container: mapContainer.current,
+        style: 'mapbox://styles/mapbox/dark-v11',
+        center: [uniquePoints[0].lng, uniquePoints[0].lat],
+        zoom: 4,
+        attributionControl: false,
+        interactive: true,
+      })
+    } catch {
+      setFailed(true)
+      return
+    }
 
     mapRef.current = map
+
+    // Style or token failure before the first load → show the fallback instead of an empty frame.
+    map.on('error', () => {
+      if (!map.loaded() && !map.isStyleLoaded()) {
+        map.remove()
+        mapRef.current = null
+        setFailed(true)
+      }
+    })
 
     map.on('load', async () => {
       // Add route lines — flights as arcs, ground segments as real driving routes
@@ -100,38 +139,39 @@ export default function TripMap({ segments, selectedSegmentId, onSegmentSelect }
           data: { type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates } },
         })
 
-        // Glow layer for flights and ground segments
+        // Faint gold halo under flights and ground segments
         if (route.type === 'flight' || route.type === 'car' || route.type === 'ground_transport') {
           map.addLayer({
             id: `route-glow-${i}`, type: 'line', source: `route-${i}`,
-            paint: { 'line-color': segmentColors[route.type] || '#9AA0A4', 'line-width': 6, 'line-opacity': 0.08 },
+            layout: { 'line-join': 'round', 'line-cap': 'round' },
+            paint: { 'line-color': GOLD, 'line-width': 6, 'line-opacity': 0.08, 'line-blur': 3 },
           })
         }
 
-        const isGround = route.type === 'car' || route.type === 'ground_transport'
         map.addLayer({
           id: `route-line-${i}`, type: 'line', source: `route-${i}`,
+          layout: { 'line-join': 'round' },
           paint: {
-            'line-color': segmentColors[route.type] || '#9AA0A4',
-            'line-width': isGround ? 2.5 : (route.type === 'flight' ? 2 : 1.5),
-            'line-opacity': route.isDashed ? 0.3 : 0.6,
-            'line-dasharray': route.isDashed ? [4, 4] : [1],
+            'line-color': routeColor(route.type),
+            'line-width': restWidth(route),
+            'line-opacity': restOpacity(route),
+            'line-dasharray': route.isDashed ? [2, 1.5] : [1],
           },
         })
       }
 
-      // Add markers and store refs
+      // Add square stop markers and store refs
       markersRef.current.clear()
       uniquePoints.forEach((point) => {
-        const color = segmentColors[point.type] || '#9AA0A4'
+        const color = segmentColors[point.type] || segmentColors.flight
         const el = document.createElement('div')
-        el.style.cssText = `width:14px;height:14px;border-radius:50%;background:${color};border:2px solid #0A0B0C;box-shadow:0 0 8px ${color}60;transition:all 0.3s ease;`
+        el.style.cssText = `width:10px;height:10px;background:${color};border:2px solid #0A0B0C;outline:1px solid ${color}55;transition:transform .2s ease, opacity .2s ease, outline-color .2s ease;`
 
         const marker = new mapboxgl.Marker({ element: el }).setLngLat([point.lng, point.lat]).addTo(map)
 
         if (point.label) {
-          const popup = new mapboxgl.Popup({ offset: 12, closeButton: false, closeOnClick: false, className: 'nexus-popup' })
-            .setHTML(`<div style="font-size:11px;color:#F5F5F5;font-family:var(--font-body),sans-serif;padding:2px 4px">${point.label}</div>`)
+          const popup = new mapboxgl.Popup({ offset: 10, closeButton: false, closeOnClick: false, className: 'rp-map-popup' })
+            .setHTML(`<div class="rp-map-popup-label">${escapeHtml(point.label)}</div>`)
           marker.setPopup(popup).togglePopup()
         }
 
@@ -162,7 +202,7 @@ export default function TripMap({ segments, selectedSegmentId, onSegmentSelect }
 
     return () => { mapRef.current?.remove(); mapRef.current = null }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hasCoords])
+  }, [hasCoords, token])
 
   // ── Highlight effect (reacts to selection changes) ──
   useEffect(() => {
@@ -177,7 +217,7 @@ export default function TripMap({ segments, selectedSegmentId, onSegmentSelect }
 
       if (selectedSegmentId && route.segmentId !== selectedSegmentId) {
         // Dim non-selected
-        map.setPaintProperty(lineId, 'line-opacity', 0.1)
+        map.setPaintProperty(lineId, 'line-opacity', 0.15)
         map.setPaintProperty(lineId, 'line-width', 1)
         if (map.getLayer(glowId)) {
           map.setPaintProperty(glowId, 'line-opacity', 0.02)
@@ -187,38 +227,35 @@ export default function TripMap({ segments, selectedSegmentId, onSegmentSelect }
         map.setPaintProperty(lineId, 'line-opacity', 1.0)
         map.setPaintProperty(lineId, 'line-width', route.type === 'flight' ? 3.5 : 3)
         if (map.getLayer(glowId)) {
-          map.setPaintProperty(glowId, 'line-opacity', 0.35)
-          map.setPaintProperty(glowId, 'line-width', 12)
+          map.setPaintProperty(glowId, 'line-opacity', 0.25)
+          map.setPaintProperty(glowId, 'line-width', 10)
         }
       } else {
         // No selection — restore defaults
-        map.setPaintProperty(lineId, 'line-opacity', route.isDashed ? 0.3 : 0.6)
-        map.setPaintProperty(lineId, 'line-width', route.type === 'flight' ? 2 : 1.5)
+        map.setPaintProperty(lineId, 'line-opacity', restOpacity(route))
+        map.setPaintProperty(lineId, 'line-width', restWidth(route))
         if (map.getLayer(glowId)) {
-          map.setPaintProperty(glowId, 'line-opacity', 0.1)
+          map.setPaintProperty(glowId, 'line-opacity', 0.08)
           map.setPaintProperty(glowId, 'line-width', 6)
         }
       }
     })
 
-    // 2. Update marker styling
+    // 2. Update marker styling (no pulse — nothing on the page pulses)
     markersRef.current.forEach((entries, segId) => {
       entries.forEach(({ element, color }) => {
         if (selectedSegmentId && segId !== selectedSegmentId) {
           element.style.opacity = '0.3'
           element.style.transform = 'scale(0.8)'
-          element.style.boxShadow = 'none'
-          element.style.animation = 'none'
+          element.style.outlineColor = 'transparent'
         } else if (selectedSegmentId && segId === selectedSegmentId) {
           element.style.opacity = '1'
-          element.style.transform = 'scale(1.5)'
-          element.style.boxShadow = `0 0 16px ${color}, 0 0 32px ${color}60`
-          element.style.animation = 'marker-pulse 1.5s ease-in-out infinite'
+          element.style.transform = 'scale(1.4)'
+          element.style.outlineColor = '#F5F5F5'
         } else {
           element.style.opacity = '1'
           element.style.transform = 'scale(1)'
-          element.style.boxShadow = `0 0 8px ${color}60`
-          element.style.animation = 'none'
+          element.style.outlineColor = `${color}55`
         }
       })
     })
@@ -245,61 +282,67 @@ export default function TripMap({ segments, selectedSegmentId, onSegmentSelect }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedSegmentId, loaded])
 
-  if (!hasCoords) {
+  if (!canMap) {
     return (
-      <div className="w-full h-[300px] rp-panel flex items-center justify-center mb-6">
-        <div className="text-center">
-          <svg className="w-8 h-8 text-[#6E7578] mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
-            <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
-          </svg>
-          <p className="rp-eyebrow--muted">No coordinates available for map</p>
-        </div>
-      </div>
+      <>
+        {fallback ?? (
+          <RpPending
+            standalone
+            aspect="wide"
+            label="Map unavailable"
+            name={hasCoords ? 'Itinerary below' : 'No coordinates on this itinerary'}
+          />
+        )}
+      </>
     )
   }
 
+  const legend = [
+    { color: segmentColors.flight, label: 'Flight' },
+    { color: segmentColors.hotel, label: 'Hotel' },
+    { color: segmentColors.ground_transport, label: 'Ground' },
+  ]
+
   return (
-    <div className="relative w-full rounded-sm border border-[#1F1F1F] overflow-hidden mb-6">
-      <div ref={mapContainer} className="w-full h-[350px] md:h-[400px]" />
+    <div className="rp-frame rp-frame--wide rp-frame--static max-h-[460px] min-h-[280px]">
+      <div ref={mapContainer} className="absolute inset-0" />
 
       {!loaded && (
-        <div className="absolute inset-0 bg-[#0E0F11] flex items-center justify-center pointer-events-none">
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 bg-[#CDA14B] rounded-full animate-pulse" />
-            <p className="rp-eyebrow--muted">Loading map…</p>
-          </div>
-        </div>
+        <RpLoading label="Loading map" className="pointer-events-none absolute inset-0 h-auto border-0" />
       )}
 
-      <div className="absolute bottom-3 left-3 bg-[#0A0B0C]/85 border border-[#26292C] backdrop-blur-sm rounded-none px-3 py-2 flex gap-4 pointer-events-none">
-        {[
-          { color: segmentColors.flight, label: 'Flight' },
-          { color: segmentColors.hotel, label: 'Hotel' },
-          { color: segmentColors.ground_transport, label: 'Ground' },
-        ].map(item => (
-          <div key={item.label} className="flex items-center gap-1.5">
-            <div className="w-2 h-2" style={{ backgroundColor: item.color }} />
-            <span className="rp-eyebrow--muted !text-[10px]">{item.label}</span>
-          </div>
+      <div className="pointer-events-none absolute bottom-3 left-3 z-[1] flex flex-wrap items-center gap-x-4 gap-y-1.5 border border-rp-line2 bg-rp-bg px-3 py-2">
+        <span className="flex items-center gap-1.5">
+          <span aria-hidden className="h-[2px] w-4" style={{ background: GOLD }} />
+          <span className="font-display text-[10px] uppercase tracking-[.16em] text-rp-muted">Route</span>
+        </span>
+        {legend.map(item => (
+          <span key={item.label} className="flex items-center gap-1.5">
+            <span aria-hidden className="h-2 w-2" style={{ backgroundColor: item.color }} />
+            <span className="font-display text-[10px] uppercase tracking-[.16em] text-rp-muted">{item.label}</span>
+          </span>
         ))}
       </div>
 
       <style jsx global>{`
-        .mapboxgl-popup-content {
-          background: #141618 !important;
+        .rp-map-popup .mapboxgl-popup-content {
+          background: #0A0B0C !important;
           border: 1px solid #26292C !important;
-          border-radius: 2px !important;
-          font-family: var(--font-body), sans-serif !important;
+          border-radius: 0 !important;
+          box-shadow: none !important;
           padding: 4px 8px !important;
-          box-shadow: 0 4px 20px rgba(0,0,0,0.5) !important;
         }
-        .mapboxgl-popup-tip {
-          border-top-color: #141618 !important;
+        .rp-map-popup .mapboxgl-popup-tip {
+          border-top-color: #26292C !important;
+          border-bottom-color: #26292C !important;
         }
-        @keyframes marker-pulse {
-          0%, 100% { transform: scale(1.5); }
-          50% { transform: scale(1.8); }
+        .rp-map-popup-label {
+          font-family: var(--font-display), 'Helvetica Neue', sans-serif;
+          font-size: 10px;
+          letter-spacing: .14em;
+          text-transform: uppercase;
+          color: #F5F5F5;
+          white-space: nowrap;
         }
       `}</style>
     </div>

@@ -1,14 +1,45 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, Loader2, Upload, FileSpreadsheet } from "lucide-react";
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 import { createClient } from "@/utils/supabase/client";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { formatCurrency } from "@/lib/utils";
 import { ImportDialog } from "@/components/budget/ImportDialog";
+import { sectionEyebrow } from "@/lib/sections";
+import { cn } from "@/lib/utils";
+import {
+  RpPage,
+  RpPageHeader,
+  RpStatStrip,
+  RpStat,
+  RpGroup,
+  RpGroupHead,
+  RpTable,
+  RpTag,
+  RpSubhead,
+  RpEmpty,
+  RpLoading,
+  RpButton,
+  RpChartFrame,
+  RpBarList,
+  RP_CHART,
+  Upload,
+  RP_ICON,
+  dot,
+  fmtDate,
+  fmtMoney,
+  fmtPct,
+  fmtTime,
+  pad2,
+} from "@/components/rp";
 import type { Budget, Project } from "@/lib/types";
 
 interface BudgetVersion {
@@ -24,6 +55,15 @@ interface BudgetVersion {
     categories?: string[];
   };
 }
+
+type LineMeta = {
+  source?: string;
+  line_name?: string;
+  is_fixed?: boolean;
+  monthly?: Record<string, number>;
+};
+
+const MONTHS = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
 
 export default function ProjectBudgetPage() {
   const params = useParams();
@@ -108,222 +148,349 @@ export default function ProjectBudgetPage() {
     (s, b) => s + Number(b.actual || 0),
     0
   );
+  const variance = totalBudgeted - totalActual;
+  const spentRatio = totalBudgeted > 0 ? totalActual / totalBudgeted : NaN;
+  const categoryCount = Object.keys(grouped).length;
+
+  // Planned spend by month, summed from the Excel monthly breakdown when present.
+  const monthly = useMemo(() => {
+    const totals = MONTHS.map(() => 0);
+    let any = false;
+    for (const b of budgets) {
+      const m = ((b.metadata || {}) as LineMeta).monthly;
+      if (!m) continue;
+      MONTHS.forEach((key, i) => {
+        const v = Number(m[key]);
+        if (Number.isFinite(v)) {
+          totals[i] += v;
+          if (v) any = true;
+        }
+      });
+    }
+    return any
+      ? MONTHS.map((key, i) => ({ m: key.charAt(0).toUpperCase() + key.slice(1), v: Math.round(totals[i]) }))
+      : null;
+  }, [budgets]);
+  const period = budgets.find((b) => b.period)?.period;
+
+  const byCategory = Object.entries(grouped)
+    .map(([category, rows]) => ({
+      label: category,
+      value: rows.reduce((s, b) => s + Number(b.budgeted || 0), 0),
+    }))
+    .sort((a, b) => b.value - a.value);
+  // Top five, then the rest folded into one row so shares still add up to the whole package.
+  const TOP = 5;
+  const categoryBars =
+    byCategory.length > TOP + 1
+      ? [
+          ...byCategory.slice(0, TOP).map((c) => ({ ...c, href: `#cat-${slug(c.label)}` })),
+          {
+            label: `${byCategory.length - TOP} other categories`,
+            value: byCategory.slice(TOP).reduce((s, c) => s + c.value, 0),
+            tone: "neutral" as const,
+          },
+        ]
+      : byCategory.map((c) => ({ ...c, href: `#cat-${slug(c.label)}` }));
 
   if (isLoading) {
     return (
-      <div className="flex min-h-[60vh] items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
+      <RpPage>
+        <RpPageHeader
+          eyebrow={sectionEyebrow("projects", "Budget")}
+          title="Budget"
+          line="Loading the package budget."
+          pines={false}
+        />
+        <RpLoading rows={6} label="Loading budget" />
+      </RpPage>
     );
   }
 
   if (!project || !orgId) {
     return (
-      <div className="mx-auto max-w-4xl space-y-6 px-4 py-8 sm:px-6">
-        <p className="text-sm text-muted-foreground">
-          Project not found or access denied.
-        </p>
-      </div>
+      <RpPage>
+        <RpPageHeader
+          back={{ href: "/projects", label: "Projects" }}
+          eyebrow={sectionEyebrow("projects", "Budget")}
+          title="Budget unavailable"
+          pines={false}
+        />
+        <RpEmpty
+          title="Nothing to show."
+          line="Project not found or access denied."
+          action={<RpButton variant="ghost" href="/projects">All projects</RpButton>}
+        />
+      </RpPage>
     );
   }
 
+  const importButton = isStaff && (
+    <RpButton
+      variant="ghost"
+      icon={<Upload {...RP_ICON} />}
+      onClick={() => setImportOpen(true)}
+    >
+      Import Excel
+    </RpButton>
+  );
+
   return (
-    <div className="mx-auto max-w-5xl space-y-6 px-4 py-8 sm:px-6">
-      <div className="flex items-center justify-between gap-3">
-        <button
-          onClick={() => router.push(`/projects/${projectId}`)}
-          className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Back to {project.name}
-        </button>
-        {isStaff && (
-          <Button onClick={() => setImportOpen(true)}>
-            <Upload className="mr-2 h-4 w-4" />
-            Import Excel
-          </Button>
-        )}
-      </div>
-
-      <header className="rp-head !mb-0">
-        <span className="rp-eyebrow">Budget</span>
-        <h1 className="rp-title">
-          {project.name}
-        </h1>
-        <p className="rp-lede">
-          Budget by category. Monthly breakdown preserved when imported from
-          Excel with monthly columns.
-        </p>
-      </header>
-
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <Card>
-          <CardContent className="p-4">
-            <p className="rp-eyebrow--muted">Total Budgeted</p>
-            <p className="mt-1 rp-stat-value text-foreground">
-              {formatCurrency(totalBudgeted)}
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <p className="rp-eyebrow--muted">Total Actual</p>
-            <p className="mt-1 rp-stat-value text-foreground">
-              {formatCurrency(totalActual)}
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <p className="rp-eyebrow--muted">Variance</p>
-            <p
-              className={`mt-1 rp-stat-value ${
-                totalActual <= totalBudgeted
-                  ? "text-emerald-400"
-                  : "text-red-400"
-              }`}
-            >
-              {formatCurrency(totalBudgeted - totalActual)}
-            </p>
-          </CardContent>
-        </Card>
-      </div>
+    <RpPage>
+      <RpPageHeader
+        back={{ href: `/projects/${projectId}`, label: shortLabel(project.name) }}
+        eyebrow={sectionEyebrow("projects", "Budget")}
+        title={project.name}
+        line={
+          budgets.length
+            ? dot(
+                `${budgets.length} line${budgets.length === 1 ? "" : "s"}`,
+                `${categoryCount} categor${categoryCount === 1 ? "y" : "ies"}`,
+                `${fmtMoney(totalBudgeted)} budgeted`
+              )
+            : "Budget by category. Monthly breakdown kept when imported from Excel."
+        }
+        spec={dot(project.project_type, project.location)}
+        actions={importButton}
+      />
 
       {budgets.length === 0 ? (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center gap-3 py-16 text-center">
-            <FileSpreadsheet className="h-10 w-10 text-muted-foreground/40" />
-            <p className="text-sm text-muted-foreground">
-              No budget data yet.
-            </p>
-            {isStaff && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setImportOpen(true)}
-              >
-                <Upload className="mr-2 h-3.5 w-3.5" />
-                Import from Excel
-              </Button>
-            )}
-          </CardContent>
-        </Card>
+        <RpEmpty
+          title="No budget yet."
+          line="Import the Excel budget or add lines on the project page."
+          action={
+            <>
+              {importButton}
+              <RpButton variant="text" arrow href={`/projects/${projectId}`}>
+                Open the project
+              </RpButton>
+            </>
+          }
+        />
       ) : (
-        <div className="space-y-4">
-          {Object.entries(grouped).map(([category, rows]) => {
-            const catTotal = rows.reduce(
-              (s, b) => s + Number(b.budgeted || 0),
-              0
-            );
-            return (
-              <Card key={category}>
-                <CardContent className="p-4">
-                  <div className="mb-3 flex items-center justify-between">
-                    <h2 className="rp-eyebrow--muted">
-                      {category}
-                    </h2>
-                    <p className="text-sm font-semibold text-foreground tabular-nums">
-                      {formatCurrency(catTotal)}
-                    </p>
-                  </div>
-                  <div className="divide-y divide-border">
-                    {rows.map((b) => {
-                      const meta = (b.metadata || {}) as {
-                        source?: string;
-                        line_name?: string;
-                        is_fixed?: boolean;
-                        monthly?: Record<string, number>;
-                      };
-                      return (
-                        <div
-                          key={b.id}
-                          className="flex items-center justify-between py-2.5"
-                        >
-                          <div className="min-w-0 flex-1">
-                            <p className="truncate text-sm text-foreground">
+        <>
+          <RpStatStrip cols={4}>
+            <RpStat
+              label="Budgeted"
+              value={fmtMoney(totalBudgeted, { compact: true })}
+              sub={fmtMoney(totalBudgeted)}
+            />
+            <RpStat
+              label="Actual"
+              value={fmtMoney(totalActual, { compact: true })}
+              sub={`${fmtPct(spentRatio)} of budget`}
+              meter={{ value: Number.isFinite(spentRatio) ? spentRatio : 0 }}
+            />
+            <RpStat
+              label="Variance"
+              value={fmtMoney(variance, { compact: true, sign: true })}
+              tone={variance > 0 ? "green" : variance < 0 ? "alert" : "default"}
+              sub={variance > 0 ? "Under budget" : variance < 0 ? "Over budget" : "On budget"}
+            />
+            <RpStat
+              label="Lines"
+              value={budgets.length}
+              sub={`${categoryCount} categor${categoryCount === 1 ? "y" : "ies"}`}
+            />
+          </RpStatStrip>
+
+          {/* Restrained charts: planned spend by month (Excel monthly breakdown) and the category split. */}
+          <div
+            className="grid gap-4"
+            style={{
+              gridTemplateColumns: monthly
+                ? "repeat(auto-fit, minmax(min(100%, 420px), 1fr))"
+                : "minmax(0, 1fr)",
+            }}
+          >
+            {monthly && (
+              <RpChartFrame
+                eyebrow="Planned spend by month"
+                value={fmtMoney(
+                  monthly.reduce((s, r) => s + r.v, 0),
+                  { compact: true }
+                )}
+                sub={dot(period && `Period ${period}`, "from the imported monthly columns")}
+                height={260}
+              >
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={monthly} margin={{ top: 4, right: 0, bottom: 0, left: 0 }}>
+                    <CartesianGrid vertical={false} stroke={RP_CHART.grid} />
+                    <XAxis
+                      dataKey="m"
+                      tick={RP_CHART.tick}
+                      axisLine={{ stroke: RP_CHART.axis }}
+                      tickLine={false}
+                      interval={0}
+                      tickFormatter={(m: string) => m.toUpperCase()}
+                    />
+                    <YAxis
+                      tick={RP_CHART.tick}
+                      tickFormatter={(n: number) => fmtMoney(n, { compact: true })}
+                      axisLine={false}
+                      tickLine={false}
+                      width={52}
+                    />
+                    <Tooltip
+                      {...RP_CHART.tooltip}
+                      formatter={(v) => [fmtMoney(Number(v)), "Planned"]}
+                    />
+                    <Bar
+                      dataKey="v"
+                      name="Planned"
+                      fill={RP_CHART.colors[0]}
+                      radius={RP_CHART.bar.radius}
+                      maxBarSize={RP_CHART.bar.maxBarSize}
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              </RpChartFrame>
+            )}
+            <RpChartFrame
+              eyebrow="Where the budget goes"
+              value={`${categoryCount} categor${categoryCount === 1 ? "y" : "ies"}`}
+              sub="Budgeted by category · share of the package"
+              height={0}
+            >
+              <RpBarList
+                items={categoryBars}
+                format={(n) => fmtMoney(n, { compact: true })}
+              />
+            </RpChartFrame>
+          </div>
+
+          {/* Per category: group head with Σ, then the lines. */}
+          <section className="flex flex-col">
+            {Object.entries(grouped).map(([category, rows], gi) => {
+              const catTotal = rows.reduce(
+                (s, b) => s + Number(b.budgeted || 0),
+                0
+              );
+              const catActual = rows.reduce(
+                (s, b) => s + Number(b.actual || 0),
+                0
+              );
+              return (
+                <RpGroup key={category} id={`cat-${slug(category)}`} className="pb-8 last:pb-0">
+                  <RpGroupHead
+                    num={gi + 1}
+                    title={category}
+                    line={dot(
+                      `${rows.length} line${rows.length === 1 ? "" : "s"}`,
+                      catTotal > 0 && `${fmtPct(catActual / catTotal)} spent`
+                    )}
+                    aside={
+                      <span className="font-display text-base font-medium tracking-[.02em] tabular-nums text-rp-text">
+                        {fmtMoney(catTotal)}
+                      </span>
+                    }
+                  />
+                  <RpTable dense minWidth={600} className="[&_table]:table-fixed">
+                    <colgroup>
+                      <col style={{ width: 48 }} />
+                      <col />
+                      <col style={{ width: 96 }} />
+                      <col style={{ width: 148 }} />
+                      <col style={{ width: 148 }} />
+                    </colgroup>
+                    {/* Columns align across categories, so only the first table shows its header; later ones keep it for screen readers at zero height. */}
+                    <thead>
+                      <tr className={gi > 0 ? "[&>th]:!p-0 [&>th]:!text-[0px] [&>th]:!leading-[0]" : undefined}>
+                        <th className="idx">#</th>
+                        <th>Line</th>
+                        <th>Source</th>
+                        <th className="num">Budgeted</th>
+                        <th className="num">Actual</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {rows.map((b, i) => {
+                        const meta = (b.metadata || {}) as LineMeta;
+                        const actual = Number(b.actual || 0);
+                        const budgeted = Number(b.budgeted || 0);
+                        return (
+                          <tr key={b.id}>
+                            <td className="idx">{pad2(i + 1)}</td>
+                            <td className="break-words">
                               {b.notes || meta.line_name || "—"}
-                            </p>
-                            <div className="mt-0.5 flex items-center gap-2 text-xs text-muted-foreground">
-                              {b.period && <span>{b.period}</span>}
-                              {meta.is_fixed && <span>· Fixed</span>}
-                              {meta.source === "excel" && (
-                                <Badge
-                                  variant="outline"
-                                  className="text-[10px] border-blue-500/40 text-blue-400"
-                                >
-                                  Excel
-                                </Badge>
+                              {(b.period || meta.is_fixed) && (
+                                <span className="sub">
+                                  {dot(b.period, meta.is_fixed && "Fixed")}
+                                </span>
                               )}
-                            </div>
-                          </div>
-                          <div className="ml-4 text-right">
-                            <p className="text-sm font-semibold text-foreground tabular-nums">
-                              {formatCurrency(Number(b.budgeted || 0))}
-                            </p>
-                            {Number(b.actual || 0) > 0 && (
-                              <p className="text-xs text-muted-foreground tabular-nums">
-                                {formatCurrency(Number(b.actual))} actual
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
+                            </td>
+                            <td>
+                              {meta.source === "excel" ? (
+                                <RpTag tone="blue">Excel</RpTag>
+                              ) : (
+                                <span className="text-rp-dim">—</span>
+                              )}
+                            </td>
+                            <td className="num">{fmtMoney(budgeted)}</td>
+                            <td
+                              className={cn(
+                                "num",
+                                actual === 0
+                                  ? "text-rp-dim"
+                                  : actual > budgeted && budgeted > 0
+                                    ? "text-rp-alert"
+                                    : ""
+                              )}
+                            >
+                              {fmtMoney(actual)}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </RpTable>
+                </RpGroup>
+              );
+            })}
+          </section>
+        </>
       )}
 
       {canReadImports && versions.length > 0 && (
-        <section className="border-t border-border pt-6">
-          <h2 className="mb-3 rp-eyebrow--muted">
-            Import history
-          </h2>
-          <div className="space-y-2">
-            {versions.map((v) => (
-              <Card key={v.id}>
-                <CardContent className="flex items-center justify-between p-3">
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm text-foreground">
-                      {v.filename || "(unnamed)"}
-                      {v.sheet_name && (
-                        <span className="text-muted-foreground">
-                          {" "}
-                          · {v.sheet_name}
-                        </span>
-                      )}
-                    </p>
-                    <p className="mt-0.5 text-xs text-muted-foreground">
-                      {new Date(v.imported_at).toLocaleString("en-US", {
-                        month: "short",
-                        day: "numeric",
-                        year: "numeric",
-                        hour: "numeric",
-                        minute: "2-digit",
-                      })}
-                      {v.period && ` · period ${v.period}`}
-                    </p>
-                  </div>
-                  <div className="ml-4 text-right">
-                    <Badge
-                      variant="outline"
-                      className="text-[10px] capitalize"
-                    >
-                      {v.source}
-                    </Badge>
-                    {v.summary.lineItemCount !== undefined && (
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        {v.summary.lineItemCount} rows
-                      </p>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+        <section className="flex flex-col gap-6">
+          <RpSubhead
+            title="Import history"
+            spec={`Last ${versions.length} import${versions.length === 1 ? "" : "s"} · newest first`}
+          />
+          <RpTable minWidth={620} caption="Import history">
+            <thead>
+              <tr>
+                <th className="idx">#</th>
+                <th>Source</th>
+                <th>File</th>
+                <th className="num">Imported</th>
+              </tr>
+            </thead>
+            <tbody>
+              {versions.map((v, i) => (
+                <tr key={v.id}>
+                  <td className="idx">{pad2(i + 1)}</td>
+                  <td>
+                    <RpTag tone={v.source === "excel" ? "blue" : "neutral"}>{v.source}</RpTag>
+                  </td>
+                  <td className="break-words">
+                    {v.filename || "(unnamed)"}
+                    <span className="sub">
+                      {dot(
+                        v.sheet_name,
+                        v.period && `Period ${v.period}`,
+                        v.summary?.lineItemCount !== undefined &&
+                          `${v.summary.lineItemCount} rows`
+                      ) || "—"}
+                    </span>
+                  </td>
+                  <td className="num text-rp-muted" suppressHydrationWarning>
+                    {dot(fmtDate(v.imported_at), fmtTime(v.imported_at))}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </RpTable>
         </section>
       )}
 
@@ -338,6 +505,18 @@ export default function ProjectBudgetPage() {
           }}
         />
       )}
-    </div>
+    </RpPage>
   );
+}
+
+function slug(s: string): string {
+  return s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "x";
+}
+
+/** Back-link label: the project name, cut at a word near 30 characters so it fits a phone row. */
+function shortLabel(name: string, max = 30): string {
+  if (name.length <= max) return name;
+  const cut = name.slice(0, max);
+  const at = cut.lastIndexOf(" ");
+  return `${(at > 12 ? cut.slice(0, at) : cut).replace(/[\s:·,&-]+$/, "")}…`;
 }

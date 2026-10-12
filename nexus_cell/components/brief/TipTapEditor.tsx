@@ -21,7 +21,7 @@ interface TipTapEditorProps {
 export function TipTapEditor({
   content,
   onChange,
-  placeholder = "Start writing...",
+  placeholder = "Start writing",
 }: TipTapEditorProps) {
   const editor = useEditor({
     immediatelyRender: false,
@@ -37,7 +37,7 @@ export function TipTapEditor({
     },
     editorProps: {
       attributes: {
-        class: "min-h-[120px] outline-none text-foreground leading-relaxed",
+        class: "rp-prose min-h-[140px] max-w-none outline-none",
       },
     },
   });
@@ -73,36 +73,36 @@ export function TipTapEditor({
       icon: List,
       action: () => editor.chain().focus().toggleBulletList().run(),
       active: editor.isActive("bulletList"),
-      label: "Bullet List",
+      label: "Bullet list",
     },
     {
       icon: ListOrdered,
       action: () => editor.chain().focus().toggleOrderedList().run(),
       active: editor.isActive("orderedList"),
-      label: "Ordered List",
+      label: "Numbered list",
     },
   ];
 
   return (
-    <div className="rounded-sm border border-[#26292C] bg-[#0E0F11]">
-      <div className="flex gap-1 border-b border-border px-2 py-1.5">
+    <div className="rp-inset">
+      <div className="flex flex-wrap gap-1.5 border-b border-rp-line px-2 py-2" role="toolbar" aria-label="Formatting">
         {toolbarButtons.map((btn) => (
           <button
             key={btn.label}
             type="button"
             onClick={btn.action}
             title={btn.label}
-            className={`rounded p-1.5 transition-colors ${
-              btn.active
-                ? "bg-primary/20 text-primary"
-                : "text-muted-foreground hover:bg-muted hover:text-foreground"
+            aria-label={btn.label}
+            aria-pressed={btn.active}
+            className={`rp-btn-icon rp-btn--sm ${
+              btn.active ? "!border-rp-gold bg-rp-gold/[.14] !text-rp-gold" : ""
             }`}
           >
-            <btn.icon className="h-4 w-4" />
+            <btn.icon size={16} strokeWidth={1.5} />
           </button>
         ))}
       </div>
-      <div className="px-3 py-2">
+      <div className="px-4 py-3 [&_.ProseMirror>:first-child]:mt-0 [&_.ProseMirror_p.is-editor-empty:first-child::before]:pointer-events-none [&_.ProseMirror_p.is-editor-empty:first-child::before]:float-left [&_.ProseMirror_p.is-editor-empty:first-child::before]:h-0 [&_.ProseMirror_p.is-editor-empty:first-child::before]:text-rp-dim [&_.ProseMirror_p.is-editor-empty:first-child::before]:content-[attr(data-placeholder)]">
         <EditorContent editor={editor} />
       </div>
     </div>

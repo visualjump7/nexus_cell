@@ -1,123 +1,99 @@
 'use client'
 
-import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
+import { BarChart, Bar, Cell, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
+import { RP_CHART, RpChartFrame, RpBarList, RpEmpty, fmtMoney, dot } from '@/components/rp'
 
-// Roaring Pines categorical order: gold, blue, green, light gold, light blue, steel.
-const COLORS = ['#CDA14B', '#3989CB', '#A4CC5C', '#E0BF7B', '#7FB3DE', '#9AA0A4']
-
-const monthlyData = [
-  { month: 'Jan', amount: 42000 },
-  { month: 'Feb', amount: 38500 },
-  { month: 'Mar', amount: 51200 },
-  { month: 'Apr', amount: 46800 },
-  { month: 'May', amount: 55100 },
-  { month: 'Jun', amount: 48900 },
-  { month: 'Jul', amount: 62300 },
-  { month: 'Aug', amount: 44700 },
-  { month: 'Sep', amount: 53600 },
-  { month: 'Oct', amount: 47200 },
-  { month: 'Nov', amount: 58400 },
-  { month: 'Dec', amount: 51800 },
-]
+interface MonthPoint {
+  /** Axis tick: 'Oct'. */
+  m: string
+  /** Tooltip label: 'October 2026'. */
+  label: string
+  /** Σ paid bill amounts with paid_date in that month. */
+  v: number
+}
 
 interface CategoryItem {
-  name: string
+  label: string
   value: number
 }
 
 interface Props {
-  categoryData: CategoryItem[]
+  /** Last 12 months, oldest first (paid bills by paid_date). */
+  months: MonthPoint[]
+  drawsTotal: number
+  /** Top categories by Σ amount over non-rejected bills. */
+  categories: CategoryItem[]
+  billedTotal: number
 }
 
-export default function DashboardCharts({ categoryData }: Props) {
-  const total = categoryData.reduce((sum, c) => sum + c.value, 0)
+const compact = (n: number) => fmtMoney(n, { compact: true })
+
+// Gold is an accent, never a large fill: the months are steel and only the
+// peak month (named in the sub-line) is picked out in gold.
+const BAR_FILL = '#3A3E42'
+const PEAK_FILL = RP_CHART.colors[0]
+
+export default function DashboardCharts({ months, drawsTotal, categories, billedTotal }: Props) {
+  const labelFor = (m: unknown) => months.find(p => p.m === m)?.label ?? String(m ?? '')
+  const busiest = months.reduce<MonthPoint | null>((best, p) => (p.v > (best?.v ?? 0) ? p : best), null)
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
-      {/* Area Chart — Activity Overview */}
-      <div className="lg:col-span-3 rp-panel p-5">
-        <h3 className="rp-eyebrow--muted mb-4">Monthly spend</h3>
-        <ResponsiveContainer width="100%" height={240}>
-          <AreaChart data={monthlyData}>
-            <defs>
-              <linearGradient id="goldGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#CDA14B" stopOpacity={0.3} />
-                <stop offset="100%" stopColor="#CDA14B" stopOpacity={0} />
-              </linearGradient>
-            </defs>
-            <XAxis
-              dataKey="month"
-              tick={{ fill: '#6E7578', fontSize: 11 }}
-              axisLine={false}
-              tickLine={false}
-            />
-            <YAxis
-              tick={{ fill: '#6E7578', fontSize: 11 }}
-              axisLine={false}
-              tickLine={false}
-              tickFormatter={v => `$${(v as number / 1000).toFixed(0)}k`}
-              width={50}
-            />
-            <Tooltip
-contentStyle={{ background: '#141618', border: '1px solid #26292C', borderRadius: 2, boxShadow: 'none' }}
-              labelStyle={{ color: '#9AA0A4' }}
-              itemStyle={{ color: '#F5F5F5' }}
-              formatter={(value) => [`$${Number(value).toLocaleString()}`, 'Spend']}
-            />
-            <Area
-              type="monotone"
-              dataKey="amount"
-              stroke="#CDA14B"
-              fill="url(#goldGradient)"
-              strokeWidth={2}
-            />
-          </AreaChart>
-        </ResponsiveContainer>
-      </div>
-
-      {/* Donut Chart — Breakdown */}
-      <div className="lg:col-span-2 rp-panel p-5">
-        <h3 className="rp-eyebrow--muted mb-4">Spend by category</h3>
-        {categoryData.length === 0 ? (
-          <div className="flex items-center justify-center h-[240px]">
-            <p className="text-gray-600 text-sm">No bills recorded yet</p>
-          </div>
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-[3fr_2fr]">
+      <RpChartFrame
+        eyebrow="Draws by month"
+        value={compact(drawsTotal)}
+        sub={dot('Paid bills by payment date', 'last 12 months', busiest && `peak ${busiest.label} ${compact(busiest.v)}`)}
+        height={0}
+        className={drawsTotal > 0 ? '[&>div:last-child]:min-h-[260px] [&>div:last-child]:flex-1' : undefined}
+      >
+        {drawsTotal > 0 ? (
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={months} margin={{ top: 8, right: 0, bottom: 0, left: 0 }}>
+              <CartesianGrid vertical={false} stroke={RP_CHART.grid} />
+              <XAxis
+                dataKey="m"
+                tick={RP_CHART.tick}
+                axisLine={{ stroke: RP_CHART.axis }}
+                tickLine={false}
+                interval="preserveStartEnd"
+                tickFormatter={v => String(v).toUpperCase()}
+              />
+              <YAxis
+                tick={RP_CHART.tick}
+                tickFormatter={v => compact(Number(v))}
+                axisLine={false}
+                tickLine={false}
+                width={56}
+              />
+              <Tooltip
+                {...RP_CHART.tooltip}
+                labelFormatter={labelFor}
+                formatter={v => [fmtMoney(Number(v)), 'Paid']}
+              />
+              <Bar dataKey="v" fill={BAR_FILL} radius={RP_CHART.bar.radius} maxBarSize={RP_CHART.bar.maxBarSize}>
+                {months.map(p => (
+                  <Cell key={p.m + p.label} fill={busiest && p.m === busiest.m && p.label === busiest.label ? PEAK_FILL : BAR_FILL} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
         ) : (
-          <>
-            <ResponsiveContainer width="100%" height={180}>
-              <PieChart>
-                <Pie
-                  data={categoryData}
-                  innerRadius={50}
-                  outerRadius={80}
-                  dataKey="value"
-                  paddingAngle={2}
-                  stroke="none"
-                >
-                  {categoryData.map((_, i) => (
-                    <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip
-                  contentStyle={{ background: '#141618', border: '1px solid #26292C', borderRadius: 2, boxShadow: 'none' }}
-                  labelStyle={{ color: '#9AA0A4' }}
-                  itemStyle={{ color: '#F5F5F5' }}
-                  formatter={(value) => [`$${Number(value).toLocaleString()}`, '']}
-                />
-              </PieChart>
-            </ResponsiveContainer>
-            <div className="flex flex-wrap gap-x-4 gap-y-1.5 mt-2">
-              {categoryData.map((item, i) => (
-                <div key={item.name} className="flex items-center gap-1.5 text-xs text-gray-400">
-                  <div className="w-2 h-2 shrink-0" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
-                  <span className="truncate">{item.name}</span>
-                  <span className="text-[#6E7578]">{total > 0 ? Math.round((item.value / total) * 100) : 0}%</span>
-                </div>
-              ))}
-            </div>
-          </>
+          <RpEmpty compact pines={false} title="No draws paid yet." line="Paid bills appear here by the month they were paid." />
         )}
-      </div>
+      </RpChartFrame>
+
+      <RpChartFrame
+        eyebrow="Where the money goes"
+        value={compact(billedTotal)}
+        sub={dot('Bills by category', 'excluding rejected', categories.length > 0 && `top ${categories.length}`)}
+        height={0}
+      >
+        {categories.length > 0 ? (
+          <RpBarList items={categories} format={compact} />
+        ) : (
+          <RpEmpty compact pines={false} title="No bills recorded yet." />
+        )}
+      </RpChartFrame>
     </div>
   )
 }

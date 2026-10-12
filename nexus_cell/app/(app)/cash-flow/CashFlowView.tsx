@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import type { Bill, UserRole, QuickBooksConnection } from '@/lib/types'
 import BillForm from '@/components/BillForm'
@@ -8,21 +8,22 @@ import DeleteConfirm from '@/components/DeleteConfirm'
 import BillsImportModal from '@/components/BillsImportModal'
 import QuickBooksBanner from '@/components/QuickBooksBanner'
 import { exportBillsToXlsx } from '@/lib/billsExcel'
+import {
+  RpPage, RpPageHeader, RpStatStrip, RpStat, RpFilterBar, RpTabs, RpInput, RpTable, RpStatus,
+  RpButton, RpEmpty, RpCounter, Download, Upload, Plus, Search, RP_ICON,
+  fmtMoney, fmtDate, dot,
+} from '@/components/rp'
+import { sectionEyebrow } from '@/lib/sections'
 
-const statusColors: Record<string, string> = {
-  pending: 'bg-yellow-500/15 text-yellow-400',
-  approved: 'bg-emerald-500/15 text-emerald-400',
-  paid: 'bg-blue-500/15 text-blue-400',
-  rejected: 'bg-red-500/15 text-red-400',
-  overdue: 'bg-orange-500/15 text-orange-400',
-}
-
-const tabs = [
-  { key: 'all', label: 'All Bills' },
-  { key: 'pending', label: 'Pending' },
-  { key: 'paid', label: 'Paid' },
-  { key: 'overdue', label: 'Overdue' },
+const TABS = [
+  { id: 'all', label: 'All' },
+  { id: 'pending', label: 'Pending' },
+  { id: 'paid', label: 'Paid' },
+  { id: 'overdue', label: 'Overdue' },
 ]
+
+const PAGE_SIZE = 50
+const UNPAID: Bill['status'][] = ['pending', 'approved', 'overdue']
 
 interface Props {
   bills: Bill[]
@@ -32,29 +33,72 @@ interface Props {
   qbConfigured?: boolean
 }
 
+/** YYYY-MM-DD in UTC, so the server render and the browser agree. */
+function utcKey(d: Date) {
+  return d.toISOString().slice(0, 10)
+}
+
 export default function CashFlowView({ bills, role, stats, qbConnection = null, qbConfigured = false }: Props) {
   const router = useRouter()
   const canWrite = ['ea', 'admin'].includes(role)
 
   const [activeTab, setActiveTab] = useState('all')
+  const [query, setQuery] = useState('')
+  const [visible, setVisible] = useState(PAGE_SIZE)
   const [showForm, setShowForm] = useState(false)
   const [editingBill, setEditingBill] = useState<Bill | null>(null)
   const [deletingBill, setDeletingBill] = useState<Bill | null>(null)
   const [showImport, setShowImport] = useState(false)
 
-  const filtered = activeTab === 'all' ? bills : bills.filter(b => b.status === activeTab)
+  // Figures derived client-side from the same rows (no new fetches).
+  const derived = useMemo(() => {
+    const now = new Date()
+    const today = utcKey(now)
+    const in7 = utcKey(new Date(now.getTime() + 7 * 86400000))
+    const monthStart = `${today.slice(0, 7)}-01`
+    let overdueSum = 0
+    let paidMonthSum = 0
+    let due7Count = 0
+    let due7Sum = 0
+    let outstandingCount = 0
+    for (const b of bills) {
+      const amt = Number(b.amount) || 0
+      if (b.status === 'overdue') overdueSum += amt
+      if (b.status === 'paid' && b.paid_date && b.paid_date >= monthStart) paidMonthSum += amt
+      if (UNPAID.includes(b.status)) {
+        outstandingCount++
+        if (b.due_date && b.due_date >= today && b.due_date <= in7) {
+          due7Count++
+          due7Sum += amt
+        }
+      }
+    }
+    return { overdueSum, paidMonthSum, due7Count, due7Sum, outstandingCount }
+  }, [bills])
 
-  function fmt(amount: number) {
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(amount)
+  const counts = useMemo(() => {
+    const c: Record<string, number> = { all: bills.length, pending: 0, paid: 0, overdue: 0 }
+    for (const b of bills) if (b.status in c) c[b.status]++
+    return c
+  }, [bills])
+
+  const filtered = useMemo(() => {
+    const byTab = activeTab === 'all' ? bills : bills.filter(b => b.status === activeTab)
+    const q = query.trim().toLowerCase()
+    return q ? byTab.filter(b => b.vendor.toLowerCase().includes(q)) : byTab
+  }, [bills, activeTab, query])
+
+  const rows = filtered.slice(0, visible)
+  const thisYear = new Date().getUTCFullYear()
+
+  function selectTab(id: string) {
+    setActiveTab(id)
+    setVisible(PAGE_SIZE)
   }
 
-  function formatDate(d: string | null) {
+  function dueLabel(d: string | null) {
     if (!d) return '—'
-    return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-  }
-
-  function formatCurrency(amount: number, currency: string) {
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(amount)
+    return fmtDate(d, Number(d.slice(0, 4)) === thisYear ? 'short' : 'medium')
   }
 
   async function handleDelete() {
@@ -64,139 +108,172 @@ export default function CashFlowView({ bills, role, stats, qbConnection = null, 
     router.refresh()
   }
 
-  return (
-    <div className="max-w-6xl">
-      <header className="rp-head">
-        <div className="flex items-end justify-between gap-4 flex-wrap">
-        <div className="flex flex-col gap-2.5">
-          <span className="rp-eyebrow">Draws &amp; payables</span>
-          <h1 className="rp-title">Cash Flow</h1>
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => exportBillsToXlsx(bills)}
-            disabled={bills.length === 0}
-            className="rp-btn-ghost disabled:opacity-40 disabled:cursor-not-allowed gap-1.5"
-            title="Export bills to Excel"
-          >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
-            </svg>
-            Export
-          </button>
-          {canWrite && (
-            <button
-              onClick={() => setShowImport(true)}
-              className="rp-btn-ghost gap-1.5"
-              title="Import bills from Excel"
-            >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
-              </svg>
-              Import
-            </button>
-          )}
-          {canWrite && (
-            <button onClick={() => { setEditingBill(null); setShowForm(true) }} className="rp-btn-solid">
-              New bill
-            </button>
-          )}
-        </div>
-        </div>
-      </header>
+  const icon = { size: RP_ICON.size, strokeWidth: RP_ICON.strokeWidth, 'aria-hidden': true } as const
 
-      {/* QuickBooks Banner */}
+  return (
+    <RpPage>
+      <RpPageHeader
+        eyebrow={sectionEyebrow('financial')}
+        title="Draws and payables"
+        line={dot(
+          `${bills.length} ${bills.length === 1 ? 'bill' : 'bills'}`,
+          `${fmtMoney(stats.totalOutstanding, { compact: true })} outstanding`,
+          `${stats.overdue} overdue`,
+        )}
+        actions={
+          <>
+            <RpButton
+              variant="ghost"
+              icon={<Download {...icon} />}
+              onClick={() => exportBillsToXlsx(bills)}
+              disabled={bills.length === 0}
+              title="Export bills to Excel"
+            >
+              Export
+            </RpButton>
+            {canWrite && (
+              <RpButton variant="ghost" icon={<Upload {...icon} />} onClick={() => setShowImport(true)} title="Import bills from Excel">
+                Import
+              </RpButton>
+            )}
+            {canWrite && (
+              <RpButton icon={<Plus {...icon} />} onClick={() => { setEditingBill(null); setShowForm(true) }}>
+                New bill
+              </RpButton>
+            )}
+          </>
+        }
+      />
+
       <QuickBooksBanner connection={qbConnection} canWrite={canWrite} isConfigured={qbConfigured} />
 
-      {/* Stat Cards */}
-      <div className="grid grid-cols-3 gap-4 mb-6">
-        <div className="rp-panel p-5">
-          <div className="flex items-center gap-2 mb-2">
-            <div className="w-1.5 h-1.5 bg-[#CDA14B]" />
-            <p className="rp-eyebrow--muted">Outstanding</p>
-          </div>
-          <p className="rp-stat-value">{fmt(stats.totalOutstanding)}</p>
-        </div>
-        <div className="rp-panel p-5">
-          <div className="flex items-center gap-2 mb-2">
-            <div className="w-1.5 h-1.5 bg-[#A4CC5C]" />
-            <p className="rp-eyebrow--muted">Paid This Month</p>
-          </div>
-          <p className="rp-stat-value">{stats.paidThisMonth}</p>
-        </div>
-        <div className="rp-panel p-5">
-          <div className="flex items-center gap-2 mb-2">
-            <div className="w-1.5 h-1.5 bg-red-400" />
-            <p className="rp-eyebrow--muted">Overdue</p>
-          </div>
-          <p className="rp-stat-value">{stats.overdue}</p>
-        </div>
-      </div>
+      <RpStatStrip cols={4}>
+        <RpStat
+          index={1}
+          label="Outstanding"
+          value={fmtMoney(stats.totalOutstanding, { compact: true })}
+          sub={dot(`${derived.outstandingCount} bills`, 'pending, approved, overdue')}
+        />
+        <RpStat
+          index={2}
+          label="Overdue"
+          value={stats.overdue}
+          tone={stats.overdue > 0 ? 'alert' : 'default'}
+          sub={stats.overdue > 0 ? `${fmtMoney(derived.overdueSum, { compact: true })} past due` : 'Nothing past due'}
+        />
+        <RpStat
+          index={3}
+          label="Paid this month"
+          value={stats.paidThisMonth}
+          sub={`${fmtMoney(derived.paidMonthSum, { compact: true })} drawn`}
+        />
+        <RpStat
+          index={4}
+          label="Due in 7 days"
+          value={derived.due7Count}
+          sub={derived.due7Count > 0 ? `${fmtMoney(derived.due7Sum, { compact: true })} to pay` : 'Nothing due this week'}
+        />
+      </RpStatStrip>
 
-      {/* Tabs */}
-      <div className="rp-tabs mb-6" role="tablist">
-        {tabs.map(tab => (
-          <button
-            key={tab.key}
-            onClick={() => setActiveTab(tab.key)}
-            role="tab"
-            aria-selected={activeTab === tab.key}
-            className="rp-tab"
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
+      <section className="flex flex-col gap-5">
+        <RpFilterBar count={`${filtered.length} ${filtered.length === 1 ? 'bill' : 'bills'}`}>
+          <RpTabs
+            ariaLabel="Bill status"
+            value={activeTab}
+            onChange={selectTab}
+            items={TABS.map(t => ({ ...t, count: counts[t.id] }))}
+          />
+          <div className="relative w-full max-w-[280px]">
+            <Search
+              size={RP_ICON.size}
+              strokeWidth={RP_ICON.strokeWidth}
+              aria-hidden
+              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-rp-dim"
+            />
+            <RpInput
+              type="search"
+              value={query}
+              onChange={e => { setQuery(e.target.value); setVisible(PAGE_SIZE) }}
+              placeholder="Search vendor"
+              aria-label="Search vendor"
+              className="h-10 !min-h-[40px] pl-9"
+            />
+          </div>
+        </RpFilterBar>
 
-      {/* Table */}
-      {filtered.length === 0 ? (
-        <div className="rp-panel p-12 text-center">
-          <p className="text-gray-500">No bills found.</p>
-        </div>
-      ) : (
-        <div className="rp-panel overflow-x-auto">
-          <table className="w-full text-sm min-w-[640px]">
-            <thead>
-              <tr className="border-b border-[#1F1F1F] text-left rp-eyebrow--muted">
-                <th className="px-5 py-3 font-medium">Vendor</th>
-                <th className="px-5 py-3 font-medium">Amount</th>
-                <th className="px-5 py-3 font-medium">Category</th>
-                <th className="px-5 py-3 font-medium">Due Date</th>
-                <th className="px-5 py-3 font-medium">Status</th>
-                {canWrite && <th className="px-5 py-3 font-medium text-right">Actions</th>}
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map(bill => (
-                <tr key={bill.id} className="border-b border-[#1F1F1F] hover:bg-[#141618] transition-colors">
-                  <td className="px-5 py-3">
-                    <p className="text-white font-medium">{bill.vendor}</p>
-                    {bill.description && <p className="text-gray-500 text-xs mt-0.5">{bill.description}</p>}
-                  </td>
-                  <td className="px-5 py-3 text-white font-mono">{formatCurrency(bill.amount, bill.currency)}</td>
-                  <td className="px-5 py-3 text-gray-400">{bill.category || '—'}</td>
-                  <td className="px-5 py-3 text-gray-400">{formatDate(bill.due_date)}</td>
-                  <td className="px-5 py-3">
-                    <span className={`text-[11px] font-medium px-2 py-0.5 rounded ${statusColors[bill.status] || ''}`}>
-                      {bill.status}
-                    </span>
-                  </td>
-                  {canWrite && (
-                    <td className="px-5 py-3 text-right">
-                      <button onClick={() => { setEditingBill(bill); setShowForm(true) }} className="text-gray-500 hover:text-white text-xs mr-3 transition-colors">Edit</button>
-                      <button onClick={() => setDeletingBill(bill)} className="text-gray-500 hover:text-red-400 text-xs transition-colors">Delete</button>
-                    </td>
-                  )}
+        {filtered.length === 0 ? (
+          <RpEmpty
+            title="No bills here."
+            line={query.trim() ? 'No vendor matches that search.' : 'Nothing in this status yet.'}
+            action={canWrite && !query.trim() ? (
+              <RpButton variant="ghost" size="sm" icon={<Plus {...icon} />} onClick={() => { setEditingBill(null); setShowForm(true) }}>
+                New bill
+              </RpButton>
+            ) : undefined}
+          />
+        ) : (
+          <>
+            {/* Below 640px: Vendor (due date under it) · Amount (status under it) · actions stacked. */}
+            <RpTable minWidth={820} caption="Bills" className="max-sm:[&_table]:!min-w-0">
+              <thead>
+                <tr>
+                  <th>Vendor</th>
+                  <th className="hidden sm:table-cell">Category</th>
+                  <th className="hidden sm:table-cell">Due</th>
+                  <th className="num">Amount</th>
+                  <th className="hidden sm:table-cell">Status</th>
+                  {canWrite && <th className="text-right" aria-label="Actions" />}
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+              </thead>
+              <tbody>
+                {rows.map(bill => (
+                  <tr key={bill.id}>
+                    <td className="max-w-[360px]">
+                      <span className="font-medium">{bill.vendor}</span>
+                      {bill.description && <span className="sub">{bill.description}</span>}
+                      {bill.due_date && (
+                        <span className={`sub tabular-nums sm:!hidden ${bill.status === 'overdue' ? '!text-rp-alert' : ''}`}>
+                          Due {dueLabel(bill.due_date)}
+                        </span>
+                      )}
+                    </td>
+                    <td className="hidden whitespace-nowrap text-rp-muted sm:table-cell">{bill.category || '—'}</td>
+                    <td className={`hidden whitespace-nowrap tabular-nums sm:table-cell ${bill.status === 'overdue' ? 'text-rp-alert' : 'text-rp-muted'}`}>
+                      {dueLabel(bill.due_date)}
+                    </td>
+                    <td className="num">
+                      {fmtMoney(bill.amount, { currency: bill.currency })}
+                      <span className="mt-2 block sm:hidden"><RpStatus kind="bill" value={bill.status} /></span>
+                    </td>
+                    <td className="hidden sm:table-cell"><RpStatus kind="bill" value={bill.status} /></td>
+                    {canWrite && (
+                      <td className="whitespace-nowrap text-right">
+                        <div className="inline-flex flex-col items-end gap-1 sm:flex-row sm:items-center sm:gap-4">
+                          <RpButton variant="text" size="sm" onClick={() => { setEditingBill(bill); setShowForm(true) }}>Edit</RpButton>
+                          <RpButton variant="text" size="sm" onClick={() => setDeletingBill(bill)}>Delete</RpButton>
+                        </div>
+                      </td>
+                    )}
+                  </tr>
+                ))}
+              </tbody>
+            </RpTable>
+
+            <div className="flex flex-wrap items-center gap-4">
+              <RpCounter current={rows.length} total={filtered.length} />
+              {rows.length < filtered.length && (
+                <RpButton variant="ghost" size="sm" onClick={() => setVisible(v => v + PAGE_SIZE)}>
+                  Show {Math.min(PAGE_SIZE, filtered.length - rows.length)} more
+                </RpButton>
+              )}
+            </div>
+          </>
+        )}
+      </section>
 
       {showForm && <BillForm bill={editingBill} onClose={() => { setShowForm(false); setEditingBill(null) }} />}
       {deletingBill && <DeleteConfirm itemName={deletingBill.vendor} onConfirm={handleDelete} onCancel={() => setDeletingBill(null)} />}
       {showImport && <BillsImportModal onClose={() => setShowImport(false)} existingBills={bills} />}
-    </div>
+    </RpPage>
   )
 }

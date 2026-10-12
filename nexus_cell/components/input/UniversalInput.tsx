@@ -2,23 +2,32 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { Receipt, ListChecks, Bell, Plane, StickyNote, RefreshCw, CreditCard, Gift } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 import { useToast } from '@/components/shared/Toast'
+import {
+  RpModal, RpCardGrid, RpCapNum, RpField, RpInput, RpSelect, RpTextarea, RpFormGrid, RpChips, RpButton,
+  statusLabel,
+} from '@/components/rp'
 
-const categories = [
-  { key: 'bill', label: 'Bill / Payment', color: '#CDA14B', icon: DollarI },
-  { key: 'travel', label: 'Travel', color: '#3989CB', icon: PlaneI },
-  { key: 'task', label: 'Task', color: '#7FB3DE', icon: CheckI },
-  { key: 'alert', label: 'Alert', color: '#fbbf24', icon: BellI },
-  { key: 'gift', label: 'Gift', color: '#E0BF7B', icon: GiftI },
-  { key: 'subscription', label: 'Subscription', color: '#E0BF7B', icon: RefreshI },
-  { key: 'membership', label: 'Membership', color: '#E0BF7B', icon: CardI },
-  { key: 'note', label: 'Note', color: '#9AA0A4', icon: PenI },
+// Construction-first order. Keys are unchanged (they pick the save handler).
+const categories: { key: string; num: string; label: string; line?: string; icon: LucideIcon }[] = [
+  { key: 'bill', num: '01', label: 'Bill', line: 'Draw or payable', icon: Receipt },
+  { key: 'task', num: '02', label: 'Task', line: 'Punch item', icon: ListChecks },
+  { key: 'alert', num: '03', label: 'Alert', line: 'Sign-off or site issue', icon: Bell },
+  { key: 'travel', num: '04', label: 'Trip', line: 'Site visit', icon: Plane },
+  { key: 'note', num: '05', label: 'Note', icon: StickyNote },
+  { key: 'subscription', num: '06', label: 'Subscription', line: 'Clubhouse services', icon: RefreshCw },
+  { key: 'membership', num: '07', label: 'Membership', icon: CreditCard },
+  { key: 'gift', num: '08', label: 'Gift', icon: Gift },
 ]
 
 const billCategories = ['Site Work', 'Track & Paddock', 'Garages', 'Clubhouse', 'Homes', 'Design & Engineering', 'Permits', 'Insurance', 'Utilities', 'Legal', 'Marketing', 'Merchandise', 'Travel', 'Membership', 'Other']
 
 // Visible labels for alert audience values (values stay principal/ea/cfo).
 const AUDIENCE_LABEL: Record<string, string> = { '': 'Everyone', principal: 'Owner', ea: "Owner's Rep", cfo: 'CFO' }
+
+const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
 
 interface Props { onClose: () => void }
 
@@ -27,11 +36,6 @@ export default function UniversalInput({ onClose }: Props) {
   const { toast } = useToast()
   const [selected, setSelected] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
-
-  const inputClass = 'w-full px-3.5 py-2.5 bg-[#0E0F11] border border-[#26292C] rounded-sm text-[#F5F5F5] placeholder-[#6E7578] focus:outline-none focus:border-[#CDA14B] text-sm'
-  const labelClass = 'block font-display text-[11px] text-[#9AA0A4] uppercase tracking-[0.16em] mb-1.5'
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const pillClass = (active: boolean, color: string) => `px-3.5 py-1.5 rounded-sm text-[11px] font-medium transition-all cursor-pointer ${active ? '' : 'bg-[#0E0F11] text-[#6E7578] hover:text-[#9AA0A4]'}`
 
   async function saveBill(f: Record<string, string>) {
     setSaving(true)
@@ -102,222 +106,209 @@ export default function UniversalInput({ onClose }: Props) {
     onClose()
   }
 
+  const current = categories.find(c => c.key === selected)
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="absolute inset-0 bg-[rgba(8,9,10,.85)] backdrop-blur-sm" />
-      <div className="relative w-full max-w-[520px] max-h-[85vh] overflow-y-auto bg-[#0A0B0C] rounded-sm border border-[#26292C] shadow-2xl shadow-black/50" onClick={e => e.stopPropagation()}>
-
-        {!selected ? (
-          /* ── Category Selection ── */
-          <div className="p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="rp-eyebrow">Create new</h2>
-              <button onClick={onClose} aria-label="Close" className="text-[#6E7578] hover:text-white text-xl">&times;</button>
-            </div>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              {categories.map(cat => {
-                const Icon = cat.icon
-                return (
-                  <button key={cat.key} onClick={() => setSelected(cat.key)} className="flex flex-col items-center gap-2 p-4 rounded-sm border border-transparent hover:border-[#26292C] hover:bg-[#141618] transition-all group">
-                    <div className="w-12 h-12 rounded-sm flex items-center justify-center" style={{ background: `${cat.color}1A`, border: `1px solid ${cat.color}33` }}>
-                      <Icon className="w-5 h-5" style={{ color: cat.color }} />
-                    </div>
-                    <span className="font-display text-[11px] uppercase tracking-[0.12em] text-[#9AA0A4] group-hover:text-white transition-colors text-center">{cat.label}</span>
-                  </button>
-                )
-              })}
-            </div>
-          </div>
-        ) : (
-          /* ── Dynamic Form ── */
-          <div className="p-6">
-            <div className="flex items-center gap-3 mb-6">
-              <button onClick={() => setSelected(null)} aria-label="Back" className="text-[#6E7578] hover:text-white">
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" /></svg>
+    <RpModal
+      open
+      onClose={onClose}
+      size="lg"
+      eyebrow={current ? `Create · ${current.num}` : 'Create'}
+      title={current ? `New ${current.label.toLowerCase()}` : 'What are you adding?'}
+    >
+      {!selected ? (
+        /* ── Category selection ── */
+        <RpCardGrid max={4} min={160}>
+          {categories.map(cat => {
+            const Icon = cat.icon
+            return (
+              <button
+                key={cat.key}
+                type="button"
+                onClick={() => setSelected(cat.key)}
+                className="rp-card rp-card--link group w-full"
+              >
+                <span className="flex h-4 items-center justify-between gap-3">
+                  <RpCapNum n={cat.num} className="text-xs leading-none tracking-[.1em]" />
+                  <Icon size={16} strokeWidth={1.5} aria-hidden className="text-rp-dim transition-colors group-hover:text-rp-gold" />
+                </span>
+                <span className="rp-card-title">{cat.label}</span>
+                {cat.line && <span className="text-sm leading-[1.4] text-rp-muted">{cat.line}</span>}
               </button>
-              <h2 className="rp-eyebrow">New {categories.find(c => c.key === selected)?.label}</h2>
-            </div>
+            )
+          })}
+        </RpCardGrid>
+      ) : (
+        /* ── Dynamic form ── */
+        <div className="flex flex-col gap-5">
+          <RpButton variant="back" size="sm" className="self-start" onClick={() => setSelected(null)}>All types</RpButton>
 
-            {selected === 'bill' && <BillForm inputClass={inputClass} labelClass={labelClass} pillClass={pillClass} saving={saving} onSave={saveBill} categories={billCategories} />}
-            {selected === 'travel' && <TravelForm inputClass={inputClass} labelClass={labelClass} pillClass={pillClass} saving={saving} onSave={saveTravel} />}
-            {selected === 'task' && <TaskForm inputClass={inputClass} labelClass={labelClass} pillClass={pillClass} saving={saving} onSave={saveTask} />}
-            {selected === 'alert' && <AlertForm inputClass={inputClass} labelClass={labelClass} pillClass={pillClass} saving={saving} onSave={saveAlert} />}
-            {selected === 'gift' && <GiftForm inputClass={inputClass} labelClass={labelClass} pillClass={pillClass} saving={saving} onSave={saveGift} />}
-            {selected === 'subscription' && <SubscriptionForm inputClass={inputClass} labelClass={labelClass} pillClass={pillClass} saving={saving} onSave={saveSubscription} />}
-            {selected === 'membership' && <MembershipForm inputClass={inputClass} labelClass={labelClass} saving={saving} onSave={saveMembership} />}
-            {selected === 'note' && <NoteForm inputClass={inputClass} labelClass={labelClass} saving={saving} onSave={saveNote} />}
-          </div>
-        )}
-      </div>
-    </div>
+          {selected === 'bill' && <BillForm saving={saving} onSave={saveBill} categories={billCategories} />}
+          {selected === 'travel' && <TravelForm saving={saving} onSave={saveTravel} />}
+          {selected === 'task' && <TaskForm saving={saving} onSave={saveTask} />}
+          {selected === 'alert' && <AlertForm saving={saving} onSave={saveAlert} />}
+          {selected === 'gift' && <GiftForm saving={saving} onSave={saveGift} />}
+          {selected === 'subscription' && <SubscriptionForm saving={saving} onSave={saveSubscription} />}
+          {selected === 'membership' && <MembershipForm saving={saving} onSave={saveMembership} />}
+          {selected === 'note' && <NoteForm saving={saving} onSave={saveNote} />}
+        </div>
+      )}
+    </RpModal>
   )
 }
 
-// ── Form Components ──
+// ── Form components ──
 
-interface FormProps { inputClass: string; labelClass: string; saving: boolean; onSave: (f: Record<string, string>) => void; pillClass?: (active: boolean, color: string) => string; categories?: string[] }
+interface FormProps { saving: boolean; onSave: (f: Record<string, string>) => void; categories?: string[] }
 
-function BillForm({ inputClass, labelClass, saving, onSave, categories }: FormProps) {
+function SaveButton({ saving, disabled, onClick, children }: { saving: boolean; disabled: boolean; onClick: () => void; children: React.ReactNode }) {
+  return (
+    <RpButton className="w-full" onClick={onClick} disabled={saving || disabled}>
+      {saving ? 'Saving…' : children}
+    </RpButton>
+  )
+}
+
+function BillForm({ saving, onSave, categories }: FormProps) {
   const [f, setF] = useState<Record<string, string>>({ vendor: '', amount: '', category: '', due_date: '', description: '', notes: '' })
   return (
-    <div className="space-y-4">
-      <div><label className={labelClass}>Vendor</label><input className={inputClass} placeholder="e.g. Paving contractor" value={f.vendor} onChange={e => setF(p => ({ ...p, vendor: e.target.value }))} /></div>
-      <div className="grid grid-cols-2 gap-3">
-        <div><label className={labelClass}>Amount</label><input className={inputClass} type="number" step="0.01" placeholder="0.00" value={f.amount} onChange={e => setF(p => ({ ...p, amount: e.target.value }))} /></div>
-        <div><label className={labelClass}>Category</label><select className={inputClass} value={f.category} onChange={e => setF(p => ({ ...p, category: e.target.value }))}><option value="">Select...</option>{(categories || []).map(c => <option key={c} value={c}>{c}</option>)}</select></div>
-      </div>
-      <div><label className={labelClass}>Due Date</label><input className={inputClass} type="date" value={f.due_date} onChange={e => setF(p => ({ ...p, due_date: e.target.value }))} /></div>
-      <div><label className={labelClass}>Description</label><textarea className={`${inputClass} resize-none`} rows={2} value={f.description} onChange={e => setF(p => ({ ...p, description: e.target.value }))} /></div>
-      <button onClick={() => f.vendor && f.amount && onSave(f)} disabled={saving || !f.vendor || !f.amount} className="rp-btn-solid w-full">{saving ? 'Saving...' : 'Save Bill'}</button>
+    <div className="flex flex-col gap-5">
+      <RpFormGrid>
+        <RpField label="Vendor" htmlFor="ui-bill-vendor" className="sm:col-span-2"><RpInput id="ui-bill-vendor" placeholder="e.g. Crescent Lake Paving" value={f.vendor} onChange={e => setF(p => ({ ...p, vendor: e.target.value }))} /></RpField>
+        <RpField label="Amount" htmlFor="ui-bill-amount"><RpInput id="ui-bill-amount" type="number" step="0.01" placeholder="0.00" value={f.amount} onChange={e => setF(p => ({ ...p, amount: e.target.value }))} /></RpField>
+        <RpField label="Category" htmlFor="ui-bill-cat"><RpSelect id="ui-bill-cat" value={f.category} onChange={e => setF(p => ({ ...p, category: e.target.value }))}><option value="">Choose</option>{(categories || []).map(c => <option key={c} value={c}>{c}</option>)}</RpSelect></RpField>
+        <RpField label="Due date" htmlFor="ui-bill-due" className="sm:col-span-2"><RpInput id="ui-bill-due" type="date" value={f.due_date} onChange={e => setF(p => ({ ...p, due_date: e.target.value }))} /></RpField>
+        <RpField label="Description" htmlFor="ui-bill-desc" hint="Over $5,000 sends a sign-off to the owner" className="sm:col-span-2"><RpTextarea id="ui-bill-desc" rows={2} value={f.description} onChange={e => setF(p => ({ ...p, description: e.target.value }))} /></RpField>
+      </RpFormGrid>
+      <SaveButton saving={saving} disabled={!f.vendor || !f.amount} onClick={() => f.vendor && f.amount && onSave(f)}>Save bill</SaveButton>
     </div>
   )
 }
 
-function TravelForm({ inputClass, labelClass, saving, onSave }: FormProps) {
+function TravelForm({ saving, onSave }: FormProps) {
   const [f, setF] = useState<Record<string, string>>({ title: '', start_date: '', end_date: '', status: 'planning', notes: '' })
   return (
-    <div className="space-y-4">
-      <div><label className={labelClass}>Trip Name</label><input className={inputClass} placeholder="e.g. Site walk with the GC" value={f.title} onChange={e => setF(p => ({ ...p, title: e.target.value }))} /></div>
-      <div className="grid grid-cols-2 gap-3">
-        <div><label className={labelClass}>Start Date</label><input className={inputClass} type="date" value={f.start_date} onChange={e => setF(p => ({ ...p, start_date: e.target.value }))} /></div>
-        <div><label className={labelClass}>End Date</label><input className={inputClass} type="date" value={f.end_date} onChange={e => setF(p => ({ ...p, end_date: e.target.value }))} /></div>
-      </div>
-      <div><label className={labelClass}>Status</label>
-        <div className="flex gap-2">{['planning', 'confirmed'].map(s => <button key={s} type="button" onClick={() => setF(p => ({ ...p, status: s }))} className={`px-3.5 py-1.5 rounded-sm text-[11px] font-medium transition-all ${f.status === s ? 'bg-[#3989CB]/15 text-[#3989CB] border border-[#3989CB]/40' : 'bg-[#0E0F11] border border-[#26292C] text-[#6E7578]'}`}>{s}</button>)}</div>
-      </div>
-      <div><label className={labelClass}>Notes</label><textarea className={`${inputClass} resize-none`} rows={2} value={f.notes} onChange={e => setF(p => ({ ...p, notes: e.target.value }))} /></div>
-      <button onClick={() => f.title && onSave(f)} disabled={saving || !f.title} className="rp-btn-solid w-full">{saving ? 'Saving...' : 'Save Trip'}</button>
+    <div className="flex flex-col gap-5">
+      <RpFormGrid>
+        <RpField label="Trip name" htmlFor="ui-trip-title" className="sm:col-span-2"><RpInput id="ui-trip-title" placeholder="e.g. Jacksonville to Palatka — Site walk with the GC" value={f.title} onChange={e => setF(p => ({ ...p, title: e.target.value }))} /></RpField>
+        <RpField label="Start date" htmlFor="ui-trip-start"><RpInput id="ui-trip-start" type="date" value={f.start_date} onChange={e => setF(p => ({ ...p, start_date: e.target.value }))} /></RpField>
+        <RpField label="End date" htmlFor="ui-trip-end"><RpInput id="ui-trip-end" type="date" value={f.end_date} onChange={e => setF(p => ({ ...p, end_date: e.target.value }))} /></RpField>
+      </RpFormGrid>
+      <RpField label="Status">
+        <RpChips ariaLabel="Trip status" value={f.status} onChange={s => setF(p => ({ ...p, status: s }))}
+          items={['planning', 'confirmed'].map(s => ({ id: s, label: statusLabel('trip', s) }))} />
+      </RpField>
+      <RpField label="Notes" htmlFor="ui-trip-notes"><RpTextarea id="ui-trip-notes" rows={2} value={f.notes} onChange={e => setF(p => ({ ...p, notes: e.target.value }))} /></RpField>
+      <SaveButton saving={saving} disabled={!f.title} onClick={() => f.title && onSave(f)}>Save trip</SaveButton>
     </div>
   )
 }
 
-function TaskForm({ inputClass, labelClass, saving, onSave }: FormProps) {
+function TaskForm({ saving, onSave }: FormProps) {
   const [f, setF] = useState<Record<string, string>>({ title: '', description: '', priority: 'normal', due_date: '' })
   return (
-    <div className="space-y-4">
-      <div><label className={labelClass}>Title</label><input className={inputClass} placeholder="e.g. Confirm grandstand steel delivery" value={f.title} onChange={e => setF(p => ({ ...p, title: e.target.value }))} /></div>
-      <div><label className={labelClass}>Description</label><textarea className={`${inputClass} resize-none`} rows={2} value={f.description} onChange={e => setF(p => ({ ...p, description: e.target.value }))} /></div>
-      <div><label className={labelClass}>Priority</label>
-        <div className="flex gap-2">{['low', 'normal', 'high', 'urgent'].map(p => <button key={p} type="button" onClick={() => setF(prev => ({ ...prev, priority: p }))} className={`px-3.5 py-1.5 rounded-sm text-[11px] font-medium transition-all ${f.priority === p ? 'bg-[#7FB3DE]/15 text-[#7FB3DE] border border-[#7FB3DE]/40' : 'bg-[#0E0F11] border border-[#26292C] text-[#6E7578]'}`}>{p}</button>)}</div>
-      </div>
-      <div><label className={labelClass}>Due Date</label><input className={inputClass} type="date" value={f.due_date} onChange={e => setF(p => ({ ...p, due_date: e.target.value }))} /></div>
-      <button onClick={() => f.title && onSave(f)} disabled={saving || !f.title} className="rp-btn-solid w-full">{saving ? 'Saving...' : 'Save Task'}</button>
+    <div className="flex flex-col gap-5">
+      <RpField label="Title" htmlFor="ui-task-title"><RpInput id="ui-task-title" placeholder="e.g. Confirm grandstand steel delivery" value={f.title} onChange={e => setF(p => ({ ...p, title: e.target.value }))} /></RpField>
+      <RpField label="Description" htmlFor="ui-task-desc"><RpTextarea id="ui-task-desc" rows={2} value={f.description} onChange={e => setF(p => ({ ...p, description: e.target.value }))} /></RpField>
+      <RpField label="Priority">
+        <RpChips ariaLabel="Priority" value={f.priority} onChange={v => setF(prev => ({ ...prev, priority: v }))}
+          items={['low', 'normal', 'high', 'urgent'].map(v => ({ id: v, label: statusLabel('priority', v) }))} />
+      </RpField>
+      <RpField label="Due date" htmlFor="ui-task-due"><RpInput id="ui-task-due" type="date" value={f.due_date} onChange={e => setF(p => ({ ...p, due_date: e.target.value }))} /></RpField>
+      <SaveButton saving={saving} disabled={!f.title} onClick={() => f.title && onSave(f)}>Save task</SaveButton>
     </div>
   )
 }
 
-function AlertForm({ inputClass, labelClass, saving, onSave }: FormProps) {
+function AlertForm({ saving, onSave }: FormProps) {
   const [f, setF] = useState<Record<string, string>>({ alert_type: 'info', title: '', body: '', priority: 'normal', target_role: '' })
   return (
-    <div className="space-y-4">
-      <div><label className={labelClass}>Type</label>
-        <div className="flex flex-wrap gap-2">{['info', 'action_required', 'approval', 'urgent', 'fyi'].map(t => <button key={t} type="button" onClick={() => setF(p => ({ ...p, alert_type: t }))} className={`px-3 py-1.5 rounded-sm text-[11px] font-medium transition-all ${f.alert_type === t ? 'bg-amber-500/15 text-amber-400 border border-amber-500/40' : 'bg-[#0E0F11] border border-[#26292C] text-[#6E7578]'}`}>{t.replace('_', ' ')}</button>)}</div>
-      </div>
-      <div><label className={labelClass}>Title</label><input className={inputClass} placeholder="Alert title" value={f.title} onChange={e => setF(p => ({ ...p, title: e.target.value }))} /></div>
-      <div><label className={labelClass}>Body</label><textarea className={`${inputClass} resize-none`} rows={3} value={f.body} onChange={e => setF(p => ({ ...p, body: e.target.value }))} /></div>
-      <div><label className={labelClass}>Priority</label>
-        <div className="flex gap-2">{['low', 'normal', 'high', 'urgent'].map(p => <button key={p} type="button" onClick={() => setF(prev => ({ ...prev, priority: p }))} className={`px-3 py-1.5 rounded-sm text-[11px] font-medium transition-all ${f.priority === p ? 'bg-amber-500/15 text-amber-400 border border-amber-500/40' : 'bg-[#0E0F11] border border-[#26292C] text-[#6E7578]'}`}>{p}</button>)}</div>
-      </div>
-      <div><label className={labelClass}>Send To</label>
-        <div className="flex gap-2">{['', 'principal', 'ea', 'cfo'].map(r => <button key={r} type="button" onClick={() => setF(p => ({ ...p, target_role: r }))} className={`px-3 py-1.5 rounded-sm text-[11px] font-medium transition-all ${f.target_role === r ? 'bg-amber-500/15 text-amber-400 border border-amber-500/40' : 'bg-[#0E0F11] border border-[#26292C] text-[#6E7578]'}`}>{AUDIENCE_LABEL[r] ?? r}</button>)}</div>
-      </div>
-      <button onClick={() => f.title && onSave(f)} disabled={saving || !f.title} className="rp-btn-solid w-full">{saving ? 'Saving...' : 'Send Alert'}</button>
+    <div className="flex flex-col gap-5">
+      <RpField label="Type">
+        <RpChips ariaLabel="Alert type" value={f.alert_type} onChange={t => setF(p => ({ ...p, alert_type: t }))}
+          items={['info', 'action_required', 'approval', 'urgent', 'fyi'].map(t => ({ id: t, label: statusLabel('alertType', t) }))} />
+      </RpField>
+      <RpField label="Title" htmlFor="ui-alert-title"><RpInput id="ui-alert-title" placeholder="e.g. Paving change order needs sign-off" value={f.title} onChange={e => setF(p => ({ ...p, title: e.target.value }))} /></RpField>
+      <RpField label="Body" htmlFor="ui-alert-body"><RpTextarea id="ui-alert-body" rows={3} value={f.body} onChange={e => setF(p => ({ ...p, body: e.target.value }))} /></RpField>
+      <RpField label="Priority">
+        <RpChips ariaLabel="Priority" value={f.priority} onChange={v => setF(prev => ({ ...prev, priority: v }))}
+          items={['low', 'normal', 'high', 'urgent'].map(v => ({ id: v, label: statusLabel('priority', v) }))} />
+      </RpField>
+      <RpField label="Send to">
+        <RpChips ariaLabel="Send to" value={f.target_role} onChange={r => setF(p => ({ ...p, target_role: r }))}
+          items={['', 'principal', 'ea', 'cfo'].map(r => ({ id: r, label: AUDIENCE_LABEL[r] ?? r }))} />
+      </RpField>
+      <SaveButton saving={saving} disabled={!f.title} onClick={() => f.title && onSave(f)}>Send alert</SaveButton>
     </div>
   )
 }
 
-function GiftForm({ inputClass, labelClass, saving, onSave }: FormProps) {
+function GiftForm({ saving, onSave }: FormProps) {
   const [f, setF] = useState<Record<string, string>>({ recipient: '', occasion: '', description: '', amount: '', date: '', status: 'idea', notes: '' })
   return (
-    <div className="space-y-4">
-      <div><label className={labelClass}>Recipient</label><input className={inputClass} placeholder="e.g. Lead architect" value={f.recipient} onChange={e => setF(p => ({ ...p, recipient: e.target.value }))} /></div>
-      <div className="grid grid-cols-2 gap-3">
-        <div><label className={labelClass}>Occasion</label><input className={inputClass} placeholder="e.g. Topping-out" value={f.occasion} onChange={e => setF(p => ({ ...p, occasion: e.target.value }))} /></div>
-        <div><label className={labelClass}>Amount</label><input className={inputClass} type="number" step="0.01" placeholder="0.00" value={f.amount} onChange={e => setF(p => ({ ...p, amount: e.target.value }))} /></div>
-      </div>
-      <div><label className={labelClass}>Description</label><input className={inputClass} value={f.description} onChange={e => setF(p => ({ ...p, description: e.target.value }))} /></div>
-      <div><label className={labelClass}>Date</label><input className={inputClass} type="date" value={f.date} onChange={e => setF(p => ({ ...p, date: e.target.value }))} /></div>
-      <div><label className={labelClass}>Status</label>
-        <div className="flex flex-wrap gap-2">{['idea', 'purchased', 'shipped', 'delivered'].map(s => <button key={s} type="button" onClick={() => setF(p => ({ ...p, status: s }))} className={`px-3 py-1.5 rounded-sm text-[11px] font-medium transition-all ${f.status === s ? 'bg-[#CDA14B]/15 text-[#E0BF7B] border border-[#CDA14B]/40' : 'bg-[#0E0F11] border border-[#26292C] text-[#6E7578]'}`}>{s}</button>)}</div>
-      </div>
-      <button onClick={() => f.recipient && onSave(f)} disabled={saving || !f.recipient} className="rp-btn-solid w-full">{saving ? 'Saving...' : 'Save Gift'}</button>
+    <div className="flex flex-col gap-5">
+      <RpFormGrid>
+        <RpField label="Recipient" htmlFor="ui-gift-to" className="sm:col-span-2"><RpInput id="ui-gift-to" placeholder="e.g. Lead architect" value={f.recipient} onChange={e => setF(p => ({ ...p, recipient: e.target.value }))} /></RpField>
+        <RpField label="Occasion" htmlFor="ui-gift-occ"><RpInput id="ui-gift-occ" placeholder="e.g. Topping-out" value={f.occasion} onChange={e => setF(p => ({ ...p, occasion: e.target.value }))} /></RpField>
+        <RpField label="Amount" htmlFor="ui-gift-amt"><RpInput id="ui-gift-amt" type="number" step="0.01" placeholder="0.00" value={f.amount} onChange={e => setF(p => ({ ...p, amount: e.target.value }))} /></RpField>
+        <RpField label="Description" htmlFor="ui-gift-desc"><RpInput id="ui-gift-desc" value={f.description} onChange={e => setF(p => ({ ...p, description: e.target.value }))} /></RpField>
+        <RpField label="Date" htmlFor="ui-gift-date"><RpInput id="ui-gift-date" type="date" value={f.date} onChange={e => setF(p => ({ ...p, date: e.target.value }))} /></RpField>
+      </RpFormGrid>
+      <RpField label="Status">
+        <RpChips ariaLabel="Gift status" value={f.status} onChange={s => setF(p => ({ ...p, status: s }))}
+          items={['idea', 'purchased', 'shipped', 'delivered'].map(s => ({ id: s, label: statusLabel('gift', s) }))} />
+      </RpField>
+      <SaveButton saving={saving} disabled={!f.recipient} onClick={() => f.recipient && onSave(f)}>Save gift</SaveButton>
     </div>
   )
 }
 
-function SubscriptionForm({ inputClass, labelClass, saving, onSave }: FormProps) {
+function SubscriptionForm({ saving, onSave }: FormProps) {
   const [f, setF] = useState<Record<string, string>>({ name: '', provider: '', amount: '', frequency: 'monthly', next_renewal: '', category: '', auto_renew: 'true' })
   return (
-    <div className="space-y-4">
-      <div><label className={labelClass}>Name</label><input className={inputClass} placeholder="e.g. Procore" value={f.name} onChange={e => setF(p => ({ ...p, name: e.target.value }))} /></div>
-      <div className="grid grid-cols-2 gap-3">
-        <div><label className={labelClass}>Provider</label><input className={inputClass} placeholder="e.g. Procore Technologies" value={f.provider} onChange={e => setF(p => ({ ...p, provider: e.target.value }))} /></div>
-        <div><label className={labelClass}>Amount</label><input className={inputClass} type="number" step="0.01" placeholder="0.00" value={f.amount} onChange={e => setF(p => ({ ...p, amount: e.target.value }))} /></div>
-      </div>
-      <div><label className={labelClass}>Frequency</label>
-        <div className="flex gap-2">{['weekly', 'monthly', 'quarterly', 'annual'].map(fr => <button key={fr} type="button" onClick={() => setF(p => ({ ...p, frequency: fr }))} className={`px-3 py-1.5 rounded-sm text-[11px] font-medium transition-all ${f.frequency === fr ? 'bg-[#CDA14B]/15 text-[#E0BF7B] border border-[#CDA14B]/40' : 'bg-[#0E0F11] border border-[#26292C] text-[#6E7578]'}`}>{fr}</button>)}</div>
-      </div>
-      <div className="grid grid-cols-2 gap-3">
-        <div><label className={labelClass}>Next Renewal</label><input className={inputClass} type="date" value={f.next_renewal} onChange={e => setF(p => ({ ...p, next_renewal: e.target.value }))} /></div>
-        <div><label className={labelClass}>Category</label><input className={inputClass} placeholder="e.g. Project software" value={f.category} onChange={e => setF(p => ({ ...p, category: e.target.value }))} /></div>
-      </div>
-      <button onClick={() => f.name && onSave(f)} disabled={saving || !f.name} className="rp-btn-solid w-full">{saving ? 'Saving...' : 'Save Subscription'}</button>
+    <div className="flex flex-col gap-5">
+      <RpFormGrid>
+        <RpField label="Name" htmlFor="ui-sub-name" className="sm:col-span-2"><RpInput id="ui-sub-name" placeholder="e.g. Procore" value={f.name} onChange={e => setF(p => ({ ...p, name: e.target.value }))} /></RpField>
+        <RpField label="Provider" htmlFor="ui-sub-prov"><RpInput id="ui-sub-prov" placeholder="e.g. Procore Technologies" value={f.provider} onChange={e => setF(p => ({ ...p, provider: e.target.value }))} /></RpField>
+        <RpField label="Amount" htmlFor="ui-sub-amt"><RpInput id="ui-sub-amt" type="number" step="0.01" placeholder="0.00" value={f.amount} onChange={e => setF(p => ({ ...p, amount: e.target.value }))} /></RpField>
+      </RpFormGrid>
+      <RpField label="Frequency">
+        <RpChips ariaLabel="Frequency" value={f.frequency} onChange={fr => setF(p => ({ ...p, frequency: fr }))}
+          items={['weekly', 'monthly', 'quarterly', 'annual'].map(fr => ({ id: fr, label: cap(fr) }))} />
+      </RpField>
+      <RpFormGrid>
+        <RpField label="Next renewal" htmlFor="ui-sub-next"><RpInput id="ui-sub-next" type="date" value={f.next_renewal} onChange={e => setF(p => ({ ...p, next_renewal: e.target.value }))} /></RpField>
+        <RpField label="Category" htmlFor="ui-sub-cat"><RpInput id="ui-sub-cat" placeholder="e.g. Project software" value={f.category} onChange={e => setF(p => ({ ...p, category: e.target.value }))} /></RpField>
+      </RpFormGrid>
+      <SaveButton saving={saving} disabled={!f.name} onClick={() => f.name && onSave(f)}>Save subscription</SaveButton>
     </div>
   )
 }
 
-function MembershipForm({ inputClass, labelClass, saving, onSave }: Omit<FormProps, 'pillClass'>) {
+function MembershipForm({ saving, onSave }: FormProps) {
   const [f, setF] = useState<Record<string, string>>({ name: '', organization_name: '', member_id: '', tier: '', expiry_date: '', renewal_amount: '' })
   return (
-    <div className="space-y-4">
-      <div><label className={labelClass}>Name</label><input className={inputClass} placeholder="e.g. SCCA" value={f.name} onChange={e => setF(p => ({ ...p, name: e.target.value }))} /></div>
-      <div className="grid grid-cols-2 gap-3">
-        <div><label className={labelClass}>Organization</label><input className={inputClass} value={f.organization_name} onChange={e => setF(p => ({ ...p, organization_name: e.target.value }))} /></div>
-        <div><label className={labelClass}>Member ID</label><input className={inputClass} value={f.member_id} onChange={e => setF(p => ({ ...p, member_id: e.target.value }))} /></div>
-      </div>
-      <div className="grid grid-cols-2 gap-3">
-        <div><label className={labelClass}>Tier</label><input className={inputClass} placeholder="e.g. Founding" value={f.tier} onChange={e => setF(p => ({ ...p, tier: e.target.value }))} /></div>
-        <div><label className={labelClass}>Renewal Amount</label><input className={inputClass} type="number" step="0.01" value={f.renewal_amount} onChange={e => setF(p => ({ ...p, renewal_amount: e.target.value }))} /></div>
-      </div>
-      <div><label className={labelClass}>Expiry Date</label><input className={inputClass} type="date" value={f.expiry_date} onChange={e => setF(p => ({ ...p, expiry_date: e.target.value }))} /></div>
-      <button onClick={() => f.name && onSave(f)} disabled={saving || !f.name} className="rp-btn-solid w-full">{saving ? 'Saving...' : 'Save Membership'}</button>
+    <div className="flex flex-col gap-5">
+      <RpFormGrid>
+        <RpField label="Name" htmlFor="ui-mem-name" className="sm:col-span-2"><RpInput id="ui-mem-name" placeholder="e.g. SCCA" value={f.name} onChange={e => setF(p => ({ ...p, name: e.target.value }))} /></RpField>
+        <RpField label="Organization" htmlFor="ui-mem-org"><RpInput id="ui-mem-org" value={f.organization_name} onChange={e => setF(p => ({ ...p, organization_name: e.target.value }))} /></RpField>
+        <RpField label="Member ID" htmlFor="ui-mem-id"><RpInput id="ui-mem-id" value={f.member_id} onChange={e => setF(p => ({ ...p, member_id: e.target.value }))} /></RpField>
+        <RpField label="Tier" htmlFor="ui-mem-tier"><RpInput id="ui-mem-tier" placeholder="e.g. Founding" value={f.tier} onChange={e => setF(p => ({ ...p, tier: e.target.value }))} /></RpField>
+        <RpField label="Renewal amount" htmlFor="ui-mem-amt"><RpInput id="ui-mem-amt" type="number" step="0.01" value={f.renewal_amount} onChange={e => setF(p => ({ ...p, renewal_amount: e.target.value }))} /></RpField>
+        <RpField label="Expiry date" htmlFor="ui-mem-exp" className="sm:col-span-2"><RpInput id="ui-mem-exp" type="date" value={f.expiry_date} onChange={e => setF(p => ({ ...p, expiry_date: e.target.value }))} /></RpField>
+      </RpFormGrid>
+      <SaveButton saving={saving} disabled={!f.name} onClick={() => f.name && onSave(f)}>Save membership</SaveButton>
     </div>
   )
 }
 
-function NoteForm({ inputClass, labelClass, saving, onSave }: Omit<FormProps, 'pillClass'>) {
+function NoteForm({ saving, onSave }: FormProps) {
   const [f, setF] = useState<Record<string, string>>({ title: '', body: '' })
   return (
-    <div className="space-y-4">
-      <div><label className={labelClass}>Title (optional)</label><input className={inputClass} value={f.title} onChange={e => setF(p => ({ ...p, title: e.target.value }))} /></div>
-      <div><label className={labelClass}>Body</label><textarea className={`${inputClass} resize-none`} rows={8} placeholder="Write your note..." value={f.body} onChange={e => setF(p => ({ ...p, body: e.target.value }))} /></div>
-      <button onClick={() => f.body && onSave(f)} disabled={saving || !f.body} className="rp-btn-solid w-full">{saving ? 'Saving...' : 'Save Note'}</button>
+    <div className="flex flex-col gap-5">
+      <RpField label="Title" htmlFor="ui-note-title" hint="Optional"><RpInput id="ui-note-title" value={f.title} onChange={e => setF(p => ({ ...p, title: e.target.value }))} /></RpField>
+      <RpField label="Body" htmlFor="ui-note-body"><RpTextarea id="ui-note-body" rows={8} placeholder="Write the note" value={f.body} onChange={e => setF(p => ({ ...p, body: e.target.value }))} /></RpField>
+      <SaveButton saving={saving} disabled={!f.body} onClick={() => f.body && onSave(f)}>Save note</SaveButton>
     </div>
   )
-}
-
-// ── Mini icons for category grid ──
-function DollarI({ className, style }: { className?: string; style?: React.CSSProperties }) {
-  return <svg className={className} style={style} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-}
-function PlaneI({ className, style }: { className?: string; style?: React.CSSProperties }) {
-  return <svg className={className} style={style} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" /></svg>
-}
-function CheckI({ className, style }: { className?: string; style?: React.CSSProperties }) {
-  return <svg className={className} style={style} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-}
-function BellI({ className, style }: { className?: string; style?: React.CSSProperties }) {
-  return <svg className={className} style={style} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" /></svg>
-}
-function GiftI({ className, style }: { className?: string; style?: React.CSSProperties }) {
-  return <svg className={className} style={style} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M21 11.25v8.25a1.5 1.5 0 01-1.5 1.5H5.25a1.5 1.5 0 01-1.5-1.5v-8.25M12 4.875A2.625 2.625 0 109.375 7.5H12m0-2.625V7.5m0-2.625A2.625 2.625 0 1114.625 7.5H12m0 0V21m-8.625-9.75h18c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125h-18c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" /></svg>
-}
-function RefreshI({ className, style }: { className?: string; style?: React.CSSProperties }) {
-  return <svg className={className} style={style} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M19.5 12c0-1.232-.046-2.453-.138-3.662a4.006 4.006 0 00-3.7-3.7 48.678 48.678 0 00-7.324 0 4.006 4.006 0 00-3.7 3.7c-.017.22-.032.441-.046.662M19.5 12l3-3m-3 3l-3-3m-12 3c0 1.232.046 2.453.138 3.662a4.006 4.006 0 003.7 3.7 48.656 48.656 0 007.324 0 4.006 4.006 0 003.7-3.7c.017-.22.032-.441.046-.662M4.5 12l3 3m-3-3l-3 3" /></svg>
-}
-function CardI({ className, style }: { className?: string; style?: React.CSSProperties }) {
-  return <svg className={className} style={style} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M15 9h3.75M15 12h3.75M15 15h3.75M4.5 19.5h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5zm6-10.125a1.875 1.875 0 11-3.75 0 1.875 1.875 0 013.75 0zm1.294 6.336a6.721 6.721 0 01-3.17.789 6.721 6.721 0 01-3.168-.789 3.376 3.376 0 016.338 0z" /></svg>
-}
-function PenI({ className, style }: { className?: string; style?: React.CSSProperties }) {
-  return <svg className={className} style={style} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" /></svg>
 }

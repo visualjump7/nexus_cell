@@ -1,56 +1,77 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import Link from 'next/link'
-import type { Project, Budget, ProjectFile, UserRole } from '@/lib/types'
+import type { Project, Budget, ProjectFile, ProjectBlock, ProjectBlockType, UserRole } from '@/lib/types'
 import DeleteConfirm from '@/components/DeleteConfirm'
-import ProjectFilesUploader from '@/components/project-detail/ProjectFilesUploader'
+import ProjectFilesUploader, { ProjectFilesTable } from '@/components/project-detail/ProjectFilesUploader'
+import ProjectBlocks, { blockAnchor, blockTypeConfig } from '@/components/project-detail/ProjectBlocks'
+import { ProjectFormModal } from '@/app/(app)/projects/ProjectsList'
+import { sectionEyebrow } from '@/lib/sections'
+import { getProjectImagery } from '@/lib/project-imagery'
+import { cn } from '@/lib/utils'
+import {
+  RpPage, RpPageHeader, RpStatus, RpButton, RpFigure, RpStatStrip, RpStat, RpSectionNav,
+  RpSubhead, RpTable, RpMeter, RpEmpty, RpModal, RpField, RpInput, RpTextarea, RpFormGrid,
+  useRpLightbox, Plus, RP_ICON, dot, fmtMoney, fmtPct, pad2,
+  type RpImage, type RpSectionNavItem,
+} from '@/components/rp'
 
-// Deterministic hero rendering from the Roaring Pines demo set (projects have
-// no image column yet). Mirrors the helper in ProjectsList.
-const PROJECT_IMAGE_ROTATION = [
-  '/demo/site/site-full-hero.jpg',
-  '/demo/site/site-central-lake-garage-arc.jpg',
-  '/demo/site/site-eastern-lakefront.jpg',
-  '/demo/site/site-northern-lakes.jpg',
-]
-
-function projectImage(p: Pick<Project, 'id' | 'name' | 'project_type'>): string {
-  const key = `${p.name || ''} ${p.project_type || ''}`.toLowerCase()
-  if (/trackside/.test(key)) return '/demo/images/trackside-connected-row.jpg'
-  if (/garage|paddock|flatrock/.test(key)) return '/demo/images/flatrock-club-01.jpg'
-  if (/home|residence|estate/.test(key)) return '/demo/homes/custom-home-exterior.jpg'
-  if (/entrance|gate/.test(key)) return '/demo/entrance/main-gate-v03.jpg'
-  if (/clubhouse|pool/.test(key)) return '/demo/site/site-clubhouse-pools-courts.jpg'
-  if (/track|circuit/.test(key)) return '/demo/site/site-southern-circuit.jpg'
-  let h = 0
-  for (const c of p.id || '') h = (h * 31 + c.charCodeAt(0)) >>> 0
-  return PROJECT_IMAGE_ROTATION[h % PROJECT_IMAGE_ROTATION.length]
+interface Props {
+  project: Project
+  budgets: Budget[]
+  files: ProjectFile[]
+  role: UserRole
+  orgId: string
+  /** When passed, the hero uses the gallery blocks' images and the Directory renders here. */
+  blocks?: ProjectBlock[]
 }
 
-const statusColors: Record<string, string> = {
-  active: 'rp-tag--accent',
-  on_hold: 'text-amber-400 border-amber-500/40',
-  completed: 'text-[#3989CB] border-[#3989CB]/40',
-  archived: '',
-}
-
-interface Props { project: Project; budgets: Budget[]; files: ProjectFile[]; role: UserRole; orgId: string }
-
-export default function ProjectDetail({ project, budgets, files, role, orgId }: Props) {
+export default function ProjectDetail({ project, budgets, files, role, orgId, blocks }: Props) {
   const router = useRouter()
   const canWrite = ['ea', 'admin'].includes(role)
   const [showBudgetForm, setShowBudgetForm] = useState(false)
   const [deletingBudget, setDeletingBudget] = useState<Budget | null>(null)
+  const [editingProject, setEditingProject] = useState(false)
+  const [deletingProject, setDeletingProject] = useState(false)
 
-  function formatCurrency(amt: number) {
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amt)
-  }
-
-  const totalBudgeted = budgets.reduce((sum, b) => sum + b.budgeted, 0)
-  const totalActual = budgets.reduce((sum, b) => sum + b.actual, 0)
+  const totalBudgeted = budgets.reduce((sum, b) => sum + (Number(b.budgeted) || 0), 0)
+  const totalActual = budgets.reduce((sum, b) => sum + (Number(b.actual) || 0), 0)
   const variance = totalBudgeted - totalActual
+  const spentRatio = totalBudgeted > 0 ? totalActual / totalBudgeted : NaN
+  const categories = new Set(budgets.map(b => b.category)).size
+
+  // ── Imagery: the gallery blocks' images (by block, then position), else the catalog.
+  const dbImages = useMemo(() => {
+    if (!blocks) return null
+    return blocks
+      .filter(b => b.type === 'gallery')
+      .flatMap(b => [...(b.project_images ?? [])].sort((x, y) => (x.position ?? 0) - (y.position ?? 0)))
+      .map((img, i) => ({ url: img.url, caption: img.caption, position: i }))
+  }, [blocks])
+  const imagery = useMemo(() => getProjectImagery(project, dbImages), [project, dbImages])
+  const images: RpImage[] = useMemo(() => {
+    const hero = imagery.hero
+    return [hero, ...imagery.gallery.filter(g => g.src !== hero.src)]
+  }, [imagery])
+  const lb = useRpLightbox(images)
+  const hero = images[0]
+  const strip = images.slice(1, 5)
+  const moreCount = images.length - 5
+
+  // ── Section nav: Budget, one anchor per block type, Files. Numbers match the headings.
+  const blockFrom = 2
+  const nav: RpSectionNavItem[] = [{ id: 'budget', num: '01', label: 'Budget' }]
+  if (blocks) {
+    const seen = new Set<ProjectBlockType>()
+    blocks.forEach((b, i) => {
+      if (seen.has(b.type)) return
+      seen.add(b.type)
+      nav.push({ id: blockAnchor(b.type), num: pad2(blockFrom + i), label: blockTypeConfig[b.type]?.label ?? b.type })
+    })
+  }
+  const filesNum = blocks ? blockFrom + blocks.length : 2
+  nav.push({ id: 'files', num: pad2(filesNum), label: 'Files' })
 
   async function handleDeleteBudget() {
     if (!deletingBudget) return
@@ -59,113 +80,224 @@ export default function ProjectDetail({ project, budgets, files, role, orgId }: 
     router.refresh()
   }
 
-  const inputClass = 'w-full px-3 py-2 bg-card border border-white/10 rounded-lg text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 text-sm'
+  async function handleDeleteProject() {
+    await fetch(`/api/projects/${project.id}`, { method: 'DELETE' })
+    setDeletingProject(false)
+    router.push('/projects')
+    router.refresh()
+  }
+
+  const budgetHref = `/projects/${project.id}/budget`
 
   return (
-    <div className="max-w-4xl">
-      {/* Header */}
-      <Link href="/projects" className="rp-eyebrow--muted hover:text-white transition-colors mb-4 inline-block">← Back to Projects</Link>
-      <header className="rp-head">
-        <span className="rp-eyebrow">Project</span>
-        <div className="flex items-center gap-3 flex-wrap">
-          <h1 className="rp-title">{project.name}</h1>
-          <span className={`rp-tag ${statusColors[project.status] || ''}`}>
-            {project.status.replace('_', ' ')}
-          </span>
-        </div>
-        {(project.project_type || project.location) && (
-          <p className="rp-caption">{[project.project_type, project.location].filter(Boolean).join(' · ')}</p>
+    <RpPage>
+      <RpPageHeader
+        back={{ href: '/projects', label: 'Projects' }}
+        eyebrow={sectionEyebrow('projects')}
+        tags={<RpStatus kind="project" value={project.status} />}
+        title={project.name}
+        line={project.description || undefined}
+        spec={project.notes ? (
+          <>
+            {dot(project.project_type, project.location)}
+            {/* The project notes read as part of the header, not a lone ruled paragraph under the stats. */}
+            <span className="mt-2 block max-w-[70ch] text-sm leading-relaxed text-rp-muted">{project.notes}</span>
+          </>
+        ) : dot(project.project_type, project.location)}
+        actions={(
+          <>
+            <RpButton href={budgetHref} arrow>Open budget</RpButton>
+            {canWrite && <RpButton variant="ghost" onClick={() => setEditingProject(true)}>Edit</RpButton>}
+            {canWrite && <RpButton variant="danger" onClick={() => setDeletingProject(true)}>Delete</RpButton>}
+          </>
         )}
-        {project.description && <p className="rp-lede">{project.description}</p>}
-      </header>
+      />
 
-      <figure className="m-0 mb-8">
-        <div className="rp-frame" style={{ aspectRatio: '16 / 7' }}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={projectImage(project)} alt={project.name} className="w-full h-full object-cover" />
-        </div>
-      </figure>
+      {/* Hero, then a strip of the next images; one lightbox steps through all of them. */}
+      <section aria-label="Images" className="flex flex-col gap-3">
+        <RpFigure
+          {...hero}
+          aspect="banner"
+          frameClassName="max-lg:aspect-[16/10]"
+          num={1}
+          qualifier={hero.qualifier ?? hero.provenance}
+          onOpen={() => lb.open(0)}
+          loading="eager"
+        />
+        {strip.length > 0 && (
+          <div className="grid grid-cols-2 gap-3 min-[640px]:grid-cols-4">
+            {strip.map((img, i) => (
+              <RpFigure
+                key={`${img.src}-${i}`}
+                src={img.src}
+                alt={img.alt}
+                aspect="card"
+                mat={img.mat}
+                objectPosition={img.objectPosition}
+                num={i + 2}
+                onOpen={() => lb.open(i + 1)}
+                overlay={i === 3 && moreCount > 0 ? (
+                  <span className="font-display text-xs uppercase tracking-[.14em] text-rp-text">+{moreCount} more</span>
+                ) : undefined}
+              />
+            ))}
+          </div>
+        )}
+        {lb.node}
+      </section>
 
-      {/* Budget Summary */}
-      <div className="grid grid-cols-3 gap-4 mb-8">
-        <div className="rp-panel p-4">
-          <p className="rp-eyebrow--muted">Total Budgeted</p>
-          <p className="rp-stat-value mt-1">{formatCurrency(totalBudgeted)}</p>
-        </div>
-        <div className="rp-panel p-4">
-          <p className="rp-eyebrow--muted">Total Actual</p>
-          <p className="rp-stat-value mt-1">{formatCurrency(totalActual)}</p>
-        </div>
-        <div className="rp-panel p-4">
-          <p className="rp-eyebrow--muted">Variance</p>
-          <p className={`rp-stat-value mt-1 ${variance >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-            {variance >= 0 ? '+' : ''}{formatCurrency(variance)}
-          </p>
-        </div>
-      </div>
+      <RpStatStrip cols={4}>
+        <RpStat
+          label="Budget"
+          value={fmtMoney(totalBudgeted, { compact: true })}
+          sub={totalBudgeted > 0 ? fmtMoney(totalBudgeted) : 'No lines yet'}
+        />
+        <RpStat
+          label="Spent"
+          value={fmtMoney(totalActual, { compact: true })}
+          sub={totalBudgeted > 0 ? `${fmtPct(spentRatio)} of budget` : undefined}
+          meter={{ value: Number.isFinite(spentRatio) ? spentRatio : 0 }}
+        />
+        <RpStat
+          label="Variance"
+          value={fmtMoney(variance, { compact: true, sign: true })}
+          tone={variance < 0 ? 'alert' : 'default'}
+          sub={variance > 0 ? 'Under budget' : variance < 0 ? 'Over budget' : 'On budget'}
+        />
+        <RpStat
+          label="Line items"
+          value={budgets.length}
+          sub={categories ? `${categories} categor${categories === 1 ? 'y' : 'ies'}` : undefined}
+        />
+      </RpStatStrip>
 
-      {/* Budget Line Items */}
-      <div className="mb-8">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="rp-eyebrow--muted">Budget Breakdown</h2>
-          {canWrite && (
-            <button onClick={() => setShowBudgetForm(true)} className="rp-btn-solid">
-              + Add Line Item
-            </button>
+      <RpSectionNav sticky items={nav} ariaLabel="Project sections" />
+
+      {/* ── 01 Budget ── (flush: the section nav's own rule sits just above) */}
+      <section className="flex flex-col gap-6">
+        <RpSubhead
+          id="budget"
+          flush
+          num={1}
+          title="Budget"
+          spec={budgets.length
+            ? dot(`${budgets.length} line${budgets.length === 1 ? '' : 's'}`, `${fmtMoney(totalBudgeted, { compact: true })} budgeted`, `${fmtMoney(totalActual, { compact: true })} spent`)
+            : 'Budget against actual, line by line'}
+          aside={(
+            <>
+              <RpButton variant="text" arrow href={budgetHref}>Open full budget</RpButton>
+              {canWrite && (
+                <RpButton variant="ghost" size="sm" icon={<Plus {...RP_ICON} size={14} />} onClick={() => setShowBudgetForm(true)}>
+                  Line item
+                </RpButton>
+              )}
+            </>
           )}
-        </div>
+        />
 
         {budgets.length === 0 ? (
-          <div className="rp-panel p-8 text-center">
-            <p className="text-gray-500">No budget items yet.</p>
-          </div>
+          <RpEmpty
+            compact
+            title="No budget lines yet."
+            line="Add a line here, or import the Excel budget from the full budget page."
+            action={canWrite && (
+              <RpButton variant="ghost" size="sm" icon={<Plus {...RP_ICON} size={14} />} onClick={() => setShowBudgetForm(true)}>
+                Line item
+              </RpButton>
+            )}
+          />
         ) : (
-          <div className="rp-panel overflow-hidden">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-[#1F1F1F] text-left rp-eyebrow--muted">
-                  <th className="px-4 py-3 font-medium">Category</th>
-                  <th className="px-4 py-3 font-medium text-right">Budgeted</th>
-                  <th className="px-4 py-3 font-medium text-right">Actual</th>
-                  <th className="px-4 py-3 font-medium text-right">Variance</th>
-                  {canWrite && <th className="px-4 py-3 font-medium text-right">Actions</th>}
-                </tr>
-              </thead>
-              <tbody>
-                {budgets.map(b => {
-                  const v = b.budgeted - b.actual
-                  const pct = b.budgeted > 0 ? (b.actual / b.budgeted) * 100 : 0
-                  return (
-                    <tr key={b.id} className="border-b border-[#1F1F1F] hover:bg-[#141618] transition-colors">
-                      <td className="px-4 py-3">
-                        <p className="text-white font-medium">{b.category}</p>
-                        {b.notes && <p className="text-xs text-gray-600">{b.notes}</p>}
+          <RpTable minWidth={canWrite ? 820 : 740} caption="Budget lines">
+            <thead>
+              <tr>
+                <th className="idx">#</th>
+                <th>Category</th>
+                <th className="num">Budgeted</th>
+                <th className="num">Actual</th>
+                <th className="num">Variance</th>
+                <th className="relative" style={{ width: 136 }}><span className="sr-only">Spend</span></th>
+                {canWrite && <th className="num relative"><span className="sr-only">Actions</span></th>}
+              </tr>
+            </thead>
+            <tbody>
+              {budgets.map((b, i) => {
+                const budgeted = Number(b.budgeted) || 0
+                const actual = Number(b.actual) || 0
+                const v = budgeted - actual
+                const ratio = budgeted > 0 ? actual / budgeted : 0
+                const over = ratio > 1
+                return (
+                  <tr key={b.id}>
+                    <td className="idx">{pad2(i + 1)}</td>
+                    <td className="min-w-[220px]">
+                      {b.category}
+                      {b.notes && <span className="sub">{b.notes}</span>}
+                    </td>
+                    <td className="num">{fmtMoney(budgeted)}</td>
+                    <td className="num">
+                      <span className={cn(over && 'text-rp-alert')}>{fmtMoney(actual)}</span>
+                      <span className={cn('ml-1.5 text-[13px]', over ? 'text-rp-alert' : 'text-rp-dim')}>({fmtPct(ratio)})</span>
+                    </td>
+                    <td className={cn('num', v > 0 ? 'text-rp-green' : v < 0 ? 'text-rp-alert' : 'text-rp-muted')}>
+                      {fmtMoney(v, { sign: true })}
+                    </td>
+                    <td className="align-middle">
+                      <RpMeter value={ratio} label={`${b.category} spend`} />
+                    </td>
+                    {canWrite && (
+                      <td className="num">
+                        <RpButton
+                          variant="text"
+                          size="sm"
+                          className="text-rp-muted hover:text-rp-alert"
+                          onClick={() => setDeletingBudget(b)}
+                          aria-label={`Remove ${b.category}${b.notes ? ` · ${b.notes}` : ''}`}
+                        >
+                          Remove
+                        </RpButton>
                       </td>
-                      <td className="px-4 py-3 text-right text-white font-mono">{formatCurrency(b.budgeted)}</td>
-                      <td className="px-4 py-3 text-right font-mono">
-                        <span className={pct > 100 ? 'text-red-400' : 'text-white'}>{formatCurrency(b.actual)}</span>
-                        <span className="text-xs text-gray-600 ml-1">({pct.toFixed(0)}%)</span>
-                      </td>
-                      <td className={`px-4 py-3 text-right font-mono ${v >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                        {v >= 0 ? '+' : ''}{formatCurrency(v)}
-                      </td>
-                      {canWrite && (
-                        <td className="px-4 py-3 text-right">
-                          <button onClick={() => setDeletingBudget(b)} className="text-gray-500 hover:text-red-400 text-xs transition-colors">Delete</button>
-                        </td>
-                      )}
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
+                    )}
+                  </tr>
+                )
+              })}
+            </tbody>
+            <tfoot>
+              <tr>
+                <td />
+                <td>Total</td>
+                <td className="num">{fmtMoney(totalBudgeted)}</td>
+                <td className="num">{fmtMoney(totalActual)}</td>
+                <td className={cn('num', variance > 0 ? 'text-rp-green' : variance < 0 ? 'text-rp-alert' : '')}>
+                  {fmtMoney(variance, { sign: true })}
+                </td>
+                <td className="align-middle">
+                  <RpMeter value={Number.isFinite(spentRatio) ? spentRatio : 0} label="Total spend" />
+                </td>
+                {canWrite && <td />}
+              </tr>
+            </tfoot>
+          </RpTable>
         )}
-      </div>
+      </section>
 
-      {/* Project Files */}
-      <div>
-        <h2 className="rp-eyebrow--muted mb-4">Files</h2>
+      {/* ── Directory (module page only; the overlay renders it after this component) ── */}
+      {blocks && (
+        <section className="flex flex-col gap-6">
+          <RpSubhead id="directory" title="Directory" spec="Images, team, subcontractors and notes" />
+          <ProjectBlocks projectId={project.id} orgId={orgId} blocks={blocks} role={role} numberFrom={blockFrom} />
+        </section>
+      )}
+
+      {/* ── Files ── */}
+      <section className="flex flex-col gap-6">
+        <RpSubhead
+          id="files"
+          num={filesNum}
+          title="Files"
+          spec={files.length
+            ? dot(`${files.length} file${files.length === 1 ? '' : 's'}`, 'drawings, contracts and photos')
+            : 'Drawings, contracts and photos'}
+        />
         {canWrite ? (
           <ProjectFilesUploader
             projectId={project.id}
@@ -174,37 +306,22 @@ export default function ProjectDetail({ project, budgets, files, role, orgId }: 
             canDelete
           />
         ) : files.length === 0 ? (
-          <div className="rp-panel p-8 text-center">
-            <p className="text-gray-500">No files uploaded yet.</p>
-          </div>
+          <RpEmpty compact title="No files yet." line="Drawings, contracts and photos will appear here." />
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {files.map(file => (
-              <div key={file.id} className="rp-panel p-4 flex items-center justify-between">
-                <div>
-                  <p className="text-white font-medium text-sm">{file.file_name}</p>
-                  <div className="text-xs text-gray-500 mt-0.5">
-                    {file.label && <span>{file.label} · </span>}
-                    {file.file_size && <span>{(file.file_size / 1024).toFixed(0)} KB</span>}
-                  </div>
-                </div>
-                {file.file_url && (
-                  <a href={file.file_url} target="_blank" rel="noopener noreferrer" className="text-emerald-400 text-xs hover:underline shrink-0">Download</a>
-                )}
-              </div>
-            ))}
-          </div>
+          <ProjectFilesTable files={files} />
         )}
-      </div>
+      </section>
 
-      {/* Budget Form Modal */}
-      {showBudgetForm && <BudgetFormModal projectId={project.id} onClose={() => setShowBudgetForm(false)} inputClass={inputClass} />}
+      {/* Modals */}
+      {showBudgetForm && <BudgetFormModal projectId={project.id} onClose={() => setShowBudgetForm(false)} />}
       {deletingBudget && <DeleteConfirm itemName={deletingBudget.category} onConfirm={handleDeleteBudget} onCancel={() => setDeletingBudget(null)} />}
-    </div>
+      {editingProject && <ProjectFormModal project={project} orgId={orgId} onClose={() => setEditingProject(false)} />}
+      {deletingProject && <DeleteConfirm itemName={project.name} onConfirm={handleDeleteProject} onCancel={() => setDeletingProject(false)} />}
+    </RpPage>
   )
 }
 
-function BudgetFormModal({ projectId, onClose, inputClass }: { projectId: string; onClose: () => void; inputClass: string }) {
+function BudgetFormModal({ projectId, onClose }: { projectId: string; onClose: () => void }) {
   const router = useRouter()
   const [form, setForm] = useState({ category: '', budgeted: '', actual: '', notes: '' })
   const [saving, setSaving] = useState(false)
@@ -234,31 +351,36 @@ function BudgetFormModal({ projectId, onClose, inputClass }: { projectId: string
     onClose()
   }
 
-  const labelClass = 'block text-sm text-gray-400 mb-1'
-
   return (
-    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4" onClick={onClose}>
-      <div className="rp-panel w-full max-w-md" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between px-6 py-4 border-b border-white/5">
-          <h2 className="rp-eyebrow">Add Budget Line Item</h2>
-          <button onClick={onClose} className="text-gray-500 hover:text-white text-xl leading-none">&times;</button>
-        </div>
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          <div><label className={labelClass}>Category *</label><input className={inputClass} value={form.category} onChange={e => setForm(p => ({ ...p, category: e.target.value }))} placeholder="e.g. Site work" required /></div>
-          <div className="grid grid-cols-2 gap-4">
-            <div><label className={labelClass}>Budgeted *</label><input className={inputClass} type="number" step="0.01" min="0" value={form.budgeted} onChange={e => setForm(p => ({ ...p, budgeted: e.target.value }))} placeholder="0.00" required /></div>
-            <div><label className={labelClass}>Actual</label><input className={inputClass} type="number" step="0.01" min="0" value={form.actual} onChange={e => setForm(p => ({ ...p, actual: e.target.value }))} placeholder="0.00" /></div>
-          </div>
-          <div><label className={labelClass}>Notes</label><textarea className={`${inputClass} resize-none`} rows={2} value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} /></div>
-          {error && <p className="text-red-400 text-sm">{error}</p>}
-          <div className="flex gap-3 pt-2">
-            <button type="button" onClick={onClose} className="rp-btn-ghost flex-1 justify-center">Cancel</button>
-            <button type="submit" disabled={saving} className="rp-btn-solid flex-1 disabled:cursor-not-allowed justify-center">
-              {saving ? 'Saving...' : 'Add'}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+    <RpModal
+      open
+      onClose={onClose}
+      eyebrow="New line item"
+      title={form.category.trim() || 'Budget line'}
+      footer={(
+        <>
+          <RpButton variant="ghost" onClick={onClose}>Cancel</RpButton>
+          <RpButton type="submit" form="budget-line-form" disabled={saving}>{saving ? 'Saving…' : 'Add line'}</RpButton>
+        </>
+      )}
+    >
+      <form id="budget-line-form" onSubmit={handleSubmit} className="flex flex-col gap-5">
+        <RpFormGrid>
+          <RpField label="Category" htmlFor="bl-category" required className="sm:col-span-2">
+            <RpInput id="bl-category" value={form.category} onChange={e => setForm(p => ({ ...p, category: e.target.value }))} placeholder="Site work, paving, MEP" required />
+          </RpField>
+          <RpField label="Budgeted ($)" htmlFor="bl-budgeted" required>
+            <RpInput id="bl-budgeted" type="number" step="0.01" min="0" value={form.budgeted} onChange={e => setForm(p => ({ ...p, budgeted: e.target.value }))} placeholder="0.00" required />
+          </RpField>
+          <RpField label="Actual ($)" htmlFor="bl-actual">
+            <RpInput id="bl-actual" type="number" step="0.01" min="0" value={form.actual} onChange={e => setForm(p => ({ ...p, actual: e.target.value }))} placeholder="0.00" />
+          </RpField>
+          <RpField label="Notes" htmlFor="bl-notes" className="sm:col-span-2" hint="Shown under the category, e.g. the line name or draw">
+            <RpTextarea id="bl-notes" rows={2} value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} />
+          </RpField>
+        </RpFormGrid>
+        {error && <p className="rp-error" role="alert">{error}</p>}
+      </form>
+    </RpModal>
   )
 }

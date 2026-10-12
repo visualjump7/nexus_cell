@@ -2,24 +2,45 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import Link from 'next/link'
 import type { Trip, TripSegment, TravelDoc, UserRole } from '@/lib/types'
 import DeleteConfirm from '@/components/DeleteConfirm'
 import TripMap from '@/components/travel/TripMap'
 import DateTimePicker from '@/components/shared/DateTimePicker'
 import SegmentDetail from '@/components/travel/SegmentDetail'
-import { getSegmentIcon } from '@/components/travel/SegmentIcons'
+import { getSegmentIcon, segmentLabel, tripParts, tripHero, ROW_STACK_SM } from '@/components/travel/SegmentIcons'
 import { segmentColors } from '@/lib/travel-constants'
-
-const statusColors: Record<string, string> = {
-  planning: 'bg-yellow-500/15 text-yellow-400 border-yellow-500/30',
-  confirmed: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
-  in_progress: 'bg-blue-500/15 text-blue-400 border-blue-500/30',
-  completed: 'bg-gray-500/15 text-gray-400 border-gray-500/30',
-  cancelled: 'bg-red-500/15 text-red-400 border-red-500/30',
-}
+import {
+  RpPage, RpPageHeader, RpSubhead, RpList, RpRow, RpCardGrid, RpFigure, RpTag, RpStatus, RpButton,
+  RpEmpty, RpModal, RpField, RpInput, RpSelect, RpTextarea, RpFormGrid,
+  Plus, RP_ICON, fmtDate, fmtTime, fmtRange, dot,
+} from '@/components/rp'
+import { sectionEyebrow } from '@/lib/sections'
 
 interface Props { trip: Trip; segments: TripSegment[]; docs: TravelDoc[]; role: UserRole }
+
+function tripDates(t: Trip): string | null {
+  if (t.start_date && t.end_date) return fmtRange(t.start_date, t.end_date)
+  if (t.start_date) return fmtDate(t.start_date)
+  return null
+}
+
+/** '12 Oct 09:30 → 11:05' (or the stay dates for hotels). */
+function segmentWhen(seg: TripSegment): string | null {
+  if (seg.segment_type === 'hotel') {
+    if (seg.check_in && seg.check_out) return `${fmtDate(seg.check_in, 'short')} → ${fmtDate(seg.check_out, 'short')}`
+    if (seg.check_in) return `From ${fmtDate(seg.check_in, 'short')}`
+    return null
+  }
+  if (!seg.depart_at && !seg.arrive_at) return null
+  const dep = seg.depart_at ? `${fmtDate(seg.depart_at, 'short')} ${fmtTime(seg.depart_at)}`.trim() : '—'
+  const arr = seg.arrive_at ? fmtTime(seg.arrive_at) || fmtDate(seg.arrive_at, 'short') : '—'
+  return `${dep} → ${arr}`
+}
+
+function segmentTitle(seg: TripSegment): string {
+  if (seg.segment_type === 'hotel' || !seg.to_location) return seg.from_location || segmentLabel(seg.segment_type)
+  return `${seg.from_location || '—'} → ${seg.to_location}`
+}
 
 export default function TripDetail({ trip, segments, docs, role }: Props) {
   const router = useRouter()
@@ -29,16 +50,6 @@ export default function TripDetail({ trip, segments, docs, role }: Props) {
   const [selectedSegId, setSelectedSegId] = useState<string | null>(null)
   const [detailSeg, setDetailSeg] = useState<TripSegment | null>(null)
 
-  function formatDT(d: string | null) {
-    if (!d) return '—'
-    return new Date(d).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
-  }
-
-  function formatDate(d: string | null) {
-    if (!d) return '—'
-    return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-  }
-
   async function handleDeleteSeg() {
     if (!deletingSeg) return
     await fetch(`/api/trips/${trip.id}/segments/${deletingSeg.id}`, { method: 'DELETE' })
@@ -46,131 +57,145 @@ export default function TripDetail({ trip, segments, docs, role }: Props) {
     router.refresh()
   }
 
-  const inputClass = 'w-full px-3 py-2 bg-card border border-white/10 rounded-lg text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 text-sm'
+  const { purpose, route } = tripParts(trip.title)
+  const hero = tripHero(trip)
 
   return (
-    <div className="max-w-4xl" onClick={() => setSelectedSegId(null)}>
-      {/* Header */}
-      <Link href="/travel" className="rp-eyebrow--muted hover:text-white transition-colors mb-4 inline-block">← Back to Travel</Link>
-      <header className="rp-head">
-        <span className="rp-eyebrow">Trip</span>
-        <div className="flex items-center gap-3 flex-wrap">
-          <h1 className="rp-title">{trip.title}</h1>
-          <span className={`text-[11px] font-medium px-2 py-0.5 rounded border ${statusColors[trip.status] || ''}`}>
-            {trip.status.replace('_', ' ')}
-          </span>
-        </div>
-        <p className="rp-caption">{formatDate(trip.start_date)} → {formatDate(trip.end_date)}</p>
-        {trip.notes && <p className="rp-lede">{trip.notes}</p>}
-      </header>
+    <>
+      {/* Any click outside the itinerary clears the map selection (as before). */}
+      <div className="contents" onClick={() => setSelectedSegId(null)}>
+        <RpPage>
+          <RpPageHeader
+            back={{ href: '/travel', label: 'Travel' }}
+            eyebrow={sectionEyebrow('travel')}
+            tags={<RpStatus kind="trip" value={trip.status} />}
+            title={purpose}
+            spec={dot(route, tripDates(trip))}
+            line={trip.notes}
+          />
 
-      {/* Map */}
-      <TripMap
-        segments={segments}
-        selectedSegmentId={selectedSegId}
-        onSegmentSelect={setSelectedSegId}
-      />
+          {/* Map — or the trip's image when there is no token / no coordinates */}
+          <TripMap
+            segments={segments}
+            selectedSegmentId={selectedSegId}
+            onSegmentSelect={setSelectedSegId}
+            fallback={
+              <RpFigure
+                {...hero}
+                aspect="wide"
+                frameClassName="max-h-[460px]"
+                lightbox={false}
+                zoom={false}
+                num={1}
+                qualifier="Representative view"
+                overlay={<RpTag tone="gold">Map unavailable · itinerary below</RpTag>}
+              />
+            }
+          />
 
-      {/* Timeline / Segments */}
-      <div className="mb-8">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold">Itinerary</h2>
-          {canWrite && (
-            <button onClick={(e) => { e.stopPropagation(); setShowSegForm(true) }} className="rp-btn-solid">
-              + Add Segment
-            </button>
-          )}
-        </div>
-
-        {segments.length === 0 ? (
-          <div className="rp-panel p-8 text-center">
-            <p className="text-gray-500">No segments yet. Add flights, hotels, or ground transport.</p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {segments.map(seg => {
-              const isSelected = selectedSegId === seg.id
-              const color = segmentColors[seg.segment_type] || '#9AA0A4'
-              return (
-                <div
-                  key={seg.id}
-                  onClick={(e) => { e.stopPropagation(); setSelectedSegId(prev => prev === seg.id ? null : seg.id) }}
-                  className={`rounded-xl shadow-lg shadow-black/20 p-4 flex items-start gap-4 cursor-pointer transition-all duration-200 border-l-[3px] ${
-                    isSelected
-                      ? 'bg-white/[0.06] ring-1 ring-white/10'
-                      : 'bg-card border-l-transparent hover:bg-white/[0.03]'
-                  }`}
-                  style={isSelected ? { borderLeftColor: color } : undefined}
+          {/* Itinerary */}
+          <section className="flex flex-col gap-5">
+            <RpSubhead
+              title="Itinerary"
+              spec={dot(
+                `${segments.length} ${segments.length === 1 ? 'segment' : 'segments'}`,
+                `${docs.length} ${docs.length === 1 ? 'document' : 'documents'}`,
+              )}
+              aside={canWrite && (
+                <RpButton
+                  variant="ghost"
+                  icon={<Plus {...RP_ICON} />}
+                  onClick={e => { e.stopPropagation(); setShowSegForm(true) }}
                 >
-                  <div className="text-gray-500 mt-0.5">{getSegmentIcon(seg.segment_type)}</div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-xs text-gray-500 uppercase font-medium">{seg.segment_type.replace('_', ' ')}</span>
-                      {seg.carrier && <span className="text-xs text-gray-600">· {seg.carrier}</span>}
-                      {seg.confirmation_code && <span className="text-xs text-emerald-500 font-mono">{seg.confirmation_code}</span>}
-                    </div>
-                    <p className="text-white font-medium">
-                      {seg.from_location || '—'} → {seg.to_location || '—'}
-                    </p>
-                    <div className="text-sm text-gray-500 mt-1 space-y-0.5">
-                      {seg.depart_at && <p>Depart: {formatDT(seg.depart_at)}</p>}
-                      {seg.arrive_at && <p>Arrive: {formatDT(seg.arrive_at)}</p>}
-                      {seg.check_in && <p>Check-in: {formatDT(seg.check_in)}</p>}
-                      {seg.check_out && <p>Check-out: {formatDT(seg.check_out)}</p>}
-                      {seg.seat_info && <p>Seat: {seg.seat_info}</p>}
-                      {seg.notes && <p className="text-gray-600">{seg.notes}</p>}
-                    </div>
-                  </div>
-                  <div className="flex flex-col items-end gap-2 shrink-0">
-                    <button onClick={(e) => { e.stopPropagation(); setDetailSeg(seg) }} className="rp-btn-ghost">
-                      Details ›
-                    </button>
-                    {canWrite && (
-                      <button onClick={(e) => { e.stopPropagation(); setDeletingSeg(seg) }} className="text-gray-600 hover:text-red-400 text-xs transition-colors">Delete</button>
-                    )}
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-        )}
-      </div>
+                  Segment
+                </RpButton>
+              )}
+            />
 
-      {/* Travel Docs */}
-      <div>
-        <h2 className="text-lg font-semibold mb-4">Travel Documents</h2>
-        {docs.length === 0 ? (
-          <div className="rp-panel p-8 text-center">
-            <p className="text-gray-500">No documents attached.</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {docs.map(doc => (
-              <div key={doc.id} className="rp-panel p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-white font-medium text-sm">{doc.label}</p>
-                    <p className="text-xs text-gray-500 mt-0.5">{doc.doc_type.replace('_', ' ')}</p>
-                  </div>
-                  {doc.file_url && (
-                    <a href={doc.file_url} target="_blank" rel="noopener noreferrer" className="text-emerald-400 text-xs hover:underline">View</a>
-                  )}
-                </div>
+            {segments.length === 0 ? (
+              <RpEmpty compact title="No segments yet." line="Add flights, hotels and ground transport." />
+            ) : (
+              <div onClick={e => e.stopPropagation()}>
+                <RpList>
+                  {segments.map((seg, i) => {
+                    const color = segmentColors[seg.segment_type] || '#9AA0A4'
+                    return (
+                      <RpRow
+                        key={seg.id}
+                        index={i + 1}
+                        lead={<span className="inline-flex" style={{ color }}>{getSegmentIcon(seg.segment_type)}</span>}
+                        title={segmentTitle(seg)}
+                        titleStyle="display"
+                        meta={
+                          <>
+                            <span className="block" suppressHydrationWarning>{dot(segmentLabel(seg.segment_type), seg.carrier, segmentWhen(seg), seg.seat_info)}</span>
+                            {seg.notes && <span className="mt-0.5 line-clamp-2 block text-rp-dim">{seg.notes}</span>}
+                          </>
+                        }
+                        aside={seg.confirmation_code ? (
+                          <span className="whitespace-nowrap text-[13px] tabular-nums text-rp-text">
+                            <span className="text-rp-dim">Conf. </span>{seg.confirmation_code}
+                          </span>
+                        ) : undefined}
+                        className={ROW_STACK_SM}
+                        selected={selectedSegId === seg.id}
+                        onClick={() => setSelectedSegId(prev => prev === seg.id ? null : seg.id)}
+                        actions={
+                          <>
+                            <RpButton variant="ghost" size="sm" onClick={() => setDetailSeg(seg)}>Details</RpButton>
+                            {canWrite && (
+                              <RpButton variant="text" size="sm" onClick={() => setDeletingSeg(seg)}>Delete</RpButton>
+                            )}
+                          </>
+                        }
+                      />
+                    )
+                  })}
+                </RpList>
               </div>
-            ))}
-          </div>
-        )}
+            )}
+          </section>
+
+          {/* Travel documents */}
+          <section className="flex flex-col gap-5">
+            <RpSubhead title="Travel documents" spec={docs.length ? `${docs.length} on file` : undefined} />
+            {docs.length === 0 ? (
+              <RpEmpty compact title="No documents attached." line="Reservations, boarding passes and contracts appear here." />
+            ) : (
+              <RpCardGrid min={280} max={2}>
+                {docs.map((doc, i) => (
+                  <article key={doc.id} className="flex min-w-0 flex-col gap-2.5 p-5">
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="font-display text-xs tracking-[.1em] tabular-nums text-rp-gold">{String(i + 1).padStart(2, '0')}</span>
+                      <RpTag>{doc.doc_type.replace(/_/g, ' ')}</RpTag>
+                    </div>
+                    <h3 className="font-display text-lg uppercase leading-[1.2] tracking-[.02em] text-rp-text">{doc.label}</h3>
+                    <p className="text-[13px] text-rp-muted">
+                      {dot(doc.document_number, doc.expiry_date && `Expires ${fmtDate(doc.expiry_date)}`) || 'No reference on file'}
+                    </p>
+                    {doc.notes && <p className="line-clamp-2 text-[13px] text-rp-dim">{doc.notes}</p>}
+                    {doc.file_url && (
+                      <div className="mt-auto pt-1">
+                        <RpButton variant="text" size="sm" arrow href={doc.file_url} target="_blank" rel="noopener noreferrer">Open</RpButton>
+                      </div>
+                    )}
+                  </article>
+                ))}
+              </RpCardGrid>
+            )}
+          </section>
+        </RpPage>
       </div>
 
       {/* Modals */}
       {detailSeg && <SegmentDetail segment={detailSeg} canWrite={canWrite} onClose={() => setDetailSeg(null)} />}
-      {showSegForm && <SegmentFormModal tripId={trip.id} onClose={() => setShowSegForm(false)} inputClass={inputClass} />}
-      {deletingSeg && <DeleteConfirm itemName={`${deletingSeg.segment_type} segment`} onConfirm={handleDeleteSeg} onCancel={() => setDeletingSeg(null)} />}
-    </div>
+      {showSegForm && <SegmentFormModal tripId={trip.id} onClose={() => setShowSegForm(false)} />}
+      {deletingSeg && <DeleteConfirm itemName={`${segmentLabel(deletingSeg.segment_type).toLowerCase()} segment`} onConfirm={handleDeleteSeg} onCancel={() => setDeletingSeg(null)} />}
+    </>
   )
 }
 
-function SegmentFormModal({ tripId, onClose, inputClass }: { tripId: string; onClose: () => void; inputClass: string }) {
+function SegmentFormModal({ tripId, onClose }: { tripId: string; onClose: () => void }) {
   const router = useRouter()
   const [form, setForm] = useState({
     segment_type: 'flight',
@@ -230,62 +255,64 @@ function SegmentFormModal({ tripId, onClose, inputClass }: { tripId: string; onC
   }
 
   return (
-    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4" onClick={onClose}>
-      <div className="rp-panel w-full max-w-lg max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between px-6 py-4 border-b border-white/5">
-          <h2 className="rp-eyebrow">Add Segment</h2>
-          <button onClick={onClose} className="text-gray-500 hover:text-white text-xl leading-none">&times;</button>
-        </div>
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          <div>
-            <label className="block text-sm text-gray-400 mb-1">Type</label>
-            <select className={inputClass} value={form.segment_type} onChange={e => setForm(p => ({ ...p, segment_type: e.target.value }))}>
+    <RpModal
+      open
+      onClose={onClose}
+      eyebrow={sectionEyebrow('travel', 'Itinerary')}
+      title="Add segment"
+      footer={
+        <>
+          <RpButton variant="ghost" onClick={onClose}>Cancel</RpButton>
+          <RpButton type="submit" form="segment-form" disabled={saving}>{saving ? 'Saving…' : 'Add segment'}</RpButton>
+        </>
+      }
+    >
+      <form id="segment-form" onSubmit={handleSubmit}>
+        <RpFormGrid>
+          <RpField label="Type" htmlFor="seg-type" className="sm:col-span-2">
+            <RpSelect id="seg-type" value={form.segment_type} onChange={e => setForm(p => ({ ...p, segment_type: e.target.value }))}>
               <option value="flight">Flight</option>
               <option value="hotel">Hotel</option>
               <option value="car">Car</option>
               <option value="train">Train</option>
-              <option value="ground_transport">Ground Transport</option>
+              <option value="ground_transport">Ground transport</option>
               <option value="other">Other</option>
-            </select>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm text-gray-400 mb-1">{isHotel ? 'Location' : 'From'}</label>
-              <input className={inputClass} value={form.from_location} onChange={e => setForm(p => ({ ...p, from_location: e.target.value }))} placeholder={isHotel ? 'e.g. Four Seasons Miami' : 'e.g. KTEB'} />
-            </div>
-            {!isHotel && (
-              <div>
-                <label className="block text-sm text-gray-400 mb-1">To</label>
-                <input className={inputClass} value={form.to_location} onChange={e => setForm(p => ({ ...p, to_location: e.target.value }))} placeholder="e.g. MCO" />
-              </div>
-            )}
-          </div>
+            </RpSelect>
+          </RpField>
+          <RpField label={isHotel ? 'Location' : 'From'} htmlFor="seg-from" className={isHotel ? 'sm:col-span-2' : undefined}>
+            <RpInput id="seg-from" value={form.from_location} onChange={e => setForm(p => ({ ...p, from_location: e.target.value }))} placeholder={isHotel ? 'e.g. Inn on the Lakes, Sebring' : 'e.g. Jacksonville Intl (JAX)'} />
+          </RpField>
+          {!isHotel && (
+            <RpField label="To" htmlFor="seg-to">
+              <RpInput id="seg-to" value={form.to_location} onChange={e => setForm(p => ({ ...p, to_location: e.target.value }))} placeholder="e.g. Palatka–Kay Larkin (28J)" />
+            </RpField>
+          )}
           {isHotel ? (
-            <div className="grid grid-cols-2 gap-4">
+            <>
               <DateTimePicker label="Check-in" value={form.check_in} onChange={v => setForm(p => ({ ...p, check_in: v }))} />
               <DateTimePicker label="Check-out" value={form.check_out} onChange={v => setForm(p => ({ ...p, check_out: v }))} />
-            </div>
+            </>
           ) : (
-            <div className="grid grid-cols-2 gap-4">
+            <>
               <DateTimePicker label="Depart" value={form.depart_at} onChange={v => setForm(p => ({ ...p, depart_at: v }))} />
               <DateTimePicker label="Arrive" value={form.arrive_at} onChange={v => setForm(p => ({ ...p, arrive_at: v }))} />
-            </div>
+            </>
           )}
-          <div className="grid grid-cols-2 gap-4">
-            <div><label className="block text-sm text-gray-400 mb-1">Carrier / Provider</label><input className={inputClass} value={form.carrier} onChange={e => setForm(p => ({ ...p, carrier: e.target.value }))} placeholder="e.g. Delta" /></div>
-            <div><label className="block text-sm text-gray-400 mb-1">Confirmation Code</label><input className={inputClass} value={form.confirmation_code} onChange={e => setForm(p => ({ ...p, confirmation_code: e.target.value }))} /></div>
-          </div>
-          <div><label className="block text-sm text-gray-400 mb-1">Seat / Room Info</label><input className={inputClass} value={form.seat_info} onChange={e => setForm(p => ({ ...p, seat_info: e.target.value }))} /></div>
-          <div><label className="block text-sm text-gray-400 mb-1">Notes</label><textarea className={`${inputClass} resize-none`} rows={2} value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} /></div>
-          {error && <p className="text-red-400 text-sm">{error}</p>}
-          <div className="flex gap-3 pt-2">
-            <button type="button" onClick={onClose} className="rp-btn-ghost flex-1 justify-center">Cancel</button>
-            <button type="submit" disabled={saving} className="rp-btn-solid flex-1 disabled:cursor-not-allowed justify-center">
-              {saving ? 'Saving...' : 'Add Segment'}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+          <RpField label="Carrier / provider" htmlFor="seg-carrier">
+            <RpInput id="seg-carrier" value={form.carrier} onChange={e => setForm(p => ({ ...p, carrier: e.target.value }))} placeholder="e.g. Jet Linx" />
+          </RpField>
+          <RpField label="Confirmation code" htmlFor="seg-conf">
+            <RpInput id="seg-conf" value={form.confirmation_code} onChange={e => setForm(p => ({ ...p, confirmation_code: e.target.value }))} />
+          </RpField>
+          <RpField label="Seat / room" htmlFor="seg-seat" className="sm:col-span-2">
+            <RpInput id="seg-seat" value={form.seat_info} onChange={e => setForm(p => ({ ...p, seat_info: e.target.value }))} />
+          </RpField>
+          <RpField label="Notes" htmlFor="seg-notes" className="sm:col-span-2">
+            <RpTextarea id="seg-notes" rows={3} value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} />
+          </RpField>
+        </RpFormGrid>
+        {error && <p className="rp-error mt-4" role="alert">{error}</p>}
+      </form>
+    </RpModal>
   )
 }

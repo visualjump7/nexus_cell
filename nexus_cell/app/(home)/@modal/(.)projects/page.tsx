@@ -5,9 +5,10 @@ import SectionOverlay from '@/components/shared/SectionOverlay'
 export default async function ProjectsOverlay() {
   const { supabase, orgId, role } = await getAuthContext()
 
+  // Same embed as the full /projects page, so the overlay shows budget meters too.
   const { data: projects } = await supabase
     .from('projects')
-    .select('*')
+    .select('*, budgets(budgeted, actual)')
     .eq('organization_id', orgId)
     .order('created_at', { ascending: false })
 

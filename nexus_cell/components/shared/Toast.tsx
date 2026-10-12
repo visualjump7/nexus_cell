@@ -30,18 +30,24 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <ToastContext.Provider value={{ toast }}>
       {children}
-      {/* Toast container */}
-      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] flex flex-col gap-2 pointer-events-none">
+      {/* Toasts: bottom-centre, square, a 2px edge in the outcome colour. */}
+      <div
+        role="status"
+        aria-live="polite"
+        className="pointer-events-none fixed bottom-6 left-1/2 z-[80] flex w-[min(420px,calc(100vw-32px))] -translate-x-1/2 flex-col gap-2"
+      >
         {toasts.map(t => (
           <div
             key={t.id}
-            className={`pointer-events-auto px-4 py-2.5 rounded-sm text-sm font-medium text-[#F5F5F5] shadow-xl shadow-black/30 border border-[#26292C] border-l-[3px] animate-fade-in-up ${
-              t.type === 'success'
-                ? 'bg-[#141618] !border-l-[#A4CC5C]'
-                : 'bg-[#141618] !border-l-red-400'
-            }`}
+            className="rp-fade pointer-events-auto flex items-baseline gap-3 border border-rp-line2 bg-rp-bg px-4 py-3"
+            style={{ boxShadow: `inset 2px 0 0 ${t.type === 'success' ? '#A4CC5C' : '#C8553D'}` }}
           >
-            {t.message}
+            <span
+              className={`shrink-0 font-display text-[11px] uppercase tracking-[.16em] ${t.type === 'success' ? 'text-rp-green' : 'text-rp-alert'}`}
+            >
+              {t.type === 'success' ? 'Saved' : 'Error'}
+            </span>
+            <span className="min-w-0 text-sm leading-snug text-rp-text">{t.message}</span>
           </div>
         ))}
       </div>

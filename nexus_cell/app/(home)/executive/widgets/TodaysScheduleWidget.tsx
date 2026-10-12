@@ -1,5 +1,6 @@
 import { createClient } from '@/utils/supabase/server'
 import WidgetCard, { WidgetEmpty } from './WidgetCard'
+import { RpList, RpRow, fmtTime, fmtDate, dot, Plane, BedDouble, Car, TrainFront, CalendarDays, MapPin } from '@/components/rp'
 import type { TripSegment, Trip, ExternalCalendarEvent } from '@/lib/types'
 
 interface Props {
@@ -10,18 +11,13 @@ interface Props {
   principalUserId?: string
 }
 
-const segmentIcon: Record<string, string> = {
-  flight: '✈',
-  hotel: '🏨',
-  car: '🚗',
-  train: '🚄',
-  ground_transport: '🚙',
-  other: '•',
-}
-
-function formatTime(iso: string | null): string {
-  if (!iso) return ''
-  return new Date(iso).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+// Lucide stroke icons per segment type (no emoji).
+const SEGMENT_ICON: Record<string, typeof Plane> = {
+  flight: Plane,
+  hotel: BedDouble,
+  car: Car,
+  train: TrainFront,
+  ground_transport: Car,
 }
 
 interface ScheduleItem {
@@ -31,9 +27,10 @@ interface ScheduleItem {
   title: string
   meta: string
   subtle?: string | null
-  // For external events, we color the icon dot to match the source calendar.
+  // For external events, a square marker in the source calendar's colour.
   color?: string | null
-  icon: string
+  segmentType?: string
+  allDay?: boolean
 }
 
 export default async function TodaysScheduleWidget({ orgId, principalUserId }: Props) {
@@ -94,13 +91,9 @@ export default async function TodaysScheduleWidget({ orgId, principalUserId }: P
         seg.from_location && seg.to_location
           ? `${seg.from_location} → ${seg.to_location}`
           : seg.from_location || seg.to_location || seg.segment_type,
-      meta: [
-        seg.depart_at ? formatTime(seg.depart_at) : '',
-        seg.carrier ? `· ${seg.carrier}` : '',
-        seg.confirmation_code ? `· ${seg.confirmation_code}` : '',
-      ].filter(Boolean).join(' '),
+      meta: dot(seg.carrier, seg.confirmation_code),
       subtle: seg.trips?.title || null,
-      icon: segmentIcon[seg.segment_type] || '•',
+      segmentType: seg.segment_type,
     })
   }
 
@@ -110,10 +103,10 @@ export default async function TodaysScheduleWidget({ orgId, principalUserId }: P
       kind: 'external',
       startTime: ev.start_at,
       title: ev.title || '(untitled)',
-      meta: ev.all_day ? 'All day' : formatTime(ev.start_at),
-      subtle: [ev.location, ev.external_calendars?.name].filter(Boolean).join(' · ') || null,
+      meta: '',
+      subtle: dot(ev.location, ev.external_calendars?.name) || null,
       color: ev.external_calendars?.color || null,
-      icon: '•',
+      allDay: ev.all_day,
     })
   }
 
@@ -122,40 +115,39 @@ export default async function TodaysScheduleWidget({ orgId, principalUserId }: P
 
   return (
     <WidgetCard
-      title="Today's Schedule"
-      subtitle={new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+      title="Today's schedule"
+      subtitle={fmtDate(new Date(), 'weekday')}
+      trailing={items.length > 0 ? <span className="font-display text-[15px] leading-none text-rp-text tabular-nums">{items.length}</span> : null}
     >
       {items.length === 0 ? (
         <WidgetEmpty message="Nothing scheduled today." />
       ) : (
-        <ul className="space-y-3 m-0 p-0 list-none">
-          {items.map(item => (
-            <li key={item.id} className="flex items-start gap-3">
-              {item.kind === 'external' ? (
-                <span
-                  className="w-6 flex justify-center items-center mt-1.5 shrink-0"
-                  aria-hidden
-                >
-                  <span
-                    className="w-2 h-2 rounded-full"
-                    style={{ background: item.color || '#9AA0A4' }}
-                  />
-                </span>
-              ) : (
-                <span className="w-6 text-center text-base shrink-0" aria-hidden>{item.icon}</span>
-              )}
-              <div className="flex-1 min-w-0">
-                <p className="text-sm text-white font-medium leading-tight">{item.title}</p>
-                <div className="flex items-center gap-2 mt-0.5 text-xs text-gray-500">
-                  {item.meta && <span>{item.meta}</span>}
-                </div>
-                {item.subtle && (
-                  <p className="text-xs text-gray-600 mt-0.5">{item.subtle}</p>
-                )}
-              </div>
-            </li>
-          ))}
-        </ul>
+        <RpList as="ul">
+          {items.map(item => {
+            const Icon = item.kind === 'segment' ? (SEGMENT_ICON[item.segmentType || ''] ?? MapPin) : CalendarDays
+            const time = item.kind === 'external' && item.allDay ? 'All day' : fmtTime(item.startTime || '') || '—'
+            return (
+              <RpRow
+                key={item.id}
+                as="li"
+                lead={
+                  <span className="flex items-center gap-3">
+                    <span className="w-[52px] font-display text-[13px] leading-[1.4] tracking-[.06em] text-rp-dim tabular-nums">{time}</span>
+                    {item.kind === 'external' ? (
+                      <span className="flex h-4 w-4 items-center justify-center" aria-hidden>
+                        <span className="h-2 w-2" style={{ background: item.color || '#9AA0A4' }} />
+                      </span>
+                    ) : (
+                      <Icon size={16} strokeWidth={1.5} className="text-rp-muted" aria-hidden />
+                    )}
+                  </span>
+                }
+                title={item.title}
+                meta={dot(item.meta, item.subtle) || undefined}
+              />
+            )
+          })}
+        </RpList>
       )}
     </WidgetCard>
   )

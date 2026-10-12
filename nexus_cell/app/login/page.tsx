@@ -5,6 +5,7 @@ import { createClient } from '@/utils/supabase/client'
 import { useRouter } from 'next/navigation'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { BRAND } from '@/lib/brand'
+import { RpPines } from '@/components/rp/RpPines'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -12,6 +13,8 @@ export default function LoginPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
+  // Shakes the password row on a failed attempt (cleared when the animation ends).
+  const [shake, setShake] = useState(false)
   const [supabase, setSupabase] = useState<SupabaseClient | null>(null)
   const router = useRouter()
 
@@ -32,6 +35,7 @@ export default function LoginPage() {
 
     if (error) {
       setError(error.message)
+      setShake(true)
       setLoading(false)
     } else {
       router.push('/')
@@ -40,22 +44,15 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[#0A0B0C] flex items-center justify-center px-6 py-16">
+    <div className="relative isolate min-h-screen overflow-hidden bg-[#0A0B0C] flex items-center justify-center px-6 py-16">
       {/* Gold ambient light, as on the pitch site's gate */}
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0"
-        style={{ background: 'radial-gradient(ellipse at 50% 40%, rgba(205,161,75,0.08), transparent 60%)' }}
+        className="pointer-events-none absolute inset-0 -z-[2]"
+        style={{ background: 'radial-gradient(ellipse at 50% 40%, rgba(205,161,75,0.07), transparent 60%)' }}
       />
       {/* Pine silhouettes along the foot of the screen */}
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={BRAND.pines}
-        alt=""
-        aria-hidden
-        className="pointer-events-none select-none absolute left-1/2 bottom-0 w-[min(100%,1480px)] h-auto -translate-x-1/2 translate-y-[12%]"
-        style={{ filter: 'brightness(.09)' }}
-      />
+      <RpPines placement="gate" />
 
       <div className="relative w-full max-w-[360px] flex flex-col items-center text-center animate-fade-in-up">
         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -72,13 +69,13 @@ export default function LoginPage() {
             autoComplete="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full min-h-[48px] px-4 bg-[#0E0F11] border border-[#4C5257] text-[#F5F5F5] text-base tracking-wide outline-none transition-colors placeholder:font-display placeholder:text-xs placeholder:uppercase placeholder:tracking-[0.16em] placeholder:text-[#6E7578] focus:border-[#CDA14B]"
+            className="w-full min-h-[48px] px-4 bg-[#0E0F11] border border-[#4C5257] text-[#F5F5F5] text-base tracking-wide outline-none transition-colors placeholder:font-display placeholder:text-xs placeholder:uppercase placeholder:tracking-[0.16em] placeholder:text-[#6E7578] focus:border-[#3989CB]"
             placeholder="Email"
             required
           />
 
           <label htmlFor="password" className="sr-only">Password</label>
-          <div className="flex w-full">
+          <div className={`flex w-full ${shake ? 'rp-shake' : ''}`} onAnimationEnd={() => setShake(false)}>
             <div className="relative flex-1 min-w-0">
               <input
                 id="password"
@@ -86,7 +83,7 @@ export default function LoginPage() {
                 autoComplete="current-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full min-h-[48px] pl-4 pr-14 bg-[#0E0F11] border border-r-0 border-[#4C5257] text-[#F5F5F5] text-base tracking-wide outline-none transition-colors placeholder:font-display placeholder:text-xs placeholder:uppercase placeholder:tracking-[0.16em] placeholder:text-[#6E7578] focus:border-[#CDA14B]"
+                className="w-full min-h-[48px] pl-4 pr-14 bg-[#0E0F11] border border-r-0 border-[#4C5257] text-[#F5F5F5] text-base tracking-wide outline-none transition-colors placeholder:font-display placeholder:text-xs placeholder:uppercase placeholder:tracking-[0.16em] placeholder:text-[#6E7578] focus:border-[#3989CB]"
                 placeholder="Password"
                 required
               />
@@ -108,13 +105,13 @@ export default function LoginPage() {
             </button>
           </div>
 
-          <p role="alert" className="min-h-[20px] text-sm text-[#CDA14B] text-center">
+          <p role="alert" className="min-h-[20px] text-[14px] text-[#CDA14B] text-center">
             {error}
           </p>
         </form>
 
-        <p className="mt-10 font-display text-[10px] uppercase tracking-[0.22em] text-[#6E7578]">
-          Private members portal
+        <p className="mt-10 font-display text-[10px] uppercase tracking-[0.2em] text-[#6E7578]">
+          {BRAND.poweredBy}
         </p>
       </div>
     </div>

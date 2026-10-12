@@ -2,17 +2,35 @@
 
 import { useState, useRef } from "react";
 import Image from "next/image";
-import { Loader2, Upload, X, ChevronDown, ChevronRight } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Upload, X, ChevronDown, ChevronRight } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 import type { Brief } from "@/lib/brief-service";
 import { BRAND } from "@/lib/brand";
+import {
+  RpBox,
+  RpField,
+  RpInput,
+  RpCheck,
+  RpButton,
+  RpFormGrid,
+  RP_ICON,
+  fmtDate,
+} from "@/components/rp";
 
 interface CoverPageSettingsProps {
   brief: Brief;
   orgId: string;
   principalName: string;
   onUpdate: (updates: Partial<Brief>) => void;
+}
+
+const DEFAULT_ACCENT = "#CDA14B";
+
+/** The PDF renderer prints raster logos from absolute URLs only (matches BriefPDF). */
+function isPrintableLogo(url: string | null | undefined): boolean {
+  if (!url) return false;
+  if (!/^https?:\/\//i.test(url) && !url.startsWith("data:image/")) return false;
+  return !/\.svg(\?|#|$)/i.test(url) && !url.startsWith("data:image/svg");
 }
 
 const presetColors = [
@@ -32,6 +50,8 @@ export function CoverPageSettings({
   const [isOpen, setIsOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const accent = brief.cover_accent_color || DEFAULT_ACCENT;
+  const printableLogo = isPrintableLogo(brief.cover_logo_url);
 
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -67,197 +87,189 @@ export function CoverPageSettings({
   };
 
   return (
-    <div className="rp-panel">
+    <RpBox as="section">
       <button
+        type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="flex w-full items-center justify-between px-4 py-3 text-foreground hover:bg-[#141618] transition-colors"
+        aria-expanded={isOpen}
+        className="flex w-full items-center justify-between gap-3 px-6 py-4 text-left transition-colors hover:bg-rp-surface"
       >
-        <span className="rp-eyebrow--muted">Cover page settings</span>
-        {isOpen ? (
-          <ChevronDown className="h-4 w-4" />
-        ) : (
-          <ChevronRight className="h-4 w-4" />
-        )}
+        <span className="flex items-baseline gap-3">
+          <span className="rp-eyebrow--muted">Cover</span>
+          <span className="text-[13px] text-rp-dim">
+            {brief.cover_title || "Weekly Owner Brief"}
+          </span>
+        </span>
+        <span className="text-rp-muted" aria-hidden>
+          {isOpen ? <ChevronDown {...RP_ICON} /> : <ChevronRight {...RP_ICON} />}
+        </span>
       </button>
 
       {isOpen && (
-        <div className="border-t border-border px-4 py-4 space-y-4">
-          <div>
-            <label className="text-xs text-muted-foreground">Cover Title</label>
-            <input
-              type="text"
-              value={brief.cover_title || ""}
-              onChange={(e) => onUpdate({ cover_title: e.target.value })}
-              placeholder="Build Brief"
-              className="mt-1 w-full rounded-md border border-border bg-background px-3 py-1.5 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:border-primary"
-            />
-          </div>
+        <div className="grid gap-6 border-t border-rp-line px-6 py-6 md:grid-cols-[1fr_220px]">
+          <div className="flex min-w-0 flex-col gap-5">
+            <RpFormGrid>
+              <RpField label="Cover title" htmlFor={`cover-title-${brief.id}`}>
+                <RpInput
+                  id={`cover-title-${brief.id}`}
+                  type="text"
+                  value={brief.cover_title || ""}
+                  onChange={(e) => onUpdate({ cover_title: e.target.value })}
+                  placeholder="Weekly Owner Brief"
+                />
+              </RpField>
+              <RpField label="Subtitle" htmlFor={`cover-sub-${brief.id}`} hint="Optional · the week in a line">
+                <RpInput
+                  id={`cover-sub-${brief.id}`}
+                  type="text"
+                  value={brief.cover_subtitle || ""}
+                  onChange={(e) => onUpdate({ cover_subtitle: e.target.value })}
+                  placeholder={`Prepared for ${principalName || "the owner"}`}
+                />
+              </RpField>
+            </RpFormGrid>
 
-          <div>
-            <label className="text-xs text-muted-foreground">
-              Subtitle (optional)
-            </label>
-            <input
-              type="text"
-              value={brief.cover_subtitle || ""}
-              onChange={(e) => onUpdate({ cover_subtitle: e.target.value })}
-              placeholder={`Prepared for ${principalName}`}
-              className="mt-1 w-full rounded-md border border-border bg-background px-3 py-1.5 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:border-primary"
-            />
-          </div>
+            <RpField
+              label="Logo"
+              hint={
+                brief.cover_logo_url && !printableLogo
+                  ? "SVG and site-relative logos print as the Roaring Pines wordmark"
+                  : "PNG or JPG prints on the PDF cover"
+              }
+            >
+              <div className="flex flex-wrap items-center gap-3">
+                {brief.cover_logo_url ? (
+                  <>
+                    <Image
+                      src={brief.cover_logo_url}
+                      alt="Cover logo"
+                      width={120}
+                      height={40}
+                      className="h-10 max-w-[120px] border border-rp-line bg-rp-bg object-contain p-1"
+                      unoptimized
+                    />
+                    <RpButton
+                      variant="icon"
+                      size="sm"
+                      aria-label="Remove logo"
+                      onClick={handleRemoveLogo}
+                    >
+                      <X {...RP_ICON} />
+                    </RpButton>
+                  </>
+                ) : (
+                  <>
+                    <input
+                      ref={fileRef}
+                      type="file"
+                      accept="image/png,image/jpeg,image/svg+xml"
+                      className="hidden"
+                      onChange={handleLogoUpload}
+                    />
+                    <RpButton
+                      variant="ghost"
+                      size="sm"
+                      icon={<Upload {...RP_ICON} />}
+                      onClick={() => fileRef.current?.click()}
+                      disabled={uploading}
+                    >
+                      {uploading ? "Uploading…" : "Upload logo"}
+                    </RpButton>
+                  </>
+                )}
+              </div>
+            </RpField>
 
-          <div>
-            <label className="text-xs text-muted-foreground">Logo</label>
-            <div className="mt-1 flex items-center gap-3">
-              {brief.cover_logo_url ? (
-                <div className="flex items-center gap-2">
-                  <Image
-                    src={brief.cover_logo_url}
-                    alt="Cover logo"
-                    width={120}
-                    height={40}
-                    className="h-10 max-w-[120px] rounded border border-border object-contain bg-zinc-900 p-1"
-                    unoptimized
-                  />
-                  <button
-                    onClick={handleRemoveLogo}
-                    className="rounded p-1 text-muted-foreground hover:bg-red-500/10 hover:text-red-400 transition-colors"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                </div>
-              ) : (
-                <>
-                  <input
-                    ref={fileRef}
-                    type="file"
-                    accept="image/png,image/jpeg,image/svg+xml"
-                    className="hidden"
-                    onChange={handleLogoUpload}
-                  />
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => fileRef.current?.click()}
-                    disabled={uploading}
-                  >
-                    {uploading ? (
-                      <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
-                    ) : (
-                      <Upload className="mr-2 h-3.5 w-3.5" />
-                    )}
-                    Upload Logo
-                  </Button>
-                </>
-              )}
-            </div>
-          </div>
-
-          <div className="flex items-center gap-6">
-            <label className="flex items-center gap-2 text-sm text-foreground">
-              <input
-                type="checkbox"
+            <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
+              <RpCheck
                 checked={brief.cover_show_date !== false}
-                onChange={(e) =>
-                  onUpdate({ cover_show_date: e.target.checked })
-                }
-                className="rounded border-border"
+                onChange={(v) => onUpdate({ cover_show_date: v })}
+                label="Show date"
               />
-              Show date
-            </label>
-            <label className="flex items-center gap-2 text-sm text-foreground">
-              <input
-                type="checkbox"
+              <RpCheck
                 checked={brief.cover_show_principal !== false}
-                onChange={(e) =>
-                  onUpdate({ cover_show_principal: e.target.checked })
-                }
-                className="rounded border-border"
-              />
-              Show owner name
-            </label>
-          </div>
-
-          <div>
-            <label className="text-xs text-muted-foreground">
-              Accent Color
-            </label>
-            <div className="mt-1.5 flex items-center gap-2">
-              {presetColors.map((c) => (
-                <button
-                  key={c.value}
-                  onClick={() => onUpdate({ cover_accent_color: c.value })}
-                  title={c.label}
-                  className={`h-6 w-6 rounded-none border-2 transition-all ${
-                    (brief.cover_accent_color || "#CDA14B") === c.value
-                      ? "border-foreground scale-110"
-                      : "border-transparent hover:border-muted-foreground"
-                  }`}
-                  style={{ backgroundColor: c.value }}
-                />
-              ))}
-              <input
-                type="color"
-                value={brief.cover_accent_color || "#CDA14B"}
-                onChange={(e) =>
-                  onUpdate({ cover_accent_color: e.target.value })
-                }
-                className="h-6 w-6 cursor-pointer rounded border-0 bg-transparent p-0"
-                title="Custom color"
+                onChange={(v) => onUpdate({ cover_show_principal: v })}
+                label="Show owner name"
               />
             </div>
+
+            <RpField label="Accent colour" hint="The PDF cover rule">
+              <div className="flex items-center gap-2" role="group" aria-label="Accent colour">
+                {presetColors.map((c) => {
+                  const active = accent.toLowerCase() === c.value.toLowerCase();
+                  return (
+                    <button
+                      key={c.value}
+                      type="button"
+                      onClick={() => onUpdate({ cover_accent_color: c.value })}
+                      title={c.label}
+                      aria-label={c.label}
+                      aria-pressed={active}
+                      className={`h-7 w-7 border transition-colors ${
+                        active ? "border-rp-text outline outline-1 outline-offset-2 outline-rp-text" : "border-rp-line2 hover:border-rp-muted"
+                      }`}
+                      style={{ backgroundColor: c.value }}
+                    />
+                  );
+                })}
+                <input
+                  type="color"
+                  value={accent}
+                  onChange={(e) =>
+                    onUpdate({ cover_accent_color: e.target.value })
+                  }
+                  className="h-7 w-7 cursor-pointer border border-rp-line2 bg-transparent p-0"
+                  title="Custom colour"
+                  aria-label="Custom colour"
+                />
+              </div>
+            </RpField>
           </div>
 
-          <div>
-            <label className="text-xs text-muted-foreground">Preview</label>
-            <div className="mt-1.5 rounded-sm border border-border bg-[#0A0B0C] p-6 text-center">
-              {brief.cover_logo_url && (
-                <Image
-                  src={brief.cover_logo_url}
-                  alt=""
-                  width={100}
-                  height={32}
-                  className="mx-auto mb-4 h-8 max-w-[100px] object-contain"
-                  unoptimized
-                />
-              )}
-              <p className="mb-2 font-display text-[9px] uppercase tracking-[0.22em] text-[#CDA14B]">
-                {BRAND.fullName}
-              </p>
-              <p className="text-sm font-bold text-[#F5F5F5]">
-                {brief.cover_title || "Build Brief"}
-              </p>
-              {brief.cover_subtitle && (
-                <p className="mt-1 text-[10px] text-[#9AA0A4]">
-                  {brief.cover_subtitle}
+          {/* PDF cover proof */}
+          <div className="flex flex-col gap-2">
+            <span className="rp-label">PDF cover</span>
+            <div className="flex aspect-[17/22] flex-col justify-between border border-rp-line2 bg-rp-bg p-5">
+              <div className="flex flex-col gap-3">
+                {printableLogo ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={brief.cover_logo_url as string}
+                    alt=""
+                    className="h-8 w-auto self-start object-contain"
+                  />
+                ) : (
+                  <span className="flex flex-col font-display text-[11px] font-medium uppercase leading-[1.05] tracking-[.16em] text-rp-text">
+                    <span>Roaring</span>
+                    <span>Pines</span>
+                    <span className="mt-0.5 text-[6px] font-normal tracking-[.2em] text-rp-muted">Motor Club</span>
+                  </span>
+                )}
+                <p className="font-display text-[8px] uppercase tracking-[.22em] text-rp-gold">
+                  {BRAND.fullName}
                 </p>
-              )}
-              <div
-                className="mx-auto my-3 h-0.5 w-8"
-                style={{
-                  backgroundColor: brief.cover_accent_color || "#CDA14B",
-                }}
-              />
-              {brief.cover_show_date !== false && (
-                <p className="text-[10px] text-[#9AA0A4]">
-                  {new Date(
-                    brief.brief_date + "T00:00:00"
-                  ).toLocaleDateString("en-US", {
-                    month: "long",
-                    day: "numeric",
-                    year: "numeric",
-                  })}
+              </div>
+              <div className="flex flex-col gap-2">
+                <p className="font-display text-[17px] uppercase leading-[1.05] tracking-[.02em] text-rp-text">
+                  {brief.cover_title || "Weekly Owner Brief"}
                 </p>
-              )}
-              {brief.cover_show_principal !== false && (
-                <p className="text-[10px] text-[#9AA0A4]">
-                  Prepared for {principalName}
-                </p>
-              )}
+                {brief.cover_subtitle && (
+                  <p className="text-[10px] leading-snug text-rp-muted">{brief.cover_subtitle}</p>
+                )}
+                <span className="h-0.5 w-8" style={{ backgroundColor: accent }} />
+                <div className="flex flex-col gap-0.5 text-[9px] uppercase tracking-[.14em] text-rp-muted">
+                  {brief.cover_show_date !== false && (
+                    <span>{fmtDate(brief.brief_date, "long")}</span>
+                  )}
+                  {brief.cover_show_principal !== false && principalName && (
+                    <span>Prepared for {principalName}</span>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
         </div>
       )}
-    </div>
+    </RpBox>
   );
 }

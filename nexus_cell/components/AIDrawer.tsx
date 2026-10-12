@@ -1,6 +1,8 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
+import { RpButton, pushEscapeLayer } from '@/components/rp'
+import { BRAND } from '@/lib/brand'
 
 interface AIDrawerProps {
   isOpen: boolean
@@ -36,9 +38,23 @@ export default function AIDrawer({ isOpen, onClose, initialMessage, onInitialMes
   const [openerShown, setOpenerShown] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+  const onCloseRef = useRef(onClose)
+  onCloseRef.current = onClose
 
+  // Focus the input on open; Esc (layered over anything below), scroll lock,
+  // and focus back to the opener when the drawer closes.
   useEffect(() => {
-    if (isOpen) inputRef.current?.focus()
+    if (!isOpen) return
+    const opener = document.activeElement as HTMLElement | null
+    inputRef.current?.focus()
+    const unregister = pushEscapeLayer(() => onCloseRef.current())
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      unregister()
+      document.body.style.overflow = prev
+      if (opener && typeof opener.focus === 'function' && document.contains(opener)) opener.focus()
+    }
   }, [isOpen])
 
   // Render the Jarvis opener as the first assistant message the first time
@@ -64,7 +80,7 @@ export default function AIDrawer({ isOpen, onClose, initialMessage, onInitialMes
 
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight
-  }, [messages])
+  }, [messages, loading])
 
   async function sendMessage(text: string) {
     if (!text.trim() || loading) return
@@ -97,71 +113,70 @@ export default function AIDrawer({ isOpen, onClose, initialMessage, onInitialMes
 
   function handleKeyDown(e: React.KeyboardEvent) {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(input) }
-    if (e.key === 'Escape') onClose()
   }
 
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="absolute inset-0 bg-[rgba(8,9,10,.85)] backdrop-blur-sm" />
-      <div className="relative w-full max-w-lg bg-[#0E0F11] rounded-sm border border-[#26292C] shadow-2xl shadow-black/40 flex flex-col max-h-[80vh]" onClick={e => e.stopPropagation()}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6" onClick={onClose} role="presentation">
+      {/* Scrim: flat, no blur */}
+      <div className="absolute inset-0 bg-[rgba(8,9,10,.85)] animate-overlay-fade-in" aria-hidden />
 
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="nexus-drawer-title"
+        className="relative flex max-h-[min(84vh,780px)] w-[min(640px,100%)] flex-col border border-rp-line2 bg-rp-bg animate-overlay-pop-in"
+        onClick={e => e.stopPropagation()}
+      >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 pt-5 pb-3 border-b border-[#1F1F1F]">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full" style={{ background: 'radial-gradient(circle, #E0BF7B 0%, #B0853A 50%, #4F3B20 100%)', boxShadow: '0 0 20px rgba(205,161,75,0.2)' }} />
-            <div>
-              <h2 className="rp-eyebrow">Nexus</h2>
-              <p className="text-[11px] text-[#9AA0A4] mt-0.5">Roaring Pines development partner</p>
-            </div>
+        <div className="flex shrink-0 items-center gap-4 border-b border-rp-line px-5 py-4 sm:px-6 sm:py-5">
+          <span
+            aria-hidden
+            className="h-8 w-8 shrink-0 rounded-full"
+            style={{ background: 'radial-gradient(circle at 35% 30%, #E6C98A 0%, #CDA14B 40%, #8C6830 78%, #2D2112 100%)', boxShadow: '0 0 18px rgba(205,161,75,.25)' }}
+          />
+          <div className="min-w-0 flex-1">
+            <h2 id="nexus-drawer-title" className="rp-eyebrow">{BRAND.assistantName}</h2>
+            <p className="mt-1 text-[13px] leading-snug text-rp-muted">{BRAND.name} development partner</p>
           </div>
-          <button onClick={onClose} aria-label="Close" className="text-[#6E7578] hover:text-white text-lg">&times;</button>
+          <RpButton variant="ghost" size="sm" onClick={onClose}>Close</RpButton>
         </div>
 
-        {/* Messages area */}
-        <div ref={scrollRef} className="flex-1 overflow-y-auto px-6 py-3 space-y-3 min-h-[100px]">
+        {/* Conversation */}
+        <div
+          ref={scrollRef}
+          className="flex min-h-[140px] flex-1 flex-col gap-4 overflow-y-auto px-5 py-5 sm:px-6"
+          aria-live="polite"
+        >
           {messages.length === 0 && !loading && (
-            <div className="text-center py-6">
-              <p className="text-[#6E7578] text-sm">Ask about the build, the budget or the calendar.</p>
+            <div className="flex flex-col gap-2 py-2">
+              <p className="font-display text-2xl uppercase leading-[1.1] tracking-[.02em] text-rp-text">Ask about the build</p>
+              <p className="max-w-[52ch] text-[15px] leading-normal text-rp-muted">
+                The budget, the schedule, sign-offs, the punch list or the next site visit to Palatka.
+              </p>
             </div>
           )}
           {messages.map((msg, i) => (
-            <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-              <div className={`max-w-[85%] px-3.5 py-2.5 rounded-sm text-sm leading-relaxed ${
-                msg.role === 'user'
-                  ? 'bg-[#CDA14B]/10 text-[#F5F5F5] border border-[#CDA14B]/25'
-                  : 'bg-[#141618] text-[#F5F5F5] border border-[#1F1F1F]'
-              }`}>
-                <p className="whitespace-pre-wrap">{msg.content}</p>
-              </div>
-            </div>
+            <ChatBubble key={i} role={msg.role}>{msg.content}</ChatBubble>
           ))}
-          {loading && (
-            <div className="flex justify-start">
-              <div className="bg-[#141618] border border-[#1F1F1F] px-4 py-3 rounded-sm flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 bg-[#CDA14B] rounded-full animate-pulse" />
-                <span className="w-1.5 h-1.5 bg-[#CDA14B] rounded-full animate-pulse" style={{ animationDelay: '150ms' }} />
-                <span className="w-1.5 h-1.5 bg-[#CDA14B] rounded-full animate-pulse" style={{ animationDelay: '300ms' }} />
-              </div>
-            </div>
-          )}
+          {loading && <ChatTyping />}
         </div>
 
-        {/* Example chips (only when no messages) */}
+        {/* Example prompts (only before the conversation starts) */}
         {messages.length === 0 && (
-          <div className="px-6 pb-3 flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2 px-5 pb-4 sm:px-6">
             {exampleQueries.map(q => (
-              <button key={q} onClick={() => sendMessage(q)} className="rp-btn-ghost !min-h-[30px] !px-3 !py-1 !text-[10px]">
+              <RpButton key={q} variant="ghost" size="sm" onClick={() => sendMessage(q)}>
                 {q}
-              </button>
+              </RpButton>
             ))}
           </div>
         )}
 
-        {/* Input */}
-        <div className="px-6 pb-5 pt-2">
-          <div className="flex gap-2">
+        {/* Input, joined to Send like the gate */}
+        <div className="shrink-0 border-t border-rp-line px-5 py-4 sm:px-6">
+          <div className="flex">
             <input
               ref={inputRef}
               type="text"
@@ -169,17 +184,51 @@ export default function AIDrawer({ isOpen, onClose, initialMessage, onInitialMes
               onChange={e => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="Ask about the build, budget or schedule…"
-              className="flex-1 bg-[#0A0B0C] border border-[#26292C] rounded-sm px-4 py-2.5 text-sm text-white placeholder-[#6E7578] focus:outline-none focus:border-[#CDA14B]"
+              aria-label={`Message ${BRAND.assistantName}`}
+              className="rp-input min-h-12 min-w-0 flex-1 border-r-0"
             />
-            <button
+            <RpButton
               onClick={() => sendMessage(input)}
               disabled={!input.trim() || loading}
-              className="rp-btn-solid"
+              className="min-h-12 shrink-0"
             >
               Send
-            </button>
+            </RpButton>
           </div>
         </div>
+      </div>
+    </div>
+  )
+}
+
+/** Square chat bubble: the user's in a 10% gold wash, Nexus's on the panel ground. Shared with the owner's Ask Nexus widget. */
+export function ChatBubble({ role, children }: { role: 'user' | 'assistant'; children: React.ReactNode }) {
+  const mine = role === 'user'
+  return (
+    <div className={`flex flex-col gap-1.5 ${mine ? 'items-end' : 'items-start'}`}>
+      <span className="font-display text-[10px] uppercase tracking-[.16em] text-rp-dim">
+        {mine ? 'You' : BRAND.assistantName}
+      </span>
+      <div
+        className={`max-w-[85%] px-4 py-3 text-[15px] leading-[1.55] text-rp-text ${
+          mine ? 'border border-rp-gold/40 bg-[rgba(205,161,75,.10)]' : 'border border-rp-line bg-rp-panel'
+        }`}
+      >
+        <p className="whitespace-pre-wrap">{children}</p>
+      </div>
+    </div>
+  )
+}
+
+/** Nexus is typing: three small gold squares. */
+export function ChatTyping() {
+  return (
+    <div className="flex flex-col items-start gap-1.5">
+      <span className="font-display text-[10px] uppercase tracking-[.16em] text-rp-dim">{BRAND.assistantName}</span>
+      <div className="flex items-center gap-1.5 border border-rp-line bg-rp-panel px-4 py-4" role="status" aria-label={`${BRAND.assistantName} is typing`}>
+        <span className="h-[5px] w-[5px] animate-pulse bg-rp-gold" />
+        <span className="h-[5px] w-[5px] animate-pulse bg-rp-gold" style={{ animationDelay: '150ms' }} />
+        <span className="h-[5px] w-[5px] animate-pulse bg-rp-gold" style={{ animationDelay: '300ms' }} />
       </div>
     </div>
   )
@@ -190,7 +239,10 @@ export default function AIDrawer({ isOpen, onClose, initialMessage, onInitialMes
 // trigger than to miss obvious wins. Kept in this file so it's near the
 // AI response handling and easy to tweak.
 const POSITIVE_PATTERNS = [
-  /\b(great|amazing|wonderful|fantastic|congrats|congratulations|nicely done|well done|love|❤|💚|🎉|✨|🥳|nailed it)\b/i,
+  /\b(great|amazing|wonderful|fantastic|congrats|congratulations|nicely done|well done|love|nailed it)\b/i,
+  // Heart, green heart, party popper, sparkles, partying face (escaped so no
+  // emoji sits in the source).
+  /\u2764|\uD83D\uDC9A|\uD83C\uDF89|\u2728|\uD83E\uDD73/,
 ]
 
 function isPositive(text: string): boolean {

@@ -11,9 +11,9 @@ import {
   STATUS_META,
   lngLatToPlan,
   pctSpent,
-  formatMoneyShort,
   type PlanPoint,
 } from '@/lib/site-map'
+import { fmtMoney } from '@/components/rp'
 import { zoneColor, type LayerKey, type PinSpec, type ZoneStat } from './utils'
 
 interface Props {
@@ -41,9 +41,11 @@ export default function FallbackView({
   const [hover, setHover] = useState<PinSpec | null>(null)
 
   return (
-    <div className="absolute inset-0 bg-[#0A0B0C]">
+    <div className="absolute inset-0 bg-rp-bg">
       <div className="absolute inset-0 overflow-auto">
-      <div className="relative mx-auto" style={{ aspectRatio: `${PLAN_W} / ${PLAN_H}`, width: 'max(100%, 760px)' }}>
+      {/* The plan sits centred in the frame when the frame is taller than the sheet. */}
+      <div className="flex min-h-full items-center">
+      <div className="relative mx-auto shrink-0" style={{ aspectRatio: `${PLAN_W} / ${PLAN_H}`, width: 'max(100%, 760px)' }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={MASTERPLAN_IMAGE}
@@ -101,7 +103,7 @@ export default function FallbackView({
               onClick={() => onSelectProject(pin.project.id)}
               onMouseEnter={() => setHover(pin)}
               onMouseLeave={() => setHover(h => (h?.project.id === pin.project.id ? null : h))}
-              className="absolute rounded-full transition-transform"
+              className="absolute rounded-full transition-transform duration-200 motion-reduce:transition-none"
               style={{
                 left: `${(x / PLAN_W) * 100}%`,
                 top: `${(y / PLAN_H) * 100}%`,
@@ -111,7 +113,7 @@ export default function FallbackView({
                 background: pin.color,
                 opacity: pin.project.status === 'archived' ? 0.7 : 1,
                 border: '2px solid #0A0B0C',
-                boxShadow: sel ? `0 0 0 2px #F5F5F5, 0 0 18px ${pin.color}` : `0 0 0 1px ${pin.color}80, 0 0 10px ${pin.color}66`,
+                boxShadow: sel ? '0 0 0 2px #F5F5F5' : `0 0 0 1px ${pin.color}80`,
                 zIndex: sel ? 5 : 1,
               }}
             />
@@ -123,23 +125,27 @@ export default function FallbackView({
           const meta = STATUS_META[hover.project.status]
           return (
             <div
-              className="absolute z-10 pointer-events-none bg-[#141618] border border-[#26292C] px-2.5 py-2 shadow-xl shadow-black/50 min-w-[180px] max-w-[240px]"
+              className="pointer-events-none absolute z-10 min-w-[190px] max-w-[250px] border border-rp-line2 bg-rp-bg px-3 py-2.5"
               style={{ left: `${(x / PLAN_W) * 100}%`, top: `${(y / PLAN_H) * 100}%`, transform: `translate(-50%, calc(-100% - ${hover.size / 2 + 10}px))` }}
             >
-              <div className="text-[12px] text-[#F5F5F5] leading-snug mb-1">{hover.project.name}</div>
-              <div className="flex justify-between gap-3 text-[11px] text-[#9AA0A4] tabular-nums">
-                <span>{formatMoneyShort(hover.project.budgeted)} budget</span>
+              <div className="mb-1 text-[13px] leading-snug text-rp-text">{hover.project.name}</div>
+              <div className="flex justify-between gap-3 text-[12px] tabular-nums text-rp-muted">
+                <span>{fmtMoney(hover.project.budgeted, { compact: true })} budget</span>
                 <span>{pctSpent(hover.project.budgeted, hover.project.actual).toFixed(0)}% spent</span>
               </div>
-              <div className="font-display uppercase tracking-[0.16em] text-[10px] mt-1" style={{ color: meta.color }}>● {meta.label}</div>
+              <div className="mt-1.5 flex items-center gap-1.5 font-display text-[10px] uppercase tracking-[0.16em]" style={{ color: meta.color }}>
+                <i aria-hidden className="block h-1.5 w-1.5" style={{ background: meta.color }} />
+                {meta.label}
+              </div>
             </div>
           )
         })()}
       </div>
       </div>
+      </div>
 
-      <div className="hidden sm:block absolute top-3 right-3 bg-[#0A0B0C]/85 border border-[#26292C] px-2.5 py-1.5 pointer-events-none">
-        <span className="rp-eyebrow--muted !text-[10px]">Plan view · {reason}</span>
+      <div className="pointer-events-none absolute right-3 top-3 hidden sm:block">
+        <span className="rp-tag bg-rp-bg/85">Plan view · {reason}</span>
       </div>
     </div>
   )

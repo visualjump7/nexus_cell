@@ -1,18 +1,22 @@
 "use client";
 
-import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import {
-  X,
-  Calendar,
-  CheckCircle,
-  Clock,
-  AlertTriangle,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { formatCurrency } from "@/lib/utils";
+import { useEffect, useId, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import Link from "next/link";
 import { updateBillStatus, type Bill } from "@/lib/bill-service";
+import {
+  RpList,
+  RpRow,
+  RpStatus,
+  RpTag,
+  RpButton,
+  Check,
+  RP_ICON,
+  fmtMoney,
+  fmtDate,
+  dot,
+  pushEscapeLayer,
+} from "@/components/rp";
 
 interface BillDrawerProps {
   isOpen: boolean;
@@ -23,44 +27,16 @@ interface BillDrawerProps {
   onBillUpdated?: () => void;
 }
 
-function formatDate(dateStr: string): string {
-  const d = new Date(dateStr + "T00:00:00");
-  return d.toLocaleDateString("en-US", {
-    weekday: "long",
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-  });
+function localTodayKey(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
-function getCategoryColor(category: string | null): string {
-  if (!category) return "bg-muted text-muted-foreground border-border";
-  const gold = "bg-[#CDA14B]/15 text-[#E0BF7B] border-[#CDA14B]/30";
-  const blue = "bg-[#3989CB]/15 text-[#7FB3DE] border-[#3989CB]/30";
-  const green = "bg-[#A4CC5C]/15 text-[#A4CC5C] border-[#A4CC5C]/30";
-  const steel = "bg-[#9AA0A4]/10 text-[#9AA0A4] border-[#9AA0A4]/25";
-  const colors: Record<string, string> = {
-    "Site Work": gold,
-    "Track & Paddock": gold,
-    Garages: gold,
-    Clubhouse: blue,
-    Homes: blue,
-    "Design & Engineering": blue,
-    Permits: green,
-    Insurance: green,
-    Legal: green,
-    Utilities: steel,
-    Marketing: steel,
-    Merchandise: steel,
-    Travel: steel,
-    Membership: steel,
-    Taxes: "bg-red-500/15 text-red-400 border-red-500/30",
-  };
-  return (
-    colors[category] || "bg-muted text-muted-foreground border-border"
-  );
-}
-
+/**
+ * The day's bills. Right sheet at ≥1024px, bottom sheet below. Square, on the
+ * page ground, no blur. Esc closes (layered), focus moves to Close and returns
+ * to the day cell on close.
+ */
 export function BillDrawer({
   isOpen,
   onClose,
@@ -70,6 +46,32 @@ export function BillDrawer({
   onBillUpdated,
 }: BillDrawerProps) {
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [mounted, setMounted] = useState(false);
+  const closeRef = useRef<HTMLButtonElement>(null);
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+  const titleId = useId();
+
+  const open = isOpen && !!date;
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!open) return;
+    const prevFocus = document.activeElement as HTMLElement | null;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const t = window.setTimeout(() => closeRef.current?.focus(), 0);
+    const pop = pushEscapeLayer(() => onCloseRef.current());
+    return () => {
+      window.clearTimeout(t);
+      pop();
+      document.body.style.overflow = prevOverflow;
+      prevFocus?.focus?.();
+    };
+  }, [open]);
 
   const handleMarkPaid = async (billId: string) => {
     setUpdatingId(billId);
@@ -80,151 +82,103 @@ export function BillDrawer({
     setUpdatingId(null);
   };
 
-  const isOverdue = date
-    ? date < new Date().toISOString().split("T")[0]
-    : false;
+  if (!mounted || !open || !date) return null;
 
-  return (
-    <AnimatePresence>
-      {isOpen && date && (
-        <>
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={onClose}
-            className="fixed inset-0 z-40 bg-[rgba(8,9,10,.85)] backdrop-blur-sm"
-          />
+  const pastDate = date < localTodayKey();
+  const unpaid = bills.some((b) => b.status === "pending" || b.status === "approved" || b.status === "overdue");
+  const isOverdue = pastDate && unpaid;
+  const currencies = Array.from(new Set(bills.map((b) => b.currency || "USD")));
+  const totalCurrency = currencies.length === 1 ? currencies[0] : "USD";
 
-          <motion.div
-            initial={{ y: "100%" }}
-            animate={{ y: 0 }}
-            exit={{ y: "100%" }}
-            transition={{ type: "spring", damping: 30, stiffness: 300 }}
-            className="fixed inset-x-0 bottom-0 z-50 max-h-[80vh] overflow-hidden rounded-t-sm border-t border-[#26292C] bg-[#0E0F11] shadow-2xl"
-          >
-            <div className="flex justify-center py-2">
-              <div className="h-1 w-10 rounded-full bg-muted-foreground/30" />
-            </div>
+  return createPortal(
+    <div className="fixed inset-0 z-[55]">
+      <div
+        aria-hidden
+        onClick={onClose}
+        className="absolute inset-0 bg-[rgba(8,9,10,.85)] animate-overlay-fade-in"
+      />
 
-            <div className="flex items-center justify-between border-b border-border px-6 pb-4">
-              <div>
-                <div className="flex items-center gap-2">
-                  <Calendar className="h-5 w-5 text-primary" />
-                  <h3 className="rp-eyebrow">
-                    {formatDate(date)}
-                  </h3>
-                </div>
-                <div className="mt-1 flex items-center gap-3">
-                  <span className="rp-stat-value">
-                    {formatCurrency(total)}
+      <aside
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        className="absolute inset-x-0 bottom-0 flex max-h-[85vh] flex-col border-t border-rp-line2 bg-rp-bg text-rp-text animate-overlay-pop-in lg:inset-y-0 lg:left-auto lg:right-0 lg:max-h-none lg:w-[min(420px,100vw)] lg:border-l lg:border-t-0 lg:animate-sheet-slide-in"
+      >
+        <header className="flex flex-col gap-3 border-b border-rp-line px-6 pb-5 pt-6">
+          <div className="flex items-start justify-between gap-4">
+            <h3 id={titleId} className="rp-eyebrow pt-2">
+              {fmtDate(date, "weekday")}
+            </h3>
+            <button ref={closeRef} type="button" onClick={onClose} className="rp-btn-ghost shrink-0">
+              Close
+            </button>
+          </div>
+          <span className="font-display text-[32px] font-medium leading-none tracking-[.01em] tabular-nums">
+            {fmtMoney(total, { currency: totalCurrency })}
+          </span>
+          <div className="flex flex-wrap items-center gap-3 text-[13px] text-rp-muted">
+            <span>{dot(`${bills.length} bill${bills.length !== 1 ? "s" : ""}`, fmtDate(date, "medium"))}</span>
+            {isOverdue && <RpTag tone="alert">Past due</RpTag>}
+          </div>
+        </header>
+
+        <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-4">
+          <RpList className="border-t-0">
+            {bills.map((bill) => (
+              <RpRow
+                key={bill.id}
+                title={bill.vendor}
+                meta={
+                  <span className="flex flex-col gap-2">
+                    {(bill.category || bill.description) && (
+                      <span>{dot(bill.category, bill.description)}</span>
+                    )}
+                    {bill.notes && <span className="text-xs text-rp-dim">{bill.notes}</span>}
+                    <span className="flex flex-wrap items-center gap-2">
+                      <RpStatus kind="bill" value={bill.status} />
+                      <RpTag tone={bill.quickbooks_synced ? "green" : "dim"}>
+                        {bill.quickbooks_synced ? "QuickBooks synced" : "Not synced"}
+                      </RpTag>
+                    </span>
                   </span>
-                  <span className="text-sm text-muted-foreground">
-                    {bills.length} bill{bills.length !== 1 ? "s" : ""}
-                  </span>
-                  {isOverdue && (
-                    <Badge
-                      variant="outline"
-                      className="border-red-500/50 text-red-400"
+                }
+                aside={
+                  <div className="flex flex-col items-end gap-2">
+                    <span
+                      className={
+                        bill.status === "paid"
+                          ? "font-display text-[15px] tracking-[.02em] tabular-nums text-rp-dim line-through"
+                          : "font-display text-[15px] tracking-[.02em] tabular-nums text-rp-text"
+                      }
                     >
-                      <AlertTriangle className="mr-1 h-3 w-3" />
-                      Overdue
-                    </Badge>
-                  )}
-                </div>
-              </div>
-              <Button variant="ghost" size="icon" onClick={onClose}>
-                <X className="h-5 w-5" />
-              </Button>
-            </div>
+                      {fmtMoney(bill.amount, { currency: bill.currency })}
+                    </span>
+                    {bill.status === "pending" && (
+                      <RpButton
+                        variant="text"
+                        size="sm"
+                        icon={<Check size={14} strokeWidth={RP_ICON.strokeWidth} aria-hidden />}
+                        onClick={() => handleMarkPaid(bill.id)}
+                        disabled={updatingId === bill.id}
+                      >
+                        {updatingId === bill.id ? "Saving" : "Mark paid"}
+                      </RpButton>
+                    )}
+                  </div>
+                }
+              />
+            ))}
+          </RpList>
+        </div>
 
-            <div className="max-h-[60vh] overflow-y-auto px-6 py-4">
-              <div className="space-y-3">
-                {bills.map((bill) => (
-                  <motion.div
-                    key={bill.id}
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    className="rounded-sm border border-[#1F1F1F] bg-[#141618] p-4 transition-colors hover:border-[#26292C]"
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <h4 className="font-medium text-foreground">
-                            {bill.vendor}
-                          </h4>
-                          {bill.status === "paid" && (
-                            <CheckCircle className="h-4 w-4 text-[#A4CC5C]" />
-                          )}
-                          {bill.quickbooks_synced && (
-                            <Badge
-                              variant="outline"
-                              className="border-[#3989CB]/50 text-[#3989CB] text-[10px]"
-                            >
-                              QB
-                            </Badge>
-                          )}
-                        </div>
-
-                        <div className="mt-1 flex flex-wrap items-center gap-2">
-                          {bill.category && (
-                            <Badge
-                              variant="outline"
-                              className={`text-xs ${getCategoryColor(bill.category)}`}
-                            >
-                              {bill.category}
-                            </Badge>
-                          )}
-                          {bill.description && (
-                            <span className="text-xs text-muted-foreground">
-                              {bill.description}
-                            </span>
-                          )}
-                        </div>
-
-                        {bill.notes && (
-                          <p className="mt-2 text-xs text-muted-foreground">
-                            {bill.notes}
-                          </p>
-                        )}
-                      </div>
-
-                      <div className="ml-4 text-right">
-                        <p
-                          className={`text-lg font-bold tabular-nums ${
-                            bill.status === "paid"
-                              ? "text-muted-foreground line-through"
-                              : "text-foreground"
-                          }`}
-                        >
-                          {formatCurrency(bill.amount)}
-                        </p>
-
-                        {bill.status === "pending" && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="mt-1 text-xs text-emerald-400 hover:text-emerald-300"
-                            onClick={() => handleMarkPaid(bill.id)}
-                            disabled={updatingId === bill.id}
-                          >
-                            {updatingId === bill.id ? (
-                              <Clock className="mr-1 h-3 w-3 animate-spin" />
-                            ) : (
-                              <CheckCircle className="mr-1 h-3 w-3" />
-                            )}
-                            Mark Paid
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
-            </div>
-          </motion.div>
-        </>
-      )}
-    </AnimatePresence>
+        <footer className="flex items-center justify-between gap-4 border-t border-rp-line px-6 py-4">
+          <span className="text-xs text-rp-dim">Due on this day</span>
+          <Link href="/financial" className="rp-link font-display text-xs uppercase tracking-[.14em]">
+            All payables <span aria-hidden>→</span>
+          </Link>
+        </footer>
+      </aside>
+    </div>,
+    document.body
   );
 }

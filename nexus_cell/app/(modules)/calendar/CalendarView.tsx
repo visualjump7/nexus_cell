@@ -1,11 +1,14 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import Link from 'next/link'
-import { Loader2 } from 'lucide-react'
 import { FiscalCalendar } from '@/components/calendar/FiscalCalendar'
 import { fetchBillsForMonth, fetchBillCategories, type Bill } from '@/lib/bill-service'
 import type { ExternalCalendar, ExternalCalendarEvent } from '@/lib/types'
+import {
+  RpPage, RpPageHeader, RpSubhead, RpGroup, RpGroupHead, RpList, RpRow, RpBox, RpCheck,
+  RpStatus, RpButton, RpEmpty, RpLoading, fmtDate, fmtTime, dot,
+} from '@/components/rp'
+import { sectionEyebrow } from '@/lib/sections'
 
 type CalendarWithVis = ExternalCalendar & { visible: boolean }
 
@@ -16,21 +19,19 @@ interface Props {
 
 function formatEventTime(ev: ExternalCalendarEvent): string {
   if (ev.all_day) return 'All day'
-  const d = new Date(ev.start_at)
-  return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+  const start = fmtTime(ev.start_at)
+  const end = ev.end_at ? fmtTime(ev.end_at) : ''
+  return end ? `${start}–${end}` : start
 }
 
-function formatEventDate(iso: string): string {
-  const d = new Date(iso)
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-  const tomorrow = new Date(today)
-  tomorrow.setDate(tomorrow.getDate() + 1)
-  const evDay = new Date(d)
-  evDay.setHours(0, 0, 0, 0)
-  if (evDay.getTime() === today.getTime()) return 'Today'
-  if (evDay.getTime() === tomorrow.getTime()) return 'Tomorrow'
-  return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+/** Local calendar-date key (YYYY-MM-DD) for a Date. */
+function localKey(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
+/** 8px calendar-colour square (status markers are square, never round). */
+function Swatch({ color }: { color: string }) {
+  return <span aria-hidden className="inline-block h-2 w-2 shrink-0" style={{ background: color }} />
 }
 
 export default function CalendarView({ calendars: initialCalendars, events }: Props) {
@@ -102,105 +103,118 @@ export default function CalendarView({ calendars: initialCalendars, events }: Pr
   }, {})
   const sortedDates = Object.keys(groupedByDate).sort()
 
+  const todayKey = localKey(today)
+  const tomorrow = new Date(today)
+  tomorrow.setDate(tomorrow.getDate() + 1)
+  const tomorrowKey = localKey(tomorrow)
+
+  const emptyLine =
+    calendars.length === 0
+      ? 'No calendars subscribed yet. An administrator adds them under Admin · Calendars.'
+      : visibleIds.size === 0
+        ? 'No calendars visible. Turn one on under Calendars.'
+        : 'Nothing on these calendars in the next two weeks.'
+
+  const visibleCount = calendars.filter(c => c.visible).length
+
   return (
-    <div className="mx-auto max-w-6xl space-y-8 px-4 py-8 sm:px-6">
-      <header className="rp-head !mb-0">
-        <span className="rp-eyebrow">Schedule</span>
-        <h1 className="rp-title">Calendar</h1>
-        <p className="rp-lede">
-          Bills, plus any external calendars your team has subscribed to.
-        </p>
-      </header>
+    <RpPage>
+      <RpPageHeader
+        eyebrow={sectionEyebrow('calendar')}
+        title="Meetings, inspections and track days"
+        line="The next two weeks, then the month's cash outflow."
+      />
 
-      {/* External calendars panel */}
-      <section className="rp-panel p-5">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="rp-eyebrow--muted">External calendars</h2>
-          <Link href="/admin/calendars" className="text-xs text-[#CDA14B] hover:underline">
-            Manage →
-          </Link>
-        </div>
-
-        {calendars.length === 0 ? (
-          <p className="text-sm text-gray-500 italic">
-            No external calendars subscribed yet. An admin can add one in <Link href="/admin/calendars" className="text-[#CDA14B] hover:underline">Admin → Calendars</Link>.
-          </p>
-        ) : (
-          <>
-            <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2 m-0 p-0 list-none mb-5">
-              {calendars.map(c => (
-                <li key={c.id}>
-                  <label className="flex items-center gap-3 px-3 py-2 rounded-lg bg-[#141618] border border-white/5 cursor-pointer hover:bg-white/[0.02] transition-colors">
-                    <input
-                      type="checkbox"
-                      checked={c.visible}
-                      onChange={e => toggle(c.id, e.target.checked)}
-                      className="accent-emerald-500"
-                    />
-                    <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: c.color }} />
-                    <span className="flex-1 text-sm text-white truncate">{c.name}</span>
-                    {c.last_sync_error && (
-                      <span className="text-[10px] text-red-400" title={c.last_sync_error}>error</span>
-                    )}
-                  </label>
-                </li>
+      <div className="grid gap-8 xl:grid-cols-[2fr_1fr]">
+        {/* Agenda — next 14 days */}
+        <section className="flex min-w-0 flex-col gap-5" aria-labelledby="cal-next">
+          <RpSubhead
+            flush
+            size="md"
+            title={<span id="cal-next">Next 14 days</span>}
+            spec={dot(
+              `${upcoming.length} ${upcoming.length === 1 ? 'event' : 'events'}`,
+              `${sortedDates.length} ${sortedDates.length === 1 ? 'day' : 'days'}`,
+            )}
+          />
+          {upcoming.length === 0 ? (
+            <RpEmpty compact title="Nothing scheduled in the next two weeks." line={emptyLine} />
+          ) : (
+            <div className="flex flex-col">
+              {sortedDates.map(date => (
+                <RpGroup key={date}>
+                  <RpGroupHead
+                    num={Number(date.slice(8, 10))}
+                    title={fmtDate(date, 'weekday')}
+                    line={date === todayKey ? 'Today' : date === tomorrowKey ? 'Tomorrow' : undefined}
+                    aside={<span className="rp-counter">{`${groupedByDate[date].length} ${groupedByDate[date].length === 1 ? 'event' : 'events'}`}</span>}
+                  />
+                  <RpList>
+                    {groupedByDate[date].map(ev => (
+                      <RpRow
+                        key={ev.id}
+                        lead={<Swatch color={colorFor(ev.external_calendar_id)} />}
+                        title={ev.title || 'Untitled'}
+                        meta={<span suppressHydrationWarning>{dot(formatEventTime(ev), nameFor(ev.external_calendar_id), ev.location)}</span>}
+                      />
+                    ))}
+                  </RpList>
+                </RpGroup>
               ))}
-            </ul>
-
-            {/* Upcoming events from visible calendars */}
-            <div>
-              <p className="text-xs text-gray-500 uppercase tracking-wider mb-2">Next 14 days</p>
-              {upcoming.length === 0 ? (
-                <p className="text-sm text-gray-500 italic">
-                  {visibleIds.size === 0
-                    ? 'No calendars visible. Toggle one on above.'
-                    : 'Nothing on these calendars in the next two weeks.'}
-                </p>
-              ) : (
-                <div className="space-y-3 max-h-72 overflow-y-auto pr-1">
-                  {sortedDates.map(date => (
-                    <div key={date}>
-                      <p className="text-[11px] text-gray-500 uppercase tracking-wider mb-1.5">
-                        {formatEventDate(date + 'T00:00:00')}
-                      </p>
-                      <ul className="space-y-1 m-0 p-0 list-none">
-                        {groupedByDate[date].map(ev => (
-                          <li key={ev.id} className="flex items-start gap-2.5 py-1">
-                            <span
-                              className="w-1.5 h-1.5 rounded-full shrink-0 mt-1.5"
-                              style={{ background: colorFor(ev.external_calendar_id) }}
-                              aria-hidden
-                            />
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm text-white leading-tight">{ev.title || '(untitled)'}</p>
-                              <p className="text-[11px] text-gray-500">
-                                {formatEventTime(ev)} · {nameFor(ev.external_calendar_id)}
-                                {ev.location && <> · {ev.location}</>}
-                              </p>
-                            </div>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  ))}
-                </div>
-              )}
             </div>
-          </>
-        )}
-      </section>
+          )}
+        </section>
+
+        {/* Calendars — per-user visibility */}
+        <aside className="min-w-0">
+          <RpBox pad="md" className="flex flex-col gap-4 xl:sticky xl:top-6">
+            <div className="flex items-center justify-between gap-3">
+              <h2 className="rp-eyebrow--muted">Calendars</h2>
+              <RpButton variant="text" size="sm" arrow href="/admin/calendars">Manage</RpButton>
+            </div>
+            {calendars.length === 0 ? (
+              <p className="text-sm leading-normal text-rp-muted">
+                No calendars subscribed yet. An administrator can add one under Admin · Calendars.
+              </p>
+            ) : (
+              <>
+                <ul className="m-0 flex list-none flex-col border-t border-rp-line p-0">
+                  {calendars.map(c => {
+                    const sync = c.last_sync_error ? 'error' : c.last_synced_at ? 'ok' : 'never'
+                    return (
+                      <li key={c.id} className="flex min-h-[44px] items-center gap-3 border-b border-rp-line py-2" title={c.last_sync_error ?? undefined}>
+                        <RpCheck
+                          className="min-w-0 flex-1"
+                          checked={c.visible}
+                          onChange={v => toggle(c.id, v)}
+                          label={
+                            <span className="flex min-w-0 items-center gap-2.5">
+                              <Swatch color={c.color} />
+                              <span className="truncate text-[15px] text-rp-text">{c.name}</span>
+                            </span>
+                          }
+                        />
+                        <RpStatus kind="sync" value={sync} />
+                      </li>
+                    )
+                  })}
+                </ul>
+                <p className="text-[13px] text-rp-dim">{dot(`${visibleCount} of ${calendars.length} shown`, 'Your view only')}</p>
+              </>
+            )}
+          </RpBox>
+        </aside>
+      </div>
 
       {/* Bill calendar (existing) */}
-      <section>
-        <h2 className="rp-eyebrow--muted mb-3">Bills</h2>
+      <section className="flex min-w-0 flex-col gap-5">
+        <RpSubhead title="Cash outflow" spec="Bills due this month, by day" />
         {billsLoading ? (
-          <div className="flex min-h-[40vh] items-center justify-center">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          </div>
+          <RpLoading label="Loading bills" />
         ) : (
-          <FiscalCalendar initialBills={bills} categories={billCategories} />
+          <FiscalCalendar initialBills={bills} categories={billCategories} eyebrow={false} />
         )}
       </section>
-    </div>
+    </RpPage>
   )
 }

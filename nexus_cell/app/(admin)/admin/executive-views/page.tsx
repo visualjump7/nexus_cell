@@ -1,5 +1,8 @@
 import { getAuthContext } from '@/lib/auth'
+import { RpPage, RpPageHeader } from '@/components/rp'
 import ExecutiveViewConfig from './ExecutiveViewConfig'
+
+export const metadata = { title: 'Owner views' }
 
 export default async function ExecutiveViewSettingsPage({
   searchParams,
@@ -31,15 +34,13 @@ export default async function ExecutiveViewSettingsPage({
     : undefined
 
   return (
-    <div className="max-w-5xl">
-      <header className="rp-head">
-        <span className="rp-eyebrow">Administrator</span>
-        <h1 className="rp-title">Owner views</h1>
-        <p className="rp-lede">
-          Choose what each owner sees on their home screen.
-        </p>
-      </header>
+    <RpPage>
+      <RpPageHeader
+        eyebrow="04 · Owner views"
+        title="Owner views"
+        line="Choose what each owner sees on their home screen, in what order, and how it greets them."
+      />
       <ExecutiveViewConfig principals={principals} initialPrincipalId={initialPrincipalId} />
-    </div>
+    </RpPage>
   )
 }

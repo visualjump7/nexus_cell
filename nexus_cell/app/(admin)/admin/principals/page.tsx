@@ -1,5 +1,7 @@
-import Link from 'next/link'
 import { getAuthContext } from '@/lib/auth'
+import { RpPage, RpPageHeader, RpList, RpRow, RpTag, RpStatus, RpButton, RpEmpty, dot, fmtDate } from '@/components/rp'
+
+export const metadata = { title: 'Owners' }
 
 export default async function AdminPrincipalsPage() {
   const { supabase, orgId } = await getAuthContext()
@@ -34,52 +36,47 @@ export default async function AdminPrincipalsPage() {
   })
 
   return (
-    <div className="max-w-4xl">
-      <header className="rp-head">
-        <span className="rp-eyebrow">Administrator</span>
-        <h1 className="rp-title">Owners</h1>
-        <p className="rp-lede">
-          Each owner sees a home view you curate. Click Configure to choose what shows up on their screen.
-        </p>
-      </header>
+    <RpPage>
+      <RpPageHeader
+        eyebrow="03 · Owners"
+        title="Owners"
+        line="Each owner sees a home view you curate. Configure a view to choose what reaches their screen."
+      />
 
       {principals.length === 0 ? (
-        <div className="rp-panel p-8 text-center">
-          <p className="text-gray-400">No owners in this organization yet.</p>
-          <p className="text-xs text-gray-600 mt-1">
-            Create one in <Link href="/admin/users" className="text-[#CDA14B] hover:underline">Users</Link> with the Owner role.
-          </p>
-        </div>
+        <RpEmpty
+          title="No owner accounts yet."
+          line="An owner (principal) needs an account before a view can be set up."
+          action={<RpButton variant="ghost" href="/admin/users" arrow>Create one under Members</RpButton>}
+        />
       ) : (
-        <ul className="space-y-2 m-0 p-0 list-none">
-          {principals.map(p => {
+        <RpList>
+          {principals.map((p, i) => {
             const hasConfig = !!p.configured_at
             return (
-              <li key={p.user_id} className="rp-panel p-4 flex items-center gap-4">
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm text-white font-medium truncate">{p.full_name || p.email}</p>
-                  <p className="text-xs text-gray-500 truncate">
-                    {p.email}{p.status !== 'active' && <> · <span className="text-amber-400">{p.status}</span></>}
-                  </p>
-                  {hasConfig ? (
-                    <p className="text-[11px] text-gray-600 mt-1">
-                      View configured · last updated {new Date(p.configured_at!).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                    </p>
-                  ) : (
-                    <p className="text-[11px] text-amber-400/80 mt-1">No custom view yet — using defaults</p>
-                  )}
-                </div>
-                <Link
-                  href={`/admin/executive-views?principal=${p.user_id}`}
-                  className="rp-btn-ghost shrink-0"
-                >
-                  Configure view
-                </Link>
-              </li>
+              <RpRow
+                key={p.user_id}
+                index={i + 1}
+                title={p.full_name || p.email || 'Owner'}
+                titleStyle="display"
+                meta={dot(
+                  p.email,
+                  hasConfig ? `Updated ${fmtDate(p.configured_at!)}` : 'No custom view yet · the default widgets',
+                )}
+                aside={
+                  <span className="flex flex-wrap items-center justify-end gap-2">
+                    {p.status !== 'active' && <RpStatus kind="member" value={p.status} />}
+                    {hasConfig ? <RpTag tone="green">Configured</RpTag> : <RpTag tone="gold">Defaults</RpTag>}
+                    <RpButton variant="ghost" size="sm" href={`/admin/executive-views?principal=${p.user_id}`} arrow>
+                      Configure view
+                    </RpButton>
+                  </span>
+                }
+              />
             )
           })}
-        </ul>
+        </RpList>
       )}
-    </div>
+    </RpPage>
   )
 }

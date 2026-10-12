@@ -4,24 +4,12 @@ import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import { useToast } from '@/components/shared/Toast'
 import type { QuickBooksConnection } from '@/lib/types'
+import { RpTag, RpButton, RpModal, timeAgo, dot } from '@/components/rp'
 
 interface Props {
   connection: QuickBooksConnection | null
   canWrite: boolean
   isConfigured: boolean
-}
-
-function timeAgo(dateStr: string | null): string {
-  if (!dateStr) return 'never'
-  const diff = Date.now() - new Date(dateStr).getTime()
-  const mins = Math.floor(diff / 60000)
-  if (mins < 1) return 'just now'
-  if (mins < 60) return `${mins}m ago`
-  const hrs = Math.floor(mins / 60)
-  if (hrs < 24) return `${hrs}h ago`
-  const days = Math.floor(hrs / 24)
-  if (days === 1) return 'yesterday'
-  return `${days}d ago`
 }
 
 export default function QuickBooksBanner({ connection, canWrite, isConfigured }: Props) {
@@ -90,107 +78,81 @@ export default function QuickBooksBanner({ connection, canWrite, isConfigured }:
     setShowConfirmDisconnect(false)
   }
 
-  // ── Logo/icon for QB (simple) ──
-  const qbIcon = (
-    <div className="w-4 h-4 rounded-sm bg-[#2ca01c] flex items-center justify-center shrink-0" title="QuickBooks">
-      <span className="text-[9px] font-bold text-white">qb</span>
-    </div>
-  )
-
-  // ── State-specific render ──
-  let dotColor: string
+  // ── State-specific copy and actions ──
+  const connected = isConfigured && !!connection
   let statusText: string
-  let subText: string | null = null
   let actions: React.ReactNode = null
 
   if (!isConfigured) {
-    dotColor = 'bg-gray-500'
-    statusText = 'QuickBooks Online — Not Configured'
-    subText = 'Add API credentials to enable'
+    statusText = 'Not connected · bills are entered here or imported from Excel'
     actions = (
-      <button
+      <RpButton
+        variant="ghost"
+        size="sm"
         disabled
         title="Set QUICKBOOKS_CLIENT_ID and QUICKBOOKS_CLIENT_SECRET"
-        className="rp-btn-ghost !min-h-[30px] !px-3 !py-1 opacity-50 cursor-not-allowed"
       >
         Connect
-      </button>
+      </RpButton>
     )
   } else if (!connection) {
-    dotColor = 'bg-amber-400'
-    statusText = 'QuickBooks Online — Not Connected'
+    statusText = 'Not connected · bills are entered here or imported from Excel'
     actions = canWrite ? (
-      <a
-        href="/api/quickbooks/authorize"
-        className="px-3 py-1.5 text-xs text-white bg-[#2ca01c] hover:brightness-110 rounded-sm transition-all font-medium"
-      >
-        Connect →
+      // Full navigation: the OAuth hand-off is a server redirect, not a client route.
+      <a href="/api/quickbooks/authorize" className="rp-btn-ghost rp-btn--sm">
+        Connect <span aria-hidden>→</span>
       </a>
     ) : null
   } else {
-    dotColor = 'bg-emerald-400'
-    statusText = `QuickBooks Online — Connected`
     const envLabel = connection.environment === 'sandbox' ? 'Sandbox' : 'Production'
-    subText = `${envLabel} · Realm ${connection.realm_id} · Last synced ${timeAgo(connection.last_synced_at)}`
+    statusText = dot('Connected', envLabel, `Realm ${connection.realm_id}`, `Last synced ${connection.last_synced_at ? timeAgo(connection.last_synced_at) : 'never'}`)
     actions = canWrite ? (
       <div className="flex items-center gap-2">
-        <button
-          onClick={handleSync}
-          disabled={syncing}
-          className="rp-btn-ghost !min-h-[30px] !px-3 !py-1"
-        >
-          {syncing ? 'Syncing...' : 'Sync Now'}
-        </button>
-        <button
-          onClick={() => setShowConfirmDisconnect(true)}
-          className="rp-btn-ghost !min-h-[30px] !px-3 !py-1 hover:!text-red-400"
-        >
+        <RpButton variant="ghost" size="sm" onClick={handleSync} disabled={syncing}>
+          {syncing ? 'Syncing' : 'Sync now'}
+        </RpButton>
+        <RpButton variant="danger" size="sm" onClick={() => setShowConfirmDisconnect(true)}>
           Disconnect
-        </button>
+        </RpButton>
       </div>
     ) : null
   }
 
   return (
     <>
-      <div className="rp-panel px-4 py-2.5 mb-4 flex items-center justify-between gap-4">
-        <div className="flex items-center gap-3 min-w-0 flex-1">
-          {qbIcon}
-          <div className={`w-2 h-2 rounded-full shrink-0 ${dotColor}`} />
-          <div className="min-w-0 flex-1">
-            <p className="text-sm text-white truncate">{statusText}</p>
-            {subText && <p className="text-[11px] text-gray-500 truncate">{subText}</p>}
-          </div>
-        </div>
-        <div className="shrink-0">{actions}</div>
+      <div className="rp-box flex flex-wrap items-center gap-3 px-5 py-3.5">
+        <RpTag tone={connected ? 'green' : 'neutral'}>QuickBooks</RpTag>
+        <span
+          aria-hidden
+          className={`h-2 w-2 shrink-0 ${connected ? 'bg-rp-green' : 'bg-rp-dim'}`}
+        />
+        <p className="order-last min-w-0 basis-full text-sm text-rp-muted sm:order-none sm:basis-0 sm:flex-1" suppressHydrationWarning>
+          <span className="sr-only">{connected ? 'QuickBooks connected. ' : 'QuickBooks not connected. '}</span>
+          {statusText}
+          {!isConfigured && <span className="text-rp-dim"> · API credentials not configured</span>}
+        </p>
+        {actions && <div className="ml-auto shrink-0">{actions}</div>}
       </div>
 
-      {/* Disconnect confirmation modal */}
-      {showConfirmDisconnect && (
-        <div className="fixed inset-0 bg-[rgba(8,9,10,.85)] flex items-center justify-center z-50 p-4" onClick={() => setShowConfirmDisconnect(false)}>
-          <div className="rp-panel w-full max-w-sm p-6" onClick={e => e.stopPropagation()}>
-            <h3 className="rp-eyebrow mb-3">Disconnect QuickBooks?</h3>
-            <p className="text-sm text-gray-400 mb-6">
-              Your portal data will remain intact, but bills will no longer sync with QuickBooks. You can reconnect anytime.
-            </p>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setShowConfirmDisconnect(false)}
-                className="rp-btn-ghost flex-1 !min-h-[42px]"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleDisconnect}
-                disabled={disconnecting}
-                className="flex-1 py-2 px-4 bg-red-600 hover:bg-red-500 disabled:opacity-50 text-white rounded-none min-h-[42px] font-display uppercase tracking-[0.16em] text-[13px] transition-colors"
-              >
-                {disconnecting ? 'Disconnecting...' : 'Disconnect'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <RpModal
+        open={showConfirmDisconnect}
+        onClose={() => setShowConfirmDisconnect(false)}
+        eyebrow="QuickBooks"
+        title="Disconnect QuickBooks?"
+        size="sm"
+        footer={
+          <>
+            <RpButton variant="ghost" onClick={() => setShowConfirmDisconnect(false)}>Cancel</RpButton>
+            <RpButton variant="danger" onClick={handleDisconnect} disabled={disconnecting}>
+              {disconnecting ? 'Disconnecting' : 'Disconnect'}
+            </RpButton>
+          </>
+        }
+      >
+        <p className="text-[15px] leading-normal text-rp-muted">
+          Bills stay as they are here. They stop syncing with QuickBooks until you connect again.
+        </p>
+      </RpModal>
     </>
   )
 }

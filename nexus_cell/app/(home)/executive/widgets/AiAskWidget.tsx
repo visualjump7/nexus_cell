@@ -2,6 +2,9 @@
 
 import { useEffect, useRef, useState } from 'react'
 import WidgetCard from './WidgetCard'
+import { ChatBubble, ChatTyping } from '@/components/AIDrawer'
+import { RpButton } from '@/components/rp'
+import { BRAND } from '@/lib/brand'
 
 interface ChatMessage {
   role: 'user' | 'assistant'
@@ -74,87 +77,61 @@ export default function AiAskWidget({ openingMessage, suggestions }: Props) {
   const showOpener = !!openingMessage && !hasConversation
 
   return (
-    <WidgetCard prominent>
-      <div className="flex items-center gap-3 mb-3">
-        <div
-          className="w-8 h-8 rounded-full shrink-0"
-          style={{
-            background: 'radial-gradient(circle, #E0BF7B 0%, #B0853A 50%, #4F3B20 100%)',
-          }}
+    <WidgetCard
+      prominent
+      title={`Ask ${BRAND.assistantName}`}
+      subtitle="Anything about the build, the budget or the calendar."
+      trailing={
+        <span
           aria-hidden
+          className="block h-6 w-6 rounded-full"
+          style={{ background: 'radial-gradient(circle at 35% 30%, #E6C98A 0%, #CDA14B 40%, #8C6830 78%, #2D2112 100%)', boxShadow: '0 0 14px rgba(205,161,75,.25)' }}
         />
-        <div>
-          <p className="rp-eyebrow leading-none">Ask Nexus</p>
-          <p className="text-[12px] text-[#9AA0A4] mt-1.5">Anything about the build, the budget or the calendar.</p>
-        </div>
-      </div>
+      }
+    >
+      <div className="flex max-w-[860px] flex-col gap-4">
+        {showOpener && <ChatBubble role="assistant">{openingMessage}</ChatBubble>}
 
-      <div className="flex gap-2">
-        <input
-          type="text"
-          value={input}
-          onChange={e => setInput(e.target.value)}
-          onKeyDown={handleKey}
-          placeholder="Type or ask…"
-          className="flex-1 bg-[#0E0F11] border border-[#26292C] rounded-sm px-4 py-2.5 text-sm text-white placeholder-[#6E7578] focus:outline-none focus:border-[#CDA14B] transition-colors"
-          disabled={loading}
-        />
-        <button
-          onClick={() => send(input)}
-          disabled={!input.trim() || loading}
-          className="rp-btn-solid"
-        >
-          {loading ? '…' : 'Ask'}
-        </button>
-      </div>
-
-      {showOpener && (
-        <div className="mt-4 flex justify-start">
-          <div className="max-w-[90%] px-3.5 py-2.5 rounded-sm text-sm leading-relaxed bg-[#CDA14B]/10 text-[#F5F5F5] border border-[#CDA14B]/20">
-            <p className="whitespace-pre-wrap">{openingMessage}</p>
+        {hasConversation && (
+          <div ref={scrollRef} className="flex max-h-80 flex-col gap-4 overflow-y-auto pr-1" aria-live="polite">
+            {messages.map((msg, i) => (
+              <ChatBubble key={i} role={msg.role}>{msg.content}</ChatBubble>
+            ))}
+            {loading && <ChatTyping />}
           </div>
-        </div>
-      )}
+        )}
 
-      {!hasConversation && (
-        <div className="mt-3 flex flex-wrap gap-2">
-          {principalSuggestions.map(s => (
-            <button
-              key={s}
-              onClick={() => send(s)}
-              disabled={loading}
-              className="rp-btn-ghost disabled:opacity-50"
-            >
-              {s}
-            </button>
-          ))}
+        {/* Input joined to Ask, like the gate */}
+        <div className="flex">
+          <input
+            type="text"
+            value={input}
+            onChange={e => setInput(e.target.value)}
+            onKeyDown={handleKey}
+            placeholder="Type or ask…"
+            aria-label={`Ask ${BRAND.assistantName}`}
+            className="rp-input min-h-12 min-w-0 flex-1 border-r-0"
+            disabled={loading}
+          />
+          <RpButton
+            onClick={() => send(input)}
+            disabled={!input.trim() || loading}
+            className="min-h-12 shrink-0"
+          >
+            {loading ? '…' : 'Ask'}
+          </RpButton>
         </div>
-      )}
 
-      {hasConversation && (
-        <div ref={scrollRef} className="mt-4 max-h-72 overflow-y-auto space-y-3 pr-1">
-          {messages.map((msg, i) => (
-            <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-              <div className={`max-w-[85%] px-3.5 py-2.5 rounded-sm text-sm leading-relaxed ${
-                msg.role === 'user'
-                  ? 'bg-[#141618] text-[#F5F5F5] border border-[#1F1F1F]'
-                  : 'bg-[#CDA14B]/10 text-[#F5F5F5] border border-[#CDA14B]/20'
-              }`}>
-                <p className="whitespace-pre-wrap">{msg.content}</p>
-              </div>
-            </div>
-          ))}
-          {loading && (
-            <div className="flex justify-start">
-              <div className="bg-[#CDA14B]/10 border border-[#CDA14B]/20 px-4 py-3 rounded-sm flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 bg-[#CDA14B] rounded-full animate-pulse" />
-                <span className="w-1.5 h-1.5 bg-[#CDA14B] rounded-full animate-pulse" style={{ animationDelay: '150ms' }} />
-                <span className="w-1.5 h-1.5 bg-[#CDA14B] rounded-full animate-pulse" style={{ animationDelay: '300ms' }} />
-              </div>
-            </div>
-          )}
-        </div>
-      )}
+        {!hasConversation && (
+          <div className="flex flex-wrap gap-2">
+            {principalSuggestions.map(s => (
+              <RpButton key={s} variant="ghost" size="sm" className="font-sans text-[13px] normal-case tracking-normal whitespace-normal text-left" onClick={() => send(s)} disabled={loading}>
+                {s}
+              </RpButton>
+            ))}
+          </div>
+        )}
+      </div>
     </WidgetCard>
   )
 }

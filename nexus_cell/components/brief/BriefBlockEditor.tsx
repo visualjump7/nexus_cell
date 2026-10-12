@@ -1,8 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { FileUp, Loader2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { FileUp } from "lucide-react";
 import { TipTapEditor } from "./TipTapEditor";
 import type {
   BriefBlock,
@@ -11,7 +10,17 @@ import type {
   ProjectsBlockData,
   DecisionsBlockData,
 } from "@/lib/brief-service";
-import { formatCurrency } from "@/lib/utils";
+import {
+  RpField,
+  RpSelect,
+  RpTextarea,
+  RpButton,
+  RpLoading,
+  RpStatus,
+  RP_ICON,
+  fmtMoney,
+  dot,
+} from "@/components/rp";
 
 interface BriefBlockEditorProps {
   block: BriefBlock;
@@ -20,6 +29,48 @@ interface BriefBlockEditorProps {
   onUpdate: (
     updates: Partial<Pick<BriefBlock, "content_html" | "config" | "commentary">>
   ) => void;
+}
+
+/** Inset summary of the live data a block will show. */
+function DataInset({ title, children }: { title: React.ReactNode; children?: React.ReactNode }) {
+  return (
+    <div className="rp-inset flex flex-col gap-3 p-4">
+      <p className="font-display text-[13px] uppercase tracking-[.14em] text-rp-text">{title}</p>
+      {children}
+    </div>
+  );
+}
+
+function MiniRows({ rows, more }: { rows: { key: string; left: React.ReactNode; right: React.ReactNode }[]; more?: number }) {
+  if (rows.length === 0) return null;
+  return (
+    <ul className="m-0 flex list-none flex-col border-t border-rp-line p-0">
+      {rows.map((r) => (
+        <li key={r.key} className="flex items-center justify-between gap-3 border-b border-rp-line py-2 text-[13px]">
+          <span className="min-w-0 truncate text-rp-muted">{r.left}</span>
+          <span className="shrink-0 tabular-nums text-rp-text">{r.right}</span>
+        </li>
+      ))}
+      {more != null && more > 0 && (
+        <li className="pt-2 text-[12px] text-rp-dim">{`+ ${more} more`}</li>
+      )}
+    </ul>
+  );
+}
+
+function CommentaryField({ block, onUpdate }: { block: BriefBlock; onUpdate: BriefBlockEditorProps["onUpdate"] }) {
+  const id = `commentary-${block.id}`;
+  return (
+    <RpField label="Commentary" htmlFor={id} hint="Optional · printed under the data">
+      <RpTextarea
+        id={id}
+        value={block.commentary || ""}
+        onChange={(e) => onUpdate({ commentary: e.target.value })}
+        placeholder="What it means and what you recommend"
+        rows={3}
+      />
+    </RpField>
+  );
 }
 
 export function BriefBlockEditor({
@@ -47,14 +98,14 @@ export function BriefBlockEditor({
 
   if (block.type === "text" || block.type === "document") {
     return (
-      <div className="space-y-3">
+      <div className="flex flex-col gap-3">
         <TipTapEditor
           content={block.content_html || ""}
           onChange={(html) => onUpdate({ content_html: html })}
           placeholder={
             block.type === "document"
-              ? "Upload a .docx or type content..."
-              : "Write your commentary..."
+              ? "Upload a .docx or type the document"
+              : "Write the update. Start with a heading to title the section."
           }
         />
         <div className="flex items-center gap-2">
@@ -65,19 +116,15 @@ export function BriefBlockEditor({
             className="hidden"
             onChange={handleDocxUpload}
           />
-          <Button
-            variant="outline"
+          <RpButton
+            variant="ghost"
             size="sm"
+            icon={<FileUp {...RP_ICON} />}
             onClick={() => fileRef.current?.click()}
             disabled={uploading}
           >
-            {uploading ? (
-              <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <FileUp className="mr-2 h-3.5 w-3.5" />
-            )}
-            Upload .docx
-          </Button>
+            {uploading ? "Converting…" : "Upload .docx"}
+          </RpButton>
         </div>
       </div>
     );
@@ -86,54 +133,19 @@ export function BriefBlockEditor({
   if (block.type === "cashflow") {
     const data = liveData.cashflow as CashFlowBlockData | undefined;
     return (
-      <div className="space-y-3">
+      <div className="flex flex-col gap-4">
         {data ? (
-          <div className="rp-surface p-3">
-            <p className="text-sm font-medium text-foreground">
-              Cash Flow — {data.month} {data.year}
-            </p>
-            <div className="mt-2 grid grid-cols-3 gap-3 text-sm">
-              <div>
-                <p className="text-muted-foreground">Paid</p>
-                <p className="font-medium text-foreground">
-                  {formatCurrency(data.cashOut)}
-                </p>
-              </div>
-              <div>
-                <p className="text-muted-foreground">Pending</p>
-                <p className="font-medium text-foreground">
-                  {data.pendingCount} bills
-                </p>
-              </div>
-              <div>
-                <p className="text-muted-foreground">Net</p>
-                <p
-                  className={`font-medium ${
-                    data.net < 0 ? "text-red-400" : "text-emerald-400"
-                  }`}
-                >
-                  {formatCurrency(data.net)}
-                </p>
-              </div>
+          <DataInset title={`Cash · ${data.month} ${data.year}`}>
+            <div className="grid grid-cols-3 gap-3">
+              <MiniStat label="Paid out" value={fmtMoney(data.cashOut, { compact: true })} />
+              <MiniStat label="Pending" value={`${data.pendingCount}`} />
+              <MiniStat label="Net" value={fmtMoney(data.net, { compact: true })} tone={data.net < 0 ? "text-rp-alert" : undefined} />
             </div>
-          </div>
+          </DataInset>
         ) : (
-          <div className="rp-surface p-3">
-            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-          </div>
+          <RpLoading label="Loading cash" className="h-24" />
         )}
-        <div>
-          <label className="text-xs text-muted-foreground">
-            Commentary (optional)
-          </label>
-          <textarea
-            value={block.commentary || ""}
-            onChange={(e) => onUpdate({ commentary: e.target.value })}
-            placeholder="Add a note below this data..."
-            rows={2}
-            className="mt-1 w-full rounded-sm border border-[#26292C] bg-[#0A0B0C] px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:border-primary"
-          />
-        </div>
+        <CommentaryField block={block} onUpdate={onUpdate} />
       </div>
     );
   }
@@ -143,69 +155,37 @@ export function BriefBlockEditor({
       (block.config?.days_ahead as number | undefined) ?? 7;
     const dataKey = `bills_${daysAhead}`;
     const data = liveData[dataKey] as BillBlockData | undefined;
+    const selectId = `days-${block.id}`;
 
     return (
-      <div className="space-y-3">
-        <div className="flex items-center gap-2">
-          <label className="text-xs text-muted-foreground">
-            Show bills due in next:
-          </label>
-          <select
+      <div className="flex flex-col gap-4">
+        <RpField label="Window" htmlFor={selectId}>
+          <RpSelect
+            id={selectId}
+            className="max-w-[220px]"
             value={daysAhead}
             onChange={(e) =>
               onUpdate({
                 config: { ...block.config, days_ahead: Number(e.target.value) },
               })
             }
-            className="rounded-sm border border-[#26292C] bg-[#0A0B0C] px-2 py-1 text-sm text-foreground"
           >
-            <option value={7}>7 days</option>
-            <option value={14}>14 days</option>
-            <option value={30}>30 days</option>
-          </select>
-        </div>
+            <option value={7}>Next 7 days</option>
+            <option value={14}>Next 14 days</option>
+            <option value={30}>Next 30 days</option>
+          </RpSelect>
+        </RpField>
         {data ? (
-          <div className="rp-surface p-3">
-            <p className="text-sm font-medium text-foreground">
-              {data.bills.length} bill{data.bills.length !== 1 ? "s" : ""} due —{" "}
-              {formatCurrency(data.total)}
-            </p>
-            {data.bills.length > 0 && (
-              <div className="mt-2 space-y-1">
-                {data.bills.slice(0, 5).map((bill) => (
-                  <div
-                    key={bill.id}
-                    className="flex justify-between text-xs text-muted-foreground"
-                  >
-                    <span>{bill.vendor}</span>
-                    <span>{formatCurrency(bill.amount)}</span>
-                  </div>
-                ))}
-                {data.bills.length > 5 && (
-                  <p className="text-xs text-muted-foreground">
-                    + {data.bills.length - 5} more
-                  </p>
-                )}
-              </div>
-            )}
-          </div>
+          <DataInset title={dot(`${data.bills.length} ${data.bills.length === 1 ? "bill" : "bills"} due`, fmtMoney(data.total, { compact: true }))}>
+            <MiniRows
+              rows={data.bills.slice(0, 5).map((bill) => ({ key: bill.id, left: bill.vendor, right: fmtMoney(bill.amount) }))}
+              more={data.bills.length - 5}
+            />
+          </DataInset>
         ) : (
-          <div className="rp-surface p-3">
-            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-          </div>
+          <RpLoading label="Loading bills" className="h-24" />
         )}
-        <div>
-          <label className="text-xs text-muted-foreground">
-            Commentary (optional)
-          </label>
-          <textarea
-            value={block.commentary || ""}
-            onChange={(e) => onUpdate({ commentary: e.target.value })}
-            placeholder="Add a note below this data..."
-            rows={2}
-            className="mt-1 w-full rounded-sm border border-[#26292C] bg-[#0A0B0C] px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:border-primary"
-          />
-        </div>
+        <CommentaryField block={block} onUpdate={onUpdate} />
       </div>
     );
   }
@@ -214,66 +194,38 @@ export function BriefBlockEditor({
     const status =
       (block.config?.status as string | undefined) ?? "all";
     const data = liveData.projects as ProjectsBlockData | undefined;
+    const selectId = `status-${block.id}`;
 
     return (
-      <div className="space-y-3">
-        <div className="flex items-center gap-2">
-          <label className="text-xs text-muted-foreground">Status:</label>
-          <select
+      <div className="flex flex-col gap-4">
+        <RpField label="Status" htmlFor={selectId}>
+          <RpSelect
+            id={selectId}
+            className="max-w-[220px]"
             value={status}
             onChange={(e) =>
               onUpdate({
                 config: { ...block.config, status: e.target.value },
               })
             }
-            className="rounded-sm border border-[#26292C] bg-[#0A0B0C] px-2 py-1 text-sm text-foreground"
           >
             <option value="all">All</option>
             <option value="active">Active</option>
-            <option value="on_hold">On Hold</option>
-            <option value="completed">Completed</option>
+            <option value="on_hold">On hold</option>
+            <option value="completed">Complete</option>
             <option value="archived">Archived</option>
-          </select>
-        </div>
+          </RpSelect>
+        </RpField>
         {data ? (
-          <div className="rp-surface p-3">
-            <p className="text-sm font-medium text-foreground">
-              {data.projects.length} project
-              {data.projects.length !== 1 ? "s" : ""} · {data.activeCount} active
-            </p>
-            {data.projects.length > 0 && (
-              <div className="mt-2 space-y-1">
-                {data.projects.slice(0, 5).map((p) => (
-                  <div
-                    key={p.id}
-                    className="flex justify-between text-xs text-muted-foreground"
-                  >
-                    <span>{p.name}</span>
-                    <span className="capitalize">
-                      {p.status.replace("_", " ")}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+          <DataInset title={dot(`${data.projects.length} ${data.projects.length === 1 ? "package" : "packages"}`, `${data.activeCount} active`)}>
+            <MiniRows
+              rows={data.projects.slice(0, 5).map((p) => ({ key: p.id, left: p.name, right: <RpStatus kind="project" value={p.status} /> }))}
+            />
+          </DataInset>
         ) : (
-          <div className="rp-surface p-3">
-            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-          </div>
+          <RpLoading label="Loading projects" className="h-24" />
         )}
-        <div>
-          <label className="text-xs text-muted-foreground">
-            Commentary (optional)
-          </label>
-          <textarea
-            value={block.commentary || ""}
-            onChange={(e) => onUpdate({ commentary: e.target.value })}
-            placeholder="Add a note below this data..."
-            rows={2}
-            className="mt-1 w-full rounded-sm border border-[#26292C] bg-[#0A0B0C] px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:border-primary"
-          />
-        </div>
+        <CommentaryField block={block} onUpdate={onUpdate} />
       </div>
     );
   }
@@ -282,46 +234,29 @@ export function BriefBlockEditor({
     const data = liveData.decisions as DecisionsBlockData | undefined;
 
     return (
-      <div className="space-y-3">
+      <div className="flex flex-col gap-4">
         {data ? (
-          <div className="rp-surface p-3">
-            <p className="text-sm font-medium text-foreground">
-              {data.count} pending decision{data.count !== 1 ? "s" : ""}
-            </p>
-            {data.decisions.length > 0 && (
-              <div className="mt-2 space-y-1">
-                {data.decisions.slice(0, 5).map((d) => (
-                  <div
-                    key={d.id}
-                    className="flex items-center justify-between text-xs text-muted-foreground"
-                  >
-                    <span>{d.title}</span>
-                    <span className="capitalize">{d.priority}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+          <DataInset title={`${data.count} ${data.count === 1 ? "decision" : "decisions"} waiting`}>
+            <MiniRows
+              rows={data.decisions.slice(0, 5).map((d) => ({ key: d.id, left: d.title, right: <RpStatus kind="priority" value={d.priority} /> }))}
+            />
+          </DataInset>
         ) : (
-          <div className="rp-surface p-3">
-            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-          </div>
+          <RpLoading label="Loading decisions" className="h-24" />
         )}
-        <div>
-          <label className="text-xs text-muted-foreground">
-            Commentary (optional)
-          </label>
-          <textarea
-            value={block.commentary || ""}
-            onChange={(e) => onUpdate({ commentary: e.target.value })}
-            placeholder="Add a note below this data..."
-            rows={2}
-            className="mt-1 w-full rounded-sm border border-[#26292C] bg-[#0A0B0C] px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:border-primary"
-          />
-        </div>
+        <CommentaryField block={block} onUpdate={onUpdate} />
       </div>
     );
   }
 
   return null;
+}
+
+function MiniStat({ label, value, tone }: { label: string; value: string; tone?: string }) {
+  return (
+    <div className="flex min-w-0 flex-col gap-1">
+      <span className="font-display text-[11px] uppercase tracking-[.16em] text-rp-muted">{label}</span>
+      <span className={`font-display text-xl font-medium tabular-nums ${tone ?? "text-rp-text"}`}>{value}</span>
+    </div>
+  );
 }

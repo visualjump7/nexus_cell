@@ -1,6 +1,9 @@
 import { getAuthContext } from '@/lib/auth'
 import UsersManager from './UsersManager'
 import type { PendingInvitation } from '@/lib/types'
+import { RpPage, RpPageHeader } from '@/components/rp'
+
+export const metadata = { title: 'Members' }
 
 export default async function AdminUsersPage() {
   const { supabase, orgId, user } = await getAuthContext()
@@ -33,19 +36,17 @@ export default async function AdminUsersPage() {
   })
 
   return (
-    <div className="max-w-5xl">
-      <header className="rp-head">
-        <span className="rp-eyebrow">Administrator</span>
-        <h1 className="rp-title">Users</h1>
-        <p className="rp-lede">
-          Create accounts directly, review invites proposed by the owner&apos;s rep, reset passwords, and manage roles.
-        </p>
-      </header>
+    <RpPage>
+      <RpPageHeader
+        eyebrow="02 · Members"
+        title="Members"
+        line="Create accounts, approve invitations from the owner's rep, reset passwords and set roles."
+      />
       <UsersManager
         initialUsers={users}
         initialPending={(pendingRes.data || []) as PendingInvitation[]}
         currentUserId={user.id}
       />
-    </div>
+    </RpPage>
   )
 }

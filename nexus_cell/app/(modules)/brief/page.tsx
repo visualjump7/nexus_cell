@@ -1,24 +1,17 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import Link from "next/link";
+import { useState, useEffect, useCallback, useLayoutEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
+import { createPortal } from "react-dom";
 import {
   Plus,
-  Loader2,
-  FileText,
-  MoreVertical,
+  MoreHorizontal,
   Send,
   ArchiveRestore,
   Trash2,
-  Calendar,
   Download,
 } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { BriefReaderView } from "@/components/brief/BriefReaderView";
 import {
   fetchBriefs,
@@ -34,15 +27,30 @@ import {
   fetchPendingDecisions,
   type Brief,
 } from "@/lib/brief-service";
-import { BRAND } from "@/lib/brand";
+import {
+  RpPage,
+  RpPageHeader,
+  RpTabs,
+  RpList,
+  RpRow,
+  RpStatus,
+  RpButton,
+  RpCheck,
+  RpEmpty,
+  RpLoading,
+  RpSubhead,
+  RP_ICON,
+  dot,
+  fmtDate,
+  pushEscapeLayer,
+} from "@/components/rp";
+import { sectionEyebrow } from "@/lib/sections";
+
+/** Below 640px, wrap a row's status and actions onto their own line (kit rows cap the end at 50%). */
+const ROW_STACK_SM = "max-sm:flex-wrap max-sm:[&>.rp-row-main]:basis-0 max-sm:[&>.rp-row-end]:max-w-none max-sm:[&>.rp-row-end]:basis-full max-sm:[&>.rp-row-end]:justify-start"
 
 type FilterTab = "all" | "draft" | "published" | "archived";
-
-const statusColors: Record<string, string> = {
-  draft: "bg-yellow-600/20 text-yellow-400 border-yellow-600/30",
-  published: "bg-emerald-600/20 text-emerald-400 border-emerald-600/30",
-  archived: "bg-zinc-600/20 text-zinc-400 border-zinc-600/30",
-};
+type Counts = Record<FilterTab, number>;
 
 export default function BriefPage() {
   const router = useRouter();
@@ -57,6 +65,9 @@ export default function BriefPage() {
   const [menuOpen, setMenuOpen] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [downloading, setDownloading] = useState<string | null>(null);
+  // Tab counts and the latest published date, taken from the last "All" load.
+  const [counts, setCounts] = useState<Counts | null>(null);
+  const [latestPublishedDate, setLatestPublishedDate] = useState<string | null>(null);
 
   useEffect(() => {
     async function bootstrap() {
@@ -92,6 +103,21 @@ export default function BriefPage() {
       filter === "all" ? undefined : filter
     );
     setBriefs(data as (Brief & { _blockCount?: number })[]);
+    if (filter === "all") {
+      setCounts({
+        all: data.length,
+        draft: data.filter((b) => b.status === "draft").length,
+        published: data.filter((b) => b.status === "published").length,
+        archived: data.filter((b) => b.status === "archived").length,
+      });
+      const published = data
+        .filter((b) => b.status === "published")
+        .map((b) => b.brief_date)
+        .sort();
+      setLatestPublishedDate(published.length ? published[published.length - 1] : null);
+    } else {
+      setCounts((prev) => (prev ? { ...prev, [filter]: data.length } : prev));
+    }
     setIsLoading(false);
   }, [orgId, filter]);
 
@@ -209,261 +235,291 @@ export default function BriefPage() {
 
   const filterTabs: { label: string; value: FilterTab }[] = [
     { label: "All", value: "all" },
-    { label: "Drafts", value: "draft" },
+    { label: "Draft", value: "draft" },
     { label: "Published", value: "published" },
     { label: "Archived", value: "archived" },
   ];
 
-  if (isLoading) {
+  // Before the role is known: a neutral loading page.
+  if (!role || (isLoading && !isStaff)) {
     return (
-      <div className="flex min-h-[60vh] items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
+      <RpPage>
+        <RpPageHeader
+          eyebrow={sectionEyebrow("brief")}
+          title="The owner's weekly brief"
+          pines={false}
+        />
+        <RpLoading rows={6} label="Loading briefs" />
+      </RpPage>
     );
   }
 
   if (isStaff) {
+    const total = counts?.all ?? briefs.length;
     return (
-      <div className="mx-auto max-w-4xl space-y-6 px-4 py-8 sm:px-6">
-        <header className="rp-head !mb-0">
-          <div className="flex items-end justify-between gap-4 flex-wrap">
-          <div className="flex flex-col gap-2.5">
-            <span className="rp-eyebrow">Owner briefings</span>
-            <h1 className="rp-title">Briefs</h1>
-            <p className="rp-lede">
-              Compose and publish briefs for the owner
-            </p>
-          </div>
-          <Button onClick={handleNewBrief} disabled={creating}>
-            {creating ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <Plus className="mr-2 h-4 w-4" />
-            )}
-            New Brief
-          </Button>
-          </div>
-        </header>
-
-        <div className="rp-tabs" role="tablist">
-          {filterTabs.map((tab) => (
-            <button
-              key={tab.value}
-              onClick={() => setFilter(tab.value)}
-              role="tab"
-              aria-selected={filter === tab.value}
-              className="rp-tab"
+      <RpPage>
+        <RpPageHeader
+          eyebrow={sectionEyebrow("brief")}
+          title="The owner's weekly brief"
+          line={dot(
+            `${total} ${total === 1 ? "brief" : "briefs"}`,
+            latestPublishedDate && `latest published ${fmtDate(latestPublishedDate, "medium")}`,
+          )}
+          actions={
+            <RpButton
+              icon={<Plus {...RP_ICON} />}
+              onClick={handleNewBrief}
+              disabled={creating}
             >
-              {tab.label}
-            </button>
-          ))}
-        </div>
+              {creating ? "Creating…" : "New brief"}
+            </RpButton>
+          }
+        />
 
-        {briefs.length === 0 ? (
-          <Card className="relative overflow-hidden" style={{ isolation: "isolate" }}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={BRAND.pines} alt="" aria-hidden className="rp-pines rp-pines--foot" />
-            <CardContent className="flex flex-col items-center justify-center py-12 min-h-[240px]">
-              <FileText className="h-12 w-12 text-muted-foreground/30" />
-              <p className="mt-4 text-sm text-muted-foreground">
-                {filter === "all"
-                  ? "No briefs yet. Create your first brief to get started."
-                  : `No ${filter} briefs found.`}
-              </p>
-            </CardContent>
-          </Card>
+        <RpTabs
+          ariaLabel="Brief status"
+          value={filter}
+          onChange={(id) => setFilter(id as FilterTab)}
+          items={filterTabs.map((t) => ({
+            id: t.value,
+            label: t.label,
+            count: t.value === filter && !isLoading ? briefs.length : counts?.[t.value],
+          }))}
+        />
+
+        {isLoading ? (
+          <RpLoading rows={6} label="Loading briefs" />
+        ) : briefs.length === 0 ? (
+          <RpEmpty
+            title={filter === "all" ? "No briefs yet." : `No ${filter} briefs.`}
+            line={
+              filter === "all"
+                ? "Compose the first owner's brief: the week in words, cash, bills, projects and decisions."
+                : "Briefs with this status appear here."
+            }
+            action={
+              filter === "all" ? (
+                <RpButton variant="ghost" icon={<Plus {...RP_ICON} />} onClick={handleNewBrief} disabled={creating}>
+                  New brief
+                </RpButton>
+              ) : undefined
+            }
+          />
         ) : (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="space-y-3"
-          >
-            {briefs.map((brief) => (
-              <Card
+          <RpList>
+            {briefs.map((brief, i) => (
+              <RpRow
                 key={brief.id}
-                className="group cursor-pointer transition-colors hover:bg-muted/20"
-                onClick={() => router.push(`/brief/${brief.id}`)}
-              >
-                <CardContent className="flex items-center justify-between p-4">
-                  <div className="flex items-center gap-4">
-                    <div className="rounded-lg bg-primary/10 p-2">
-                      <FileText className="h-5 w-5 text-primary" />
-                    </div>
-                    <div>
-                      <p className="font-medium text-foreground">
-                        {brief.title}
-                      </p>
-                      <div className="mt-1 flex items-center gap-3 text-xs text-muted-foreground">
-                        <span className="flex items-center gap-1">
-                          <Calendar className="h-3 w-3" />
-                          {new Date(
-                            brief.brief_date + "T00:00:00"
-                          ).toLocaleDateString("en-US", {
-                            month: "long",
-                            day: "numeric",
-                            year: "numeric",
-                          })}
-                        </span>
-                        <span>{brief._blockCount || 0} blocks</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <Badge
-                      variant="outline"
-                      className={statusColors[brief.status] || ""}
+                className={ROW_STACK_SM}
+                index={i + 1}
+                href={`/brief/${brief.id}`}
+                title={brief.title}
+                titleStyle="display"
+                meta={dot(
+                  fmtDate(brief.brief_date, "medium"),
+                  `${brief._blockCount || 0} blocks`,
+                  brief.principal_visible ? "Visible to owner" : null,
+                  downloading === brief.id && "Preparing PDF…",
+                )}
+                aside={<RpStatus kind="brief" value={brief.status} />}
+                actions={
+                  <BriefRowMenu
+                    open={menuOpen === brief.id}
+                    onToggle={() => setMenuOpen(menuOpen === brief.id ? null : brief.id)}
+                    onClose={() => setMenuOpen(null)}
+                  >
+                    {brief.status === "draft" && (
+                      <MenuItem icon={<Send {...RP_ICON} />} onClick={() => handlePublish(brief.id)}>
+                        Publish
+                      </MenuItem>
+                    )}
+                    {brief.status === "published" && (
+                      <MenuItem icon={<ArchiveRestore {...RP_ICON} />} onClick={() => handleUnpublish(brief.id)}>
+                        Unpublish
+                      </MenuItem>
+                    )}
+                    <MenuItem
+                      icon={<Download {...RP_ICON} />}
+                      onClick={() => handleDownloadPDF(brief.id)}
+                      disabled={downloading === brief.id}
                     >
-                      {brief.status}
-                    </Badge>
-
-                    <div
-                      className="relative"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <button
-                        onClick={() =>
-                          setMenuOpen(menuOpen === brief.id ? null : brief.id)
+                      {downloading === brief.id ? "Preparing PDF…" : "Download PDF"}
+                    </MenuItem>
+                    <div className="border-b border-rp-line px-4 py-3">
+                      <RpCheck
+                        checked={Boolean(brief.principal_visible)}
+                        onChange={() =>
+                          handleTogglePrincipalVisible(
+                            brief.id,
+                            Boolean(brief.principal_visible),
+                          )
                         }
-                        className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-                      >
-                        <MoreVertical className="h-4 w-4" />
-                      </button>
-
-                      {menuOpen === brief.id && (
-                        <div className="absolute right-0 top-full z-10 mt-1 min-w-[160px] rounded-lg border border-border bg-card py-1 shadow-lg">
-                          {brief.status === "draft" && (
-                            <button
-                              onClick={() => handlePublish(brief.id)}
-                              className="flex w-full items-center gap-2 px-3 py-2 text-sm text-foreground hover:bg-muted"
-                            >
-                              <Send className="h-3.5 w-3.5" />
-                              Publish
-                            </button>
-                          )}
-                          {brief.status === "published" && (
-                            <button
-                              onClick={() => handleUnpublish(brief.id)}
-                              className="flex w-full items-center gap-2 px-3 py-2 text-sm text-foreground hover:bg-muted"
-                            >
-                              <ArchiveRestore className="h-3.5 w-3.5" />
-                              Unpublish
-                            </button>
-                          )}
-                          <button
-                            onClick={() => handleDownloadPDF(brief.id)}
-                            disabled={downloading === brief.id}
-                            className="flex w-full items-center gap-2 px-3 py-2 text-sm text-foreground hover:bg-muted disabled:opacity-50"
-                          >
-                            {downloading === brief.id ? (
-                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                            ) : (
-                              <Download className="h-3.5 w-3.5" />
-                            )}
-                            Download PDF
-                          </button>
-                          <button
-                            onClick={() =>
-                              handleTogglePrincipalVisible(
-                                brief.id,
-                                Boolean(brief.principal_visible),
-                              )
-                            }
-                            className="flex w-full items-center gap-2 px-3 py-2 text-sm text-foreground hover:bg-muted"
-                          >
-                            <span className={`inline-block w-3.5 h-3.5 rounded border ${brief.principal_visible ? 'bg-emerald-500 border-emerald-500' : 'border-white/30'}`}>
-                              {brief.principal_visible && (
-                                <svg viewBox="0 0 16 16" className="w-full h-full text-white" fill="none" stroke="currentColor" strokeWidth={3}>
-                                  <path d="M3 8l3 3 7-7" strokeLinecap="round" strokeLinejoin="round" />
-                                </svg>
-                              )}
-                            </span>
-                            Visible to owner
-                          </button>
-                          <button
-                            onClick={() => handleDelete(brief.id)}
-                            className="flex w-full items-center gap-2 px-3 py-2 text-sm text-red-400 hover:bg-muted"
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                            Delete
-                          </button>
-                        </div>
-                      )}
+                        label="Visible to owner"
+                      />
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
+                    <MenuItem icon={<Trash2 {...RP_ICON} />} onClick={() => handleDelete(brief.id)} danger>
+                      Delete
+                    </MenuItem>
+                  </BriefRowMenu>
+                }
+              />
             ))}
-          </motion.div>
+          </RpList>
         )}
-      </div>
+      </RpPage>
     );
   }
 
   // Reader view (principal / cfo)
   return (
-    <motion.main
-      initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-      className="mx-auto max-w-[680px] px-4 py-10 sm:px-6"
-    >
+    <RpPage>
       {latestBrief ? (
         <BriefReaderView brief={latestBrief} liveData={liveData} />
       ) : (
-        <div className="relative overflow-hidden py-12 text-center min-h-[280px]" style={{ isolation: "isolate" }}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={BRAND.pines} alt="" aria-hidden className="rp-pines rp-pines--foot" />
-          <FileText className="mx-auto h-12 w-12 text-muted-foreground/30" />
-          <p className="mt-4 text-lg text-muted-foreground">
-            No brief available
-          </p>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Your team has not published a brief yet.
-          </p>
-        </div>
+        <>
+          <RpPageHeader
+            eyebrow={sectionEyebrow("brief")}
+            title="The owner's weekly brief"
+            line="The week on site, in one read."
+          />
+          <RpEmpty
+            title="No brief yet."
+            line="The owner's rep team has not published a brief yet."
+          />
+        </>
       )}
 
       {briefs.length > 0 && (
-        <section className="mt-12 border-t border-border pt-6">
-          <div className="mb-3 flex items-center justify-between">
-            <h2 className="rp-eyebrow--muted">
-              Previous briefs
-            </h2>
-            <span className="text-xs text-muted-foreground">
-              {briefs.length} {briefs.length === 1 ? "brief" : "briefs"}
-            </span>
-          </div>
-          <div className="space-y-2">
-            {briefs.map((b) => (
-              <Link key={b.id} href={`/brief/${b.id}`}>
-                <Card className="group cursor-pointer transition-colors hover:bg-muted/20">
-                  <CardContent className="flex items-center gap-3 p-3">
-                    <div className="rounded-lg bg-primary/10 p-2">
-                      <FileText className="h-4 w-4 text-primary" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium text-foreground">
-                        {b.title}
-                      </p>
-                      <p className="mt-0.5 flex items-center gap-1 text-[11px] text-muted-foreground">
-                        <Calendar className="h-3 w-3 shrink-0" />
-                        {new Date(
-                          b.brief_date + "T00:00:00"
-                        ).toLocaleDateString("en-US", {
-                          month: "long",
-                          day: "numeric",
-                          year: "numeric",
-                        })}
-                      </p>
-                    </div>
-                  </CardContent>
-                </Card>
-              </Link>
+        <section className="flex max-w-[760px] flex-col gap-5">
+          <RpSubhead
+            size="md"
+            title="Previous briefs"
+            spec={`${briefs.length} ${briefs.length === 1 ? "brief" : "briefs"}`}
+          />
+          <RpList>
+            {briefs.map((b, i) => (
+              <RpRow
+                key={b.id}
+                index={i + 1}
+                href={`/brief/${b.id}`}
+                title={b.title}
+                titleStyle="display"
+                meta={dot(fmtDate(b.brief_date, "long"), b.cover_subtitle)}
+              />
             ))}
-          </div>
+          </RpList>
         </section>
       )}
-    </motion.main>
+    </RpPage>
+  );
+}
+
+// ── Row menu: a square popover, portalled so it never sits under the next row ──
+
+function BriefRowMenu({
+  open,
+  onToggle,
+  onClose,
+  children,
+}: {
+  open: boolean;
+  onToggle: () => void;
+  onClose: () => void;
+  children: React.ReactNode;
+}) {
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const [pos, setPos] = useState<{ top: number; right: number } | null>(null);
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+
+  useLayoutEffect(() => {
+    if (!open || !btnRef.current) return;
+    const place = () => {
+      const r = btnRef.current!.getBoundingClientRect();
+      setPos({ top: r.bottom + 6, right: Math.max(8, window.innerWidth - r.right) });
+    };
+    place();
+    window.addEventListener("resize", place);
+    window.addEventListener("scroll", place, true);
+    return () => {
+      window.removeEventListener("resize", place);
+      window.removeEventListener("scroll", place, true);
+    };
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    const pop = pushEscapeLayer(() => {
+      onCloseRef.current();
+      btnRef.current?.focus();
+    });
+    const onDown = (e: MouseEvent) => {
+      const t = e.target as Node;
+      if (menuRef.current?.contains(t) || btnRef.current?.contains(t)) return;
+      onCloseRef.current();
+    };
+    document.addEventListener("mousedown", onDown);
+    return () => {
+      pop();
+      document.removeEventListener("mousedown", onDown);
+    };
+  }, [open]);
+
+  return (
+    <>
+      <RpButton
+        ref={btnRef}
+        variant="ghost"
+        size="sm"
+        icon={<MoreHorizontal {...RP_ICON} />}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        onClick={onToggle}
+      >
+        More
+      </RpButton>
+      {open && pos && typeof document !== "undefined" &&
+        createPortal(
+          <div
+            ref={menuRef}
+            role="menu"
+            className="fixed z-[55] min-w-[220px] border border-rp-line2 bg-rp-bg"
+            style={{ top: pos.top, right: pos.right }}
+          >
+            {children}
+          </div>,
+          document.body,
+        )}
+    </>
+  );
+}
+
+function MenuItem({
+  icon,
+  onClick,
+  disabled,
+  danger,
+  children,
+}: {
+  icon: React.ReactNode;
+  onClick: () => void;
+  disabled?: boolean;
+  danger?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      role="menuitem"
+      onClick={onClick}
+      disabled={disabled}
+      className={`flex w-full items-center gap-3 border-b border-rp-line px-4 py-3 text-left text-[14px] transition-colors last:border-b-0 hover:bg-rp-surface focus-visible:bg-rp-surface disabled:opacity-50 ${
+        danger ? "text-rp-alert" : "text-rp-text"
+      }`}
+    >
+      <span className={danger ? "text-rp-alert" : "text-rp-muted"}>{icon}</span>
+      {children}
+    </button>
   );
 }

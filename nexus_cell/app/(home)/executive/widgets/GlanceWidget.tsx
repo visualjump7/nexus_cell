@@ -1,12 +1,10 @@
 import { createClient } from '@/utils/supabase/server'
 import WidgetCard from './WidgetCard'
+import { fmtMoney } from '@/components/rp'
+import { cn } from '@/lib/utils'
 
 interface Props {
   orgId: string
-}
-
-function fmtCurrency(amount: number): string {
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(amount)
 }
 
 export default async function GlanceWidget({ orgId }: Props) {
@@ -23,24 +21,23 @@ export default async function GlanceWidget({ orgId }: Props) {
   const tripsCount = trips.count || 0
 
   const stats = [
-    { label: 'Outstanding', value: fmtCurrency(totalOutstanding), dot: 'bg-[#CDA14B]' },
-    { label: 'Approvals', value: approvalsCount.toString(), dot: 'bg-[#3989CB]' },
-    { label: 'Site visits', value: tripsCount.toString(), dot: 'bg-[#A4CC5C]' },
+    { label: 'Outstanding', value: fmtMoney(totalOutstanding, { compact: true }), sub: 'Bills not yet paid' },
+    { label: 'Sign-offs', value: String(approvalsCount), sub: 'Waiting on you' },
+    { label: 'Site visits', value: String(tripsCount), sub: 'Confirmed or underway' },
   ]
 
   return (
-    <WidgetCard title="Quick Glance">
-      <div className="grid grid-cols-3 gap-3">
-        {stats.map(s => (
-          <div key={s.label}>
-            <div className="flex items-center gap-1.5 mb-1.5">
-              <div className={`w-1.5 h-1.5 ${s.dot}`} />
-              <p className="rp-eyebrow--muted">{s.label}</p>
-            </div>
-            <p className="rp-stat-value text-white">{s.value}</p>
+    <WidgetCard title="At a glance">
+      {/* Three figures under one rule, split by hairlines (no box inside the cell) */}
+      <dl className="m-0 grid grid-cols-3 border-t border-rp-line">
+        {stats.map((s, i) => (
+          <div key={s.label} className={cn('flex min-w-0 flex-col gap-2.5 px-4 pt-4', i === 0 ? 'pl-0' : 'border-l border-rp-line')}>
+            <dt className="rp-stat-label">{s.label}</dt>
+            <dd className="rp-stat-value m-0 text-rp-text">{s.value}</dd>
+            <dd className="rp-stat-sub m-0 max-sm:hidden">{s.sub}</dd>
           </div>
         ))}
-      </div>
+      </dl>
     </WidgetCard>
   )
 }

@@ -1,67 +1,72 @@
 import type { ReactNode } from 'react'
+import { Plane, BedDouble, Car, TrainFront, CarTaxiFront, MapPin } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
+import { tripImage } from '@/lib/project-imagery'
+import type { RpImage } from '@/components/rp'
 
-const iconClass = 'w-5 h-5'
+// Lucide stroke icons at the kit size (16 / 1.5). Colour comes from the
+// caller (currentColor), usually the segment colour in lib/travel-constants.
 
-export function FlightIcon() {
-  return (
-    <svg className={iconClass} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
-    </svg>
-  )
+const ICON = { size: 16, strokeWidth: 1.5 }
+
+export function FlightIcon() { return <Plane {...ICON} aria-hidden /> }
+export function HotelIcon() { return <BedDouble {...ICON} aria-hidden /> }
+export function CarIcon() { return <Car {...ICON} aria-hidden /> }
+export function TrainIcon() { return <TrainFront {...ICON} aria-hidden /> }
+export function GroundIcon() { return <CarTaxiFront {...ICON} aria-hidden /> }
+export function OtherIcon() { return <MapPin {...ICON} aria-hidden /> }
+
+const iconMap: Record<string, LucideIcon> = {
+  flight: Plane,
+  hotel: BedDouble,
+  car: Car,
+  train: TrainFront,
+  ground_transport: CarTaxiFront,
+  other: MapPin,
 }
 
-export function HotelIcon() {
-  return (
-    <svg className={iconClass} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 3H21" />
-    </svg>
-  )
+/** Segment icon; pass a size for larger contexts (default 16). */
+export function getSegmentIcon(type: string, size = ICON.size): ReactNode {
+  const Icon = iconMap[type] || MapPin
+  return <Icon size={size} strokeWidth={ICON.strokeWidth} aria-hidden />
 }
 
-export function CarIcon() {
-  return (
-    <svg className={iconClass} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.125-.504 1.029-1.114a22.122 22.122 0 00-3.398-8.625 2.563 2.563 0 00-2.14-1.114H6.678a2.563 2.563 0 00-2.14 1.114 22.1 22.1 0 00-3.398 8.625A1.114 1.114 0 002.17 18.75h1.08" />
-    </svg>
-  )
+const LABELS: Record<string, string> = {
+  flight: 'Flight',
+  hotel: 'Hotel',
+  car: 'Car',
+  train: 'Train',
+  ground_transport: 'Ground',
+  other: 'Other',
 }
 
-export function TrainIcon() {
-  return (
-    <svg className={iconClass} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
-    </svg>
-  )
+/** Short type label: 'Flight', 'Hotel', 'Ground' … */
+export function segmentLabel(type: string): string {
+  return LABELS[type] || type.replace(/_/g, ' ')
 }
 
-export function GroundIcon() {
-  return (
-    <svg className={iconClass} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
-      <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
-    </svg>
-  )
+/**
+ * Split a trip title into purpose and route.
+ * 'Jacksonville to Palatka — OAC & Draw #10 Site Week' → { purpose: 'OAC & Draw #10 Site Week', route: 'Jacksonville → Palatka' }
+ * 'Benchmarking Tour — Thermal, Monticello & Atlanta' → { purpose: 'Benchmarking Tour', route: 'Thermal, Monticello & Atlanta' }
+ * A title without a dash is all purpose.
+ */
+export function tripParts(title: string | null | undefined): { purpose: string; route: string | null } {
+  const t = (title || '').trim()
+  const m = t.match(/^(.*?)\s+[—–]\s+(.*)$/)
+  if (!m) return { purpose: t || 'Trip', route: null }
+  const [, before, after] = m
+  if (/\s+to\s+/i.test(before)) return { purpose: after, route: before.replace(/\s+to\s+/gi, ' → ') }
+  return { purpose: before, route: after }
 }
 
-export function OtherIcon() {
-  return (
-    <svg className={iconClass} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 005.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 009.568 3z" />
-      <path strokeLinecap="round" strokeLinejoin="round" d="M6 6h.008v.008H6V6z" />
-    </svg>
-  )
+/**
+ * Trip imagery: matched on the title first (route and purpose are the most
+ * specific words), then on the notes (see tripImage).
+ */
+export function tripHero(trip: { id?: string; title?: string | null; notes?: string | null }): RpImage {
+  return tripImage(trip)
 }
 
-const iconMap: Record<string, () => ReactNode> = {
-  flight: FlightIcon,
-  hotel: HotelIcon,
-  car: CarIcon,
-  train: TrainIcon,
-  ground_transport: GroundIcon,
-  other: OtherIcon,
-}
-
-export function getSegmentIcon(type: string): ReactNode {
-  const Icon = iconMap[type] || OtherIcon
-  return <Icon />
-}
+/** Below 640px, wrap a list row's status and actions onto their own line. */
+export const ROW_STACK_SM = 'max-sm:flex-wrap max-sm:[&>.rp-row-main]:basis-0 max-sm:[&>.rp-row-end]:max-w-none max-sm:[&>.rp-row-end]:basis-full max-sm:[&>.rp-row-end]:justify-start'

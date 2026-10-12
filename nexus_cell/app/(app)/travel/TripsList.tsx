@@ -5,17 +5,51 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import type { Trip, UserRole } from '@/lib/types'
 import DeleteConfirm from '@/components/DeleteConfirm'
-import { BRAND } from '@/lib/brand'
+import { tripParts, tripHero } from '@/components/travel/SegmentIcons'
+import { TRIP_IMAGE_POOL, toRpImage } from '@/lib/project-imagery'
+import type { RpImage } from '@/components/rp'
+import {
+  RpPage, RpPageHeader, RpTabs, RpGroup, RpGroupHead, RpCardGrid, RpFigure, RpCapNum, RpStatus,
+  RpButton, RpEmpty, RpModal, RpField, RpInput, RpSelect, RpTextarea, RpFormGrid,
+  Plus, RP_ICON, fmtDate, fmtRange, dot, statusLabel,
+} from '@/components/rp'
+import { sectionEyebrow } from '@/lib/sections'
 
-const statusColors: Record<string, string> = {
-  planning: 'bg-yellow-500/15 text-yellow-400 border-yellow-500/30',
-  confirmed: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
-  in_progress: 'bg-blue-500/15 text-blue-400 border-blue-500/30',
-  completed: 'bg-gray-500/15 text-gray-400 border-gray-500/30',
-  cancelled: 'bg-red-500/15 text-red-400 border-red-500/30',
-}
+const STATUS_ORDER: Trip['status'][] = ['planning', 'confirmed', 'in_progress', 'completed', 'cancelled']
 
 interface Props { trips: Trip[]; role: UserRole }
+
+/** UTC calendar-date string, the comparison the rest of the app uses. */
+function todayIso() {
+  return new Date().toISOString().split('T')[0]
+}
+
+function tripDates(t: Trip): string {
+  if (t.start_date && t.end_date) return fmtRange(t.start_date, t.end_date)
+  if (t.start_date) return fmtDate(t.start_date)
+  if (t.end_date) return `Until ${fmtDate(t.end_date)}`
+  return 'Dates to be set'
+}
+
+/**
+ * Card images for one group, in display order: each trip's own match, unless an
+ * earlier card in the group already shows it, then the next unused picture
+ * from the trip pool, so no two cards in a group repeat while the pool lasts.
+ */
+function heroesFor(items: Trip[]): Map<string, RpImage> {
+  const out = new Map<string, RpImage>()
+  const used = new Set<string>()
+  for (const t of items) {
+    let hero = tripHero(t)
+    if (used.has(hero.src)) {
+      const alt = TRIP_IMAGE_POOL.find(src => !used.has(src))
+      if (alt) hero = toRpImage(alt)
+    }
+    used.add(hero.src)
+    out.set(t.id, hero)
+  }
+  return out
+}
 
 export default function TripsList({ trips, role }: Props) {
   const router = useRouter()
@@ -28,10 +62,21 @@ export default function TripsList({ trips, role }: Props) {
 
   const filtered = trips.filter(t => statusFilter === 'all' || t.status === statusFilter)
 
-  function formatDate(d: string | null) {
-    if (!d) return '—'
-    return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-  }
+  const today = todayIso()
+  const isUpcoming = (t: Trip) =>
+    t.status === 'in_progress' ||
+    t.status === 'confirmed' ||
+    (t.status === 'planning' && (!t.start_date || t.start_date.slice(0, 10) >= today))
+
+  const startKey = (t: Trip) => t.start_date ?? '9999-12-31'
+  const upcoming = filtered.filter(isUpcoming).sort((a, b) => (startKey(a) < startKey(b) ? -1 : startKey(a) > startKey(b) ? 1 : 0))
+  const past = filtered.filter(t => !isUpcoming(t))
+
+  const underwayCount = trips.filter(t => t.status === 'in_progress').length
+  const next = trips
+    .filter(t => (t.status === 'confirmed' || t.status === 'planning') && !!t.start_date && t.start_date.slice(0, 10) >= today)
+    .sort((a, b) => (startKey(a) < startKey(b) ? -1 : 1))[0]
+  const nextParts = next ? tripParts(next.title) : null
 
   async function handleDelete() {
     if (!deletingTrip) return
@@ -40,76 +85,108 @@ export default function TripsList({ trips, role }: Props) {
     router.refresh()
   }
 
-  const selectClass = 'px-3 py-1.5 bg-card border border-white/10 rounded-lg text-sm text-gray-300 focus:outline-none focus:ring-2 focus:ring-emerald-500/50'
-  const inputClass = 'w-full px-3 py-2 bg-card border border-white/10 rounded-lg text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 text-sm'
+  function openNew() { setEditingTrip(null); setShowForm(true) }
+
+  const statusTabs = [
+    { id: 'all', label: 'All', count: trips.length },
+    ...STATUS_ORDER.map(s => ({ id: s, label: statusLabel('trip', s), count: trips.filter(t => t.status === s).length })),
+  ]
+
+  function renderCard(trip: Trip, n: number, hero: RpImage) {
+    const { purpose, route } = tripParts(trip.title)
+    const href = `/travel/${trip.id}`
+    return (
+      <article key={trip.id} className="flex min-w-0 flex-col gap-3">
+        <RpFigure
+          {...hero}
+          aspect="card"
+          caption={undefined}
+          qualifier={undefined}
+          href={href}
+          lightbox={false}
+        />
+        <div className="flex items-baseline gap-3">
+          <RpCapNum n={n} className="text-[13px]" />
+          <h3 className="min-w-0 font-display text-xl uppercase leading-[1.15] tracking-[.03em] text-rp-text">
+            <Link href={href} className="transition-colors hover:text-rp-gold">{purpose}</Link>
+          </h3>
+        </div>
+        {route && <p className="-mt-1.5 text-[13px] text-rp-muted">{route}</p>}
+        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+          <span className="font-display text-[12px] uppercase tracking-[.12em] tabular-nums text-rp-text">{tripDates(trip)}</span>
+          <RpStatus kind="trip" value={trip.status} />
+        </div>
+        {trip.notes && <p className="line-clamp-2 text-sm leading-normal text-rp-muted">{trip.notes}</p>}
+        {canWrite && (
+          <div className="flex items-center gap-4 border-t border-rp-line pt-3">
+            <RpButton variant="text" size="sm" onClick={() => { setEditingTrip(trip); setShowForm(true) }}>Edit</RpButton>
+            <RpButton variant="text" size="sm" onClick={() => setDeletingTrip(trip)}>Delete</RpButton>
+          </div>
+        )}
+      </article>
+    )
+  }
+
+  const groups = [
+    { id: 'upcoming', title: 'Underway and upcoming', items: upcoming },
+    { id: 'past', title: 'Past', items: past },
+  ].filter(g => g.items.length > 0)
+
+  let running = 0
 
   return (
-    <div className="max-w-6xl">
-      <header className="rp-head">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={BRAND.pines} alt="" aria-hidden className="rp-pines rp-pines--head" />
-        <div className="flex items-end justify-between gap-4 flex-wrap">
-        <div className="flex flex-col gap-2.5">
-          <span className="rp-eyebrow">Site visits &amp; travel</span>
-          <h1 className="rp-title">Travel</h1>
-          <p className="rp-caption">{filtered.length} trip{filtered.length !== 1 ? 's' : ''}</p>
-        </div>
-        {canWrite && (
-          <button onClick={() => { setEditingTrip(null); setShowForm(true) }} className="rp-btn-solid">
-            New trip
-          </button>
+    <RpPage>
+      <RpPageHeader
+        eyebrow={sectionEyebrow('travel')}
+        title="Site visits and trips"
+        line={dot(
+          `${trips.length} ${trips.length === 1 ? 'trip' : 'trips'}`,
+          `${underwayCount} underway`,
+          next && nextParts ? `next: ${nextParts.route ?? nextParts.purpose}, ${fmtDate(next.start_date, 'short')}` : null,
         )}
-        </div>
-      </header>
+        actions={canWrite && (
+          <RpButton icon={<Plus {...RP_ICON} />} onClick={openNew}>New trip</RpButton>
+        )}
+      />
 
-      <div className="flex gap-3 mb-6">
-        <select className={selectClass} value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
-          <option value="all">All Statuses</option>
-          <option value="planning">Planning</option>
-          <option value="confirmed">Confirmed</option>
-          <option value="in_progress">In Progress</option>
-          <option value="completed">Completed</option>
-          <option value="cancelled">Cancelled</option>
-        </select>
-      </div>
+      <RpTabs ariaLabel="Trip status" items={statusTabs} value={statusFilter} onChange={setStatusFilter} />
 
       {filtered.length === 0 ? (
-        <div className="rp-panel p-12 text-center">
-          <p className="text-gray-500">No trips planned.</p>
-        </div>
+        <RpEmpty
+          title="No trips planned."
+          line={trips.length > 0 ? 'No trips with this status.' : 'Site visits, draws and recruiting trips land here.'}
+          action={canWrite && trips.length === 0 ? <RpButton variant="ghost" icon={<Plus {...RP_ICON} />} onClick={openNew}>New trip</RpButton> : undefined}
+        />
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filtered.map(trip => (
-            <Link key={trip.id} href={`/travel/${trip.id}`} className="rp-panel p-5 hover:border-[#3A3E42] transition-colors block">
-              <div className="flex items-start justify-between mb-3">
-                <h3 className="text-white font-medium">{trip.title}</h3>
-                <span className={`text-[11px] font-medium px-2 py-0.5 rounded border ${statusColors[trip.status] || ''}`}>
-                  {trip.status.replace('_', ' ')}
-                </span>
-              </div>
-              <div className="text-sm text-gray-500 space-y-1">
-                <p>{formatDate(trip.start_date)} → {formatDate(trip.end_date)}</p>
-                {trip.notes && <p className="truncate">{trip.notes}</p>}
-              </div>
-              {canWrite && (
-                <div className="mt-3 pt-3 border-t border-white/5 flex gap-3">
-                  <button onClick={e => { e.preventDefault(); setEditingTrip(trip); setShowForm(true) }} className="text-gray-500 hover:text-white text-xs transition-colors">Edit</button>
-                  <button onClick={e => { e.preventDefault(); setDeletingTrip(trip) }} className="text-gray-500 hover:text-red-400 text-xs transition-colors">Delete</button>
-                </div>
-              )}
-            </Link>
-          ))}
+        <div className="flex flex-col">
+          {groups.map((g, gi) => {
+            const heroes = heroesFor(g.items)
+            return (
+              <RpGroup key={g.id}>
+                <RpGroupHead
+                  num={gi + 1}
+                  title={g.title}
+                  aside={<span className="rp-counter">{`${g.items.length} ${g.items.length === 1 ? 'trip' : 'trips'}`}</span>}
+                />
+                <RpCardGrid ruled={false} min={300} max={3}>
+                  {g.items.map(trip => {
+                    running += 1
+                    return renderCard(trip, running, heroes.get(trip.id) ?? tripHero(trip))
+                  })}
+                </RpCardGrid>
+              </RpGroup>
+            )
+          })}
         </div>
       )}
 
-      {/* Trip Form Modal */}
-      {showForm && <TripFormModal trip={editingTrip} onClose={() => { setShowForm(false); setEditingTrip(null) }} inputClass={inputClass} />}
+      {showForm && <TripFormModal trip={editingTrip} onClose={() => { setShowForm(false); setEditingTrip(null) }} />}
       {deletingTrip && <DeleteConfirm itemName={deletingTrip.title} onConfirm={handleDelete} onCancel={() => setDeletingTrip(null)} />}
-    </div>
+    </RpPage>
   )
 }
 
-function TripFormModal({ trip, onClose, inputClass }: { trip: Trip | null; onClose: () => void; inputClass: string }) {
+function TripFormModal({ trip, onClose }: { trip: Trip | null; onClose: () => void }) {
   const router = useRouter()
   const isEditing = !!trip
   const [form, setForm] = useState({
@@ -142,53 +219,47 @@ function TripFormModal({ trip, onClose, inputClass }: { trip: Trip | null; onClo
     onClose()
   }
 
-  const labelClass = 'block text-sm text-gray-400 mb-1'
-
   return (
-    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4" onClick={onClose}>
-      <div className="rp-panel w-full max-w-lg" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between px-6 py-4 border-b border-white/5">
-          <h2 className="rp-eyebrow">{isEditing ? 'Edit Trip' : 'New Trip'}</h2>
-          <button onClick={onClose} className="text-gray-500 hover:text-white text-xl leading-none">&times;</button>
-        </div>
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          <div>
-            <label className={labelClass}>Title *</label>
-            <input className={inputClass} value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))} placeholder="e.g. Site walk with the GC" required />
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className={labelClass}>Start Date</label>
-              <input className={inputClass} type="date" value={form.start_date} onChange={e => setForm(p => ({ ...p, start_date: e.target.value }))} />
-            </div>
-            <div>
-              <label className={labelClass}>End Date</label>
-              <input className={inputClass} type="date" value={form.end_date} onChange={e => setForm(p => ({ ...p, end_date: e.target.value }))} />
-            </div>
-          </div>
-          <div>
-            <label className={labelClass}>Status</label>
-            <select className={inputClass} value={form.status} onChange={e => setForm(p => ({ ...p, status: e.target.value as typeof p.status }))}>
+    <RpModal
+      open
+      onClose={onClose}
+      eyebrow={sectionEyebrow('travel', isEditing ? 'Edit' : 'New')}
+      title={isEditing ? 'Edit trip' : 'New trip'}
+      footer={
+        <>
+          <RpButton variant="ghost" onClick={onClose}>Cancel</RpButton>
+          <RpButton type="submit" form="trip-form" disabled={saving}>
+            {saving ? 'Saving…' : isEditing ? 'Save' : 'Create trip'}
+          </RpButton>
+        </>
+      }
+    >
+      <form id="trip-form" onSubmit={handleSubmit}>
+        <RpFormGrid>
+          <RpField label="Title" htmlFor="trip-title" required hint="Route — purpose, e.g. Jacksonville to Palatka — Site walk with the GC" className="sm:col-span-2">
+            <RpInput id="trip-title" value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))} placeholder="e.g. Site walk with the GC" required />
+          </RpField>
+          <RpField label="Start date" htmlFor="trip-start">
+            <RpInput id="trip-start" type="date" value={form.start_date} onChange={e => setForm(p => ({ ...p, start_date: e.target.value }))} />
+          </RpField>
+          <RpField label="End date" htmlFor="trip-end">
+            <RpInput id="trip-end" type="date" value={form.end_date} onChange={e => setForm(p => ({ ...p, end_date: e.target.value }))} />
+          </RpField>
+          <RpField label="Status" htmlFor="trip-status" className="sm:col-span-2">
+            <RpSelect id="trip-status" value={form.status} onChange={e => setForm(p => ({ ...p, status: e.target.value as typeof p.status }))}>
               <option value="planning">Planning</option>
               <option value="confirmed">Confirmed</option>
-              <option value="in_progress">In Progress</option>
-              <option value="completed">Completed</option>
+              <option value="in_progress">Underway</option>
+              <option value="completed">Complete</option>
               <option value="cancelled">Cancelled</option>
-            </select>
-          </div>
-          <div>
-            <label className={labelClass}>Notes</label>
-            <textarea className={`${inputClass} resize-none`} rows={2} value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} />
-          </div>
-          {error && <p className="text-red-400 text-sm">{error}</p>}
-          <div className="flex gap-3 pt-2">
-            <button type="button" onClick={onClose} className="rp-btn-ghost flex-1 justify-center">Cancel</button>
-            <button type="submit" disabled={saving} className="rp-btn-solid flex-1 disabled:cursor-not-allowed justify-center">
-              {saving ? 'Saving...' : isEditing ? 'Update' : 'Create Trip'}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+            </RpSelect>
+          </RpField>
+          <RpField label="Notes" htmlFor="trip-notes" className="sm:col-span-2">
+            <RpTextarea id="trip-notes" rows={3} value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} />
+          </RpField>
+        </RpFormGrid>
+        {error && <p className="rp-error mt-4" role="alert">{error}</p>}
+      </form>
+    </RpModal>
   )
 }

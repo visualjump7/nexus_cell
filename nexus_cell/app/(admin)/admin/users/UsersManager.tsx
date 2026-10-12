@@ -4,6 +4,21 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useToast } from '@/components/shared/Toast'
 import type { PendingInvitation, UserRole } from '@/lib/types'
+import {
+  RpSubhead,
+  RpTable,
+  RpStatus,
+  RpTag,
+  RpButton,
+  RpEmpty,
+  RpModal,
+  RpField,
+  RpInput,
+  RpSelect,
+  Plus,
+  fmtDate,
+  dot,
+} from '@/components/rp'
 
 interface UserRow {
   user_id: string
@@ -24,14 +39,6 @@ const ROLE_OPTIONS: UserRole[] = ['admin', 'ea', 'cfo', 'principal', 'viewer']
 const ROLE_LABEL: Record<string, string> = {
   admin: 'Administrator', ea: "Owner's Rep", cfo: 'CFO', principal: 'Owner', viewer: 'Viewer',
 }
-const ROLE_COLOR: Record<string, string> = {
-  admin: 'bg-red-500/15 text-red-400',
-  ea: 'bg-[#3989CB]/15 text-[#3989CB]',
-  cfo: 'bg-[#A4CC5C]/15 text-[#A4CC5C]',
-  principal: 'bg-[#CDA14B]/15 text-[#CDA14B]',
-  viewer: 'bg-[#9AA0A4]/15 text-[#9AA0A4]',
-}
-
 export default function UsersManager({ initialUsers, initialPending, currentUserId }: Props) {
   const router = useRouter()
   const { toast } = useToast()
@@ -76,128 +83,127 @@ export default function UsersManager({ initialUsers, initialPending, currentUser
   }
 
   return (
-    <div className="space-y-6">
+    <div className="flex flex-col gap-[var(--rp-gap)]">
       {/* Pending invitations (top — needs admin attention) */}
       {pending.length > 0 && (
-        <section className="rp-panel p-5">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h2 className="rp-eyebrow--muted">Pending invitations</h2>
-              <p className="text-xs text-gray-500 mt-0.5">Invites proposed by the owner&apos;s rep, waiting for your approval</p>
-            </div>
-            <span className="text-xs text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-1 rounded">
-              {pending.length} pending
-            </span>
-          </div>
-          <ul className="space-y-2 m-0 p-0 list-none">
-            {pending.map(inv => {
-              const proposer = (inv as unknown as { proposed_by_profile: { full_name: string | null; email: string } | null }).proposed_by_profile
-              return (
-                <li key={inv.id} className="bg-[#141618] border border-white/5 rounded-lg p-3">
-                  <div className="flex items-center gap-3 flex-wrap">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm text-white font-medium truncate">{inv.full_name}</p>
-                      <p className="text-xs text-gray-500 truncate">
-                        {inv.email} · <span className={`px-1.5 py-0.5 rounded-sm text-[10px] ${ROLE_COLOR[inv.role] || ''}`}>{ROLE_LABEL[inv.role] || inv.role}</span>
-                        {proposer && <> · proposed by {proposer.full_name || proposer.email}</>}
-                      </p>
-                      {inv.notes && <p className="text-xs text-gray-600 mt-1 italic">&ldquo;{inv.notes}&rdquo;</p>}
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <button
-                        onClick={() => setApproveTarget(inv)}
-                        className="rp-btn-solid"
-                      >
-                        Approve
-                      </button>
-                      <button
-                        onClick={() => rejectInvite(inv.id)}
-                        className="rp-btn-ghost"
-                      >
-                        Reject
-                      </button>
-                    </div>
-                  </div>
-                </li>
-              )
-            })}
-          </ul>
+        <section className="flex flex-col gap-5">
+          <RpSubhead
+            flush
+            title="Pending invitations"
+            spec="Proposed by the owner's rep, waiting for your approval"
+            aside={<RpTag tone="gold">{pending.length} pending</RpTag>}
+          />
+          <RpTable minWidth={860} caption="Pending invitations">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Role</th>
+                <th>Proposed by</th>
+                <th>Date</th>
+                <th className="num relative"><span className="sr-only">Actions</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              {pending.map(inv => {
+                const proposer = (inv as unknown as { proposed_by_profile: { full_name: string | null; email: string } | null }).proposed_by_profile
+                return (
+                  <tr key={inv.id}>
+                    <td>
+                      <span className="font-medium text-rp-text">{inv.full_name}</span>
+                      {inv.notes && <span className="sub">&ldquo;{inv.notes}&rdquo;</span>}
+                    </td>
+                    <td className="text-rp-muted">{inv.email}</td>
+                    <td><RpStatus kind="role" value={inv.role} /></td>
+                    <td className="text-rp-muted">{proposer ? (proposer.full_name || proposer.email) : '—'}</td>
+                    <td className="whitespace-nowrap text-rp-muted">{fmtDate(inv.created_at)}</td>
+                    <td className="num">
+                      <span className="inline-flex items-center gap-2">
+                        <RpButton size="sm" onClick={() => setApproveTarget(inv)}>Approve</RpButton>
+                        <RpButton variant="danger" size="sm" onClick={() => rejectInvite(inv.id)}>Reject</RpButton>
+                      </span>
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </RpTable>
         </section>
       )}
 
       {/* Members table */}
-      <section className="rp-panel">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-white/5">
-          <h2 className="rp-eyebrow--muted">Members</h2>
-          <button
-            onClick={() => setCreateOpen(true)}
-            className="px-3 py-1.5 bg-emerald-500 hover:brightness-110 text-white text-xs font-medium rounded-lg transition-all"
-          >
-            + Create user
-          </button>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm min-w-[640px]">
+      <section className="flex flex-col gap-5">
+        <RpSubhead
+          flush={pending.length === 0}
+          title="Members"
+          spec={dot(`${users.length} account${users.length !== 1 ? 's' : ''}`, `${users.filter(u => u.status === 'active').length} active`)}
+          aside={<RpButton size="sm" icon={<Plus size={14} strokeWidth={1.5} />} onClick={() => setCreateOpen(true)}>Create user</RpButton>}
+        />
+        {users.length === 0 ? (
+          <RpEmpty compact title="No members yet." line="Create the first account, or approve an invitation from the owner's rep." />
+        ) : (
+          <RpTable minWidth={880} caption="Members">
             <thead>
-              <tr className="border-b border-white/5 text-gray-500 text-left text-xs uppercase tracking-wider">
-                <th className="px-5 py-3 font-medium">Name</th>
-                <th className="px-5 py-3 font-medium">Role</th>
-                <th className="px-5 py-3 font-medium">Status</th>
-                <th className="px-5 py-3 font-medium text-right">Actions</th>
+              <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Role</th>
+                <th>Status</th>
+                <th className="num relative"><span className="sr-only">Actions</span></th>
               </tr>
             </thead>
             <tbody>
               {users.map(u => {
                 const isSelf = u.user_id === currentUserId
                 return (
-                  <tr key={u.user_id} className="border-b border-white/5 last:border-0 hover:bg-white/[0.02]">
-                    <td className="px-5 py-3">
-                      <p className="text-white">{u.full_name || '—'}</p>
-                      <p className="text-xs text-gray-500">{u.email}</p>
+                  <tr key={u.user_id}>
+                    <td>
+                      <span className="font-medium text-rp-text">{u.full_name || '—'}</span>
+                      {isSelf && <span className="sub">You</span>}
                     </td>
-                    <td className="px-5 py-3">
+                    <td className="text-rp-muted">{u.email}</td>
+                    <td>
                       {isSelf ? (
-                        <span className={`text-xs px-2 py-1 rounded-sm ${ROLE_COLOR[u.role] || ''}`}>{ROLE_LABEL[u.role] || u.role} (you)</span>
+                        <RpStatus kind="role" value={u.role} />
                       ) : (
-                        <select
+                        <RpSelect
                           value={u.role}
                           onChange={e => changeRole(u.user_id, e.target.value as UserRole)}
-                          className="bg-[#141618] border border-white/10 rounded px-2 py-1 text-xs text-white focus:outline-none focus:border-emerald-400/50"
+                          aria-label={`Role for ${u.full_name || u.email || 'member'}`}
+                          className="!min-h-9 w-[180px] text-[14px]"
                         >
                           {ROLE_OPTIONS.map(r => <option key={r} value={r}>{ROLE_LABEL[r]}</option>)}
-                        </select>
+                        </RpSelect>
                       )}
                     </td>
-                    <td className="px-5 py-3">
-                      <span className={`text-xs px-2 py-1 rounded ${u.status === 'active' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-gray-500/10 text-gray-400'}`}>
-                        {u.status}
-                      </span>
-                    </td>
-                    <td className="px-5 py-3 text-right">
-                      <div className="flex items-center justify-end gap-1">
-                        <button
+                    <td><RpStatus kind="member" value={u.status} /></td>
+                    <td className="num">
+                      <span className="inline-flex items-center gap-2">
+                        <RpButton
+                          variant="ghost"
+                          size="sm"
                           onClick={() => setResetTarget(u)}
                           disabled={isSelf}
-                          className="text-xs text-gray-400 hover:text-white px-2 py-1 rounded hover:bg-white/5 disabled:opacity-30 disabled:cursor-not-allowed"
                           title={isSelf ? 'Use Settings to change your own password' : 'Reset password'}
                         >
                           Reset password
-                        </button>
-                        <button
+                        </RpButton>
+                        <RpButton
+                          variant={u.status === 'active' ? 'danger' : 'ghost'}
+                          size="sm"
                           onClick={() => toggleStatus(u)}
                           disabled={isSelf}
-                          className="text-xs text-gray-400 hover:text-white px-2 py-1 rounded hover:bg-white/5 disabled:opacity-30 disabled:cursor-not-allowed"
                         >
                           {u.status === 'active' ? 'Deactivate' : 'Reactivate'}
-                        </button>
-                      </div>
+                        </RpButton>
+                      </span>
                     </td>
                   </tr>
                 )
               })}
             </tbody>
-          </table>
-        </div>
+          </RpTable>
+        )}
       </section>
 
       {createOpen && <CreateUserModal onClose={() => setCreateOpen(false)} onCreated={() => { setCreateOpen(false); router.refresh() }} />}
@@ -241,27 +247,33 @@ function CreateUserModal({ onClose, onCreated }: { onClose: () => void; onCreate
   }
 
   return (
-    <ModalShell title="Create user" onClose={onClose}>
-      <div className="space-y-3">
-        <Field label="Full name"><input className={inputCls} value={fullName} onChange={e => setFullName(e.target.value)} placeholder="Jane Smith" /></Field>
-        <Field label="Email"><input type="email" className={inputCls} value={email} onChange={e => setEmail(e.target.value)} placeholder="jane@example.com" autoComplete="off" /></Field>
-        <Field label="Password" hint="At least 8 characters. Share this with the new user.">
-          <input type="text" className={inputCls + ' font-mono'} value={password} onChange={e => setPassword(e.target.value)} placeholder="Choose a strong password" autoComplete="new-password" />
-        </Field>
-        <Field label="Role">
-          <select className={inputCls} value={role} onChange={e => setRole(e.target.value as UserRole)}>
-            {ROLE_OPTIONS.map(r => <option key={r} value={r}>{ROLE_LABEL[r]}</option>)}
-          </select>
-        </Field>
-        {err && <p className="text-sm text-red-400">{err}</p>}
-        <div className="flex gap-2 justify-end pt-2">
-          <button onClick={onClose} className="rp-btn-ghost">Cancel</button>
-          <button onClick={submit} disabled={submitting || !email || !fullName || password.length < 8} className="px-4 py-2 bg-emerald-500 hover:brightness-110 disabled:opacity-50 text-white font-medium text-sm rounded-lg">
+    <RpModal
+      open
+      onClose={onClose}
+      size="sm"
+      eyebrow="New member"
+      title="Create user"
+      footer={
+        <>
+          <RpButton variant="ghost" onClick={onClose}>Cancel</RpButton>
+          <RpButton onClick={submit} disabled={submitting || !email || !fullName || password.length < 8}>
             {submitting ? 'Creating…' : 'Create'}
-          </button>
-        </div>
-      </div>
-    </ModalShell>
+          </RpButton>
+        </>
+      }
+    >
+      <RpField label="Full name" htmlFor="cu-name"><RpInput id="cu-name" value={fullName} onChange={e => setFullName(e.target.value)} placeholder="Jane Smith" /></RpField>
+      <RpField label="Email" htmlFor="cu-email"><RpInput id="cu-email" type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="jane@example.com" autoComplete="off" /></RpField>
+      <RpField label="Password" htmlFor="cu-password" hint="At least 8 characters. Share this with the new user.">
+        <RpInput id="cu-password" type="text" className="tracking-[.04em]" value={password} onChange={e => setPassword(e.target.value)} placeholder="Choose a strong password" autoComplete="new-password" />
+      </RpField>
+      <RpField label="Role" htmlFor="cu-role">
+        <RpSelect id="cu-role" value={role} onChange={e => setRole(e.target.value as UserRole)}>
+          {ROLE_OPTIONS.map(r => <option key={r} value={r}>{ROLE_LABEL[r]}</option>)}
+        </RpSelect>
+      </RpField>
+      {err && <p className="rp-error" role="alert">{err}</p>}
+    </RpModal>
   )
 }
 
@@ -294,20 +306,26 @@ function ResetPasswordModal({ user, onClose, onReset }: { user: UserRow; onClose
   }
 
   return (
-    <ModalShell title={`Reset password for ${user.full_name || user.email}`} onClose={onClose}>
-      <div className="space-y-3">
-        <Field label="New password" hint="At least 8 characters. Share this with the user.">
-          <input type="text" className={inputCls + ' font-mono'} value={password} onChange={e => setPassword(e.target.value)} autoComplete="new-password" />
-        </Field>
-        {err && <p className="text-sm text-red-400">{err}</p>}
-        <div className="flex gap-2 justify-end pt-2">
-          <button onClick={onClose} className="rp-btn-ghost">Cancel</button>
-          <button onClick={submit} disabled={submitting || password.length < 8} className="px-4 py-2 bg-emerald-500 hover:brightness-110 disabled:opacity-50 text-white font-medium text-sm rounded-lg">
+    <RpModal
+      open
+      onClose={onClose}
+      size="sm"
+      eyebrow="Reset password"
+      title={user.full_name || user.email || 'Member'}
+      footer={
+        <>
+          <RpButton variant="ghost" onClick={onClose}>Cancel</RpButton>
+          <RpButton onClick={submit} disabled={submitting || password.length < 8}>
             {submitting ? 'Resetting…' : 'Reset'}
-          </button>
-        </div>
-      </div>
-    </ModalShell>
+          </RpButton>
+        </>
+      }
+    >
+      <RpField label="New password" htmlFor="rp-new-password" hint="At least 8 characters. Share this with the user.">
+        <RpInput id="rp-new-password" type="text" className="tracking-[.04em]" value={password} onChange={e => setPassword(e.target.value)} autoComplete="new-password" />
+      </RpField>
+      {err && <p className="rp-error" role="alert">{err}</p>}
+    </RpModal>
   )
 }
 
@@ -340,47 +358,28 @@ function ApproveInviteModal({ invite, onClose, onApproved }: { invite: PendingIn
   }
 
   return (
-    <ModalShell title={`Approve invitation for ${invite.full_name}`} onClose={onClose}>
-      <div className="space-y-3">
-        <p className="text-xs text-gray-500">
-          Email: <span className="text-white">{invite.email}</span> · Role: <span className="text-white">{ROLE_LABEL[invite.role] || invite.role}</span>
-        </p>
-        <Field label="Set password" hint="At least 8 characters. Share this with the new user.">
-          <input type="text" className={inputCls + ' font-mono'} value={password} onChange={e => setPassword(e.target.value)} autoComplete="new-password" />
-        </Field>
-        {err && <p className="text-sm text-red-400">{err}</p>}
-        <div className="flex gap-2 justify-end pt-2">
-          <button onClick={onClose} className="rp-btn-ghost">Cancel</button>
-          <button onClick={submit} disabled={submitting || password.length < 8} className="px-4 py-2 bg-emerald-500 hover:brightness-110 disabled:opacity-50 text-white font-medium text-sm rounded-lg">
+    <RpModal
+      open
+      onClose={onClose}
+      size="sm"
+      eyebrow="Approve invitation"
+      title={invite.full_name}
+      footer={
+        <>
+          <RpButton variant="ghost" onClick={onClose}>Cancel</RpButton>
+          <RpButton onClick={submit} disabled={submitting || password.length < 8}>
             {submitting ? 'Creating…' : 'Approve & create'}
-          </button>
-        </div>
-      </div>
-    </ModalShell>
-  )
-}
-
-// ───── Tiny shared bits ─────
-
-const inputCls = 'w-full bg-[#141618] border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-400/50'
-
-function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
-  return (
-    <div>
-      <label className="block text-xs text-gray-500 uppercase tracking-wider mb-1.5">{label}</label>
-      {children}
-      {hint && <p className="text-[11px] text-gray-600 mt-1">{hint}</p>}
-    </div>
-  )
-}
-
-function ModalShell({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
-  return (
-    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4" onClick={onClose}>
-      <div className="bg-[#0E0F11] rounded-xl shadow-2xl shadow-black/40 w-full max-w-md p-6 border border-white/10" onClick={e => e.stopPropagation()}>
-        <h3 className="text-lg font-semibold text-white mb-4">{title}</h3>
-        {children}
-      </div>
-    </div>
+          </RpButton>
+        </>
+      }
+    >
+      <p className="text-[15px] text-rp-muted">
+        {invite.email} · <span className="text-rp-text">{ROLE_LABEL[invite.role] || invite.role}</span>
+      </p>
+      <RpField label="Set password" htmlFor="ai-password" hint="At least 8 characters. Share this with the new user.">
+        <RpInput id="ai-password" type="text" className="tracking-[.04em]" value={password} onChange={e => setPassword(e.target.value)} autoComplete="new-password" />
+      </RpField>
+      {err && <p className="rp-error" role="alert">{err}</p>}
+    </RpModal>
   )
 }

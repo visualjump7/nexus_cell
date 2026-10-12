@@ -1,7 +1,6 @@
 import { getAuthContext } from '@/lib/auth'
 import { notFound } from 'next/navigation'
 import ProjectDetail from '@/app/(app)/projects/[projectId]/ProjectDetail'
-import ProjectBlocks from '@/components/project-detail/ProjectBlocks'
 import type { ProjectBlock } from '@/lib/types'
 
 export default async function ProjectDetailPage({ params }: { params: { projectId: string } }) {
@@ -18,15 +17,16 @@ export default async function ProjectDetailPage({ params }: { params: { projectI
 
   const blocks = (blocksRes.data || []) as ProjectBlock[]
 
+  // ProjectDetail renders the Directory (ProjectBlocks) itself and takes its
+  // hero images from the gallery blocks.
   return (
-    <div>
-      <ProjectDetail project={project} budgets={budgetsRes.data || []} files={filesRes.data || []} role={role} orgId={orgId} />
-
-      {/* Project Directory — Block System */}
-      <div className="max-w-4xl mt-8">
-        <h2 className="rp-eyebrow--muted mb-4">Project Directory</h2>
-        <ProjectBlocks projectId={project.id} orgId={orgId} blocks={blocks} role={role} />
-      </div>
-    </div>
+    <ProjectDetail
+      project={project}
+      budgets={budgetsRes.data || []}
+      files={filesRes.data || []}
+      blocks={blocks}
+      role={role}
+      orgId={orgId}
+    />
   )
 }

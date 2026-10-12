@@ -5,6 +5,18 @@ import { useRouter } from 'next/navigation'
 import { useToast } from '@/components/shared/Toast'
 import NexusEnergyOrb from '@/components/NexusEnergyOrb'
 import NexusCharacter from '@/components/NexusCharacter'
+import {
+  RpTabs,
+  RpBox,
+  RpEyebrow,
+  RpField,
+  RpInput,
+  RpSelect,
+  RpTextarea,
+  RpFormGrid,
+  RpButton,
+  RpCardGrid,
+} from '@/components/rp'
 
 interface Props {
   initialFullName: string
@@ -113,91 +125,78 @@ export default function SettingsTabs({ initialFullName, email, canSuggestUsers, 
     setSavingPassword(false)
   }
 
+  const tabs = [
+    { id: 'profile', label: 'Profile' },
+    { id: 'password', label: 'Password' },
+    { id: 'appearance', label: 'Appearance' },
+    ...(canSuggestUsers ? [{ id: 'suggest_user', label: 'Suggest a user' }] : []),
+  ]
+
   return (
-    <div className="space-y-6">
-      {/* Tabs */}
-      <div className="rp-tabs" role="tablist">
-        {(['profile', 'password', 'appearance', ...(canSuggestUsers ? ['suggest_user' as Tab] : [])] as Tab[]).map(t => (
-          <button
-            key={t}
-            onClick={() => setTab(t)}
-            role="tab"
-            aria-selected={tab === t}
-            className="rp-tab"
-          >
-            {t === 'profile' ? 'Profile' : t === 'password' ? 'Password' : t === 'appearance' ? 'Appearance' : 'Suggest a user'}
-          </button>
-        ))}
-      </div>
+    <div className="flex flex-col gap-6">
+      <RpTabs ariaLabel="Account settings" items={tabs} value={tab} onChange={id => setTab(id as Tab)} />
 
       {/* Profile tab */}
       {tab === 'profile' && (
-        <div className="rp-panel p-5 space-y-4">
-          <div>
-            <label className="block text-xs text-gray-500 uppercase tracking-wider mb-1.5">Full name</label>
-            <input
+        <RpBox pad="lg" className="flex max-w-[640px] flex-col gap-5">
+          <RpEyebrow tone="muted">Profile</RpEyebrow>
+          <RpField label="Full name" htmlFor="settings-name">
+            <RpInput
+              id="settings-name"
               type="text"
               value={fullName}
               onChange={e => setFullName(e.target.value)}
-              className="w-full bg-[#141618] border border-[#26292C] rounded-sm px-3 py-2 text-sm text-white placeholder-[#6E7578] focus:outline-none focus:border-[#CDA14B]"
               placeholder="Your name"
+              autoComplete="name"
             />
-          </div>
-          <div>
-            <label className="block text-xs text-gray-500 uppercase tracking-wider mb-1.5">Email</label>
-            <input
-              type="email"
-              value={email}
-              disabled
-              className="w-full bg-[#0A0B0C] border border-white/10 rounded-lg px-3 py-2 text-sm text-gray-500 cursor-not-allowed"
-            />
-            <p className="text-[11px] text-gray-600 mt-1.5">Email changes are managed by your administrator.</p>
-          </div>
-          <div className="flex justify-end pt-2">
-            <button
+          </RpField>
+          <RpField label="Email" htmlFor="settings-email" hint="Email changes are managed by your administrator.">
+            <RpInput id="settings-email" type="email" value={email} disabled />
+          </RpField>
+          <div className="flex justify-end border-t border-rp-line pt-5">
+            <RpButton
               onClick={saveProfile}
               disabled={savingProfile || fullName.trim() === initialFullName.trim() || fullName.trim().length === 0}
-              className="rp-btn-solid disabled:cursor-not-allowed"
             >
               {savingProfile ? 'Saving…' : 'Save changes'}
-            </button>
+            </RpButton>
           </div>
-        </div>
+        </RpBox>
       )}
 
       {/* Appearance tab — pick the hero element on the command panel */}
       {tab === 'appearance' && (
-        <div className="rp-panel p-5 space-y-4">
-          <p className="text-xs text-gray-500">
-            Choose what greets you on the command panel. Both behave identically — different vibes only.
+        <div className="flex flex-col gap-5">
+          <p className="max-w-[60ch] text-[15px] leading-normal text-rp-muted">
+            Choose what greets you on the home screen. Both behave the same; only the look changes.
           </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <RpCardGrid max={2} min={260} className="max-w-[860px]">
             <HeroChoiceCard
-              label="Energy Orb"
-              caption="Glowing sphere with subtle particles and ripples."
+              num="01"
+              label="Energy orb"
+              caption="A glowing sphere with quiet particles and ripples."
               selected={heroStyle === 'orb'}
               saving={savingHero === 'orb'}
               onClick={() => saveHeroStyle('orb')}
             >
-              <div className="pointer-events-none scale-[0.4] origin-center">
+              <div className="pointer-events-none origin-center scale-[0.4]">
                 <NexusEnergyOrb size={200} />
               </div>
             </HeroChoiceCard>
             <HeroChoiceCard
+              num="02"
               label="Character"
-              caption="Half-dome face with eyes that follow your cursor."
+              caption="A half-dome face with eyes that follow your cursor."
               selected={heroStyle === 'character'}
               saving={savingHero === 'character'}
               onClick={() => saveHeroStyle('character')}
             >
-              <div className="pointer-events-none scale-[0.45] origin-center">
+              <div className="pointer-events-none origin-center scale-[0.45]">
                 <NexusCharacter size={200} />
               </div>
             </HeroChoiceCard>
-          </div>
-          <p className="text-[11px] text-gray-600">
-            Refresh the command panel after switching to see the change.
-          </p>
+          </RpCardGrid>
+          <p className="text-[13px] text-rp-dim">Refresh the home screen after switching to see the change.</p>
         </div>
       )}
 
@@ -206,40 +205,39 @@ export default function SettingsTabs({ initialFullName, email, canSuggestUsers, 
 
       {/* Password tab */}
       {tab === 'password' && (
-        <div className="rp-panel p-5 space-y-4">
-          <div>
-            <label className="block text-xs text-gray-500 uppercase tracking-wider mb-1.5">New password</label>
-            <input
+        <RpBox pad="lg" className="flex max-w-[640px] flex-col gap-5">
+          <RpEyebrow tone="muted">Change password</RpEyebrow>
+          <RpField label="New password" htmlFor="settings-new-password" hint="At least 8 characters.">
+            <RpInput
+              id="settings-new-password"
               type="password"
               value={newPassword}
               onChange={e => setNewPassword(e.target.value)}
               autoComplete="new-password"
-              className="w-full bg-[#141618] border border-[#26292C] rounded-sm px-3 py-2 text-sm text-white placeholder-[#6E7578] focus:outline-none focus:border-[#CDA14B]"
               placeholder="At least 8 characters"
+              invalid={!!passwordError}
             />
-          </div>
-          <div>
-            <label className="block text-xs text-gray-500 uppercase tracking-wider mb-1.5">Confirm new password</label>
-            <input
+          </RpField>
+          <RpField label="Confirm new password" htmlFor="settings-confirm-password" error={passwordError || undefined}>
+            <RpInput
+              id="settings-confirm-password"
               type="password"
               value={confirmPassword}
               onChange={e => setConfirmPassword(e.target.value)}
               autoComplete="new-password"
-              className="w-full bg-[#141618] border border-[#26292C] rounded-sm px-3 py-2 text-sm text-white placeholder-[#6E7578] focus:outline-none focus:border-[#CDA14B]"
               placeholder="Repeat the new password"
+              invalid={!!passwordError}
             />
-          </div>
-          {passwordError && <p className="text-sm text-red-400">{passwordError}</p>}
-          <div className="flex justify-end pt-2">
-            <button
+          </RpField>
+          <div className="flex justify-end border-t border-rp-line pt-5">
+            <RpButton
               onClick={changePassword}
               disabled={savingPassword || !newPassword || !confirmPassword}
-              className="rp-btn-solid disabled:cursor-not-allowed"
             >
               {savingPassword ? 'Updating…' : 'Update password'}
-            </button>
+            </RpButton>
           </div>
-        </div>
+        </RpBox>
       )}
     </div>
   )
@@ -286,56 +284,57 @@ function SuggestUserPanel() {
     setSubmitting(false)
   }
 
-  const inputCls = 'w-full bg-[#141618] border border-[#26292C] rounded-sm px-3 py-2 text-sm text-white placeholder-[#6E7578] focus:outline-none focus:border-[#CDA14B]'
-
   return (
-    <div className="rp-panel p-5 space-y-4">
-      <p className="text-xs text-gray-500">
-        Suggest a new user. An administrator will review your suggestion, set a password, and create the account. They&apos;ll relay credentials to the new user.
-      </p>
-      <div>
-        <label className="block text-xs text-gray-500 uppercase tracking-wider mb-1.5">Full name</label>
-        <input className={inputCls} value={fullName} onChange={e => setFullName(e.target.value)} placeholder="Jane Smith" />
+    <RpBox pad="lg" className="flex max-w-[640px] flex-col gap-5">
+      <div className="flex flex-col gap-2">
+        <RpEyebrow tone="muted">Suggest a user</RpEyebrow>
+        <p className="text-[15px] leading-normal text-rp-muted">
+          Propose a new account. An administrator reviews it, sets a password and creates the account, then passes the credentials on.
+        </p>
       </div>
-      <div>
-        <label className="block text-xs text-gray-500 uppercase tracking-wider mb-1.5">Email</label>
-        <input type="email" className={inputCls} value={email} onChange={e => setEmail(e.target.value)} placeholder="jane@example.com" />
-      </div>
-      <div>
-        <label className="block text-xs text-gray-500 uppercase tracking-wider mb-1.5">Role</label>
-        <select className={inputCls} value={role} onChange={e => setRole(e.target.value as typeof role)}>
-          <option value="viewer">Viewer</option>
-          <option value="principal">Owner</option>
-          <option value="ea">Owner&apos;s Rep</option>
-          <option value="cfo">CFO</option>
-        </select>
-      </div>
-      <div>
-        <label className="block text-xs text-gray-500 uppercase tracking-wider mb-1.5">Notes (optional)</label>
-        <textarea
-          className={inputCls + ' min-h-[72px] resize-none'}
-          value={notes}
-          onChange={e => setNotes(e.target.value)}
-          placeholder="Why should this person be added? Any context for the admin."
-        />
-      </div>
-      {err && <p className="text-sm text-red-400">{err}</p>}
-      <div className="flex justify-end pt-2">
-        <button
+      <RpFormGrid>
+        <RpField label="Full name" htmlFor="suggest-name">
+          <RpInput id="suggest-name" value={fullName} onChange={e => setFullName(e.target.value)} placeholder="Jane Smith" />
+        </RpField>
+        <RpField label="Email" htmlFor="suggest-email">
+          <RpInput id="suggest-email" type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="jane@example.com" />
+        </RpField>
+        <RpField label="Role" htmlFor="suggest-role" className="sm:col-span-2">
+          <RpSelect id="suggest-role" value={role} onChange={e => setRole(e.target.value as typeof role)}>
+            <option value="viewer">Viewer</option>
+            <option value="principal">Owner</option>
+            <option value="ea">Owner&apos;s Rep</option>
+            <option value="cfo">CFO</option>
+          </RpSelect>
+        </RpField>
+        <RpField label="Notes (optional)" htmlFor="suggest-notes" className="sm:col-span-2">
+          <RpTextarea
+            id="suggest-notes"
+            value={notes}
+            onChange={e => setNotes(e.target.value)}
+            placeholder="Why this person should be added, and any context for the administrator."
+          />
+        </RpField>
+      </RpFormGrid>
+      {err && <p className="rp-error" role="alert">{err}</p>}
+      <div className="flex justify-end border-t border-rp-line pt-5">
+        <RpButton
           onClick={submit}
           disabled={submitting || !email || !fullName}
-          className="rp-btn-solid disabled:cursor-not-allowed"
         >
           {submitting ? 'Sending…' : 'Send for approval'}
-        </button>
+        </RpButton>
       </div>
-    </div>
+    </RpBox>
   )
 }
 
-// Reusable card for the Appearance picker. Shows a scaled-down preview of
-// the hero element + label, with a teal border + checkmark when selected.
+// Appearance choice cell: the live preview, an Oswald label and a line. Pressed
+// = gold 1px outline (inset) plus a 14% gold wash; no radius, no check badge.
+// The orb and character render their own <button>, so the cell is a block with
+// a stretched toggle button over it (no nested buttons), and the preview is inert.
 function HeroChoiceCard({
+  num,
   label,
   caption,
   selected,
@@ -343,6 +342,7 @@ function HeroChoiceCard({
   onClick,
   children,
 }: {
+  num: string
   label: string
   caption: string
   selected: boolean
@@ -351,28 +351,36 @@ function HeroChoiceCard({
   children: React.ReactNode
 }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={saving}
-      className={`relative bg-[#141618] rounded-xl p-4 text-left transition-all border-2 disabled:opacity-60 ${
+    <div
+      className={`relative flex flex-col gap-2.5 p-5 transition-colors duration-200 ${
         selected
-          ? 'border-emerald-400/60 ring-1 ring-emerald-400/30'
-          : 'border-white/[0.06] hover:border-white/[0.15]'
-      }`}
+          ? 'bg-rp-gold/[.14] outline outline-1 -outline-offset-1 outline-rp-gold'
+          : 'hover:bg-rp-surface'
+      } ${saving ? 'opacity-60' : ''}`}
     >
-      {selected && (
-        <span className="absolute top-2 right-2 w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center">
-          <svg viewBox="0 0 16 16" className="w-3 h-3 text-white" fill="none" stroke="currentColor" strokeWidth={3}>
-            <path d="M3 8l3 3 7-7" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
+      <span className="flex items-center justify-between gap-3">
+        <span className={`font-display text-xs tracking-[.1em] ${selected ? 'text-rp-gold' : 'text-rp-dim'}`}>{num}</span>
+        <span className="font-display text-[11px] uppercase tracking-[.16em] text-rp-muted">
+          {saving ? 'Saving…' : selected ? 'In use' : 'Use this'}
         </span>
-      )}
-      <div className="h-32 flex items-center justify-center overflow-hidden mb-3">
+      </span>
+      <span
+        aria-hidden
+        ref={el => { el?.setAttribute('inert', '') }}
+        className="pointer-events-none flex h-36 items-center justify-center overflow-hidden"
+      >
         {children}
-      </div>
-      <p className="text-sm text-white font-medium">{label}</p>
-      <p className="text-[11px] text-gray-500 mt-0.5">{caption}</p>
-    </button>
+      </span>
+      <span className="font-display text-xl uppercase leading-[1.1] tracking-[.03em] text-rp-text">{label}</span>
+      <span className="text-[14px] leading-[1.4] text-rp-muted">{caption}</span>
+      <button
+        type="button"
+        onClick={onClick}
+        disabled={saving}
+        aria-pressed={selected}
+        aria-label={`${label} · ${caption}`}
+        className="absolute inset-0 z-[1] cursor-pointer disabled:cursor-wait"
+      />
+    </div>
   )
 }

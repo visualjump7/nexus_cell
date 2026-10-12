@@ -1,8 +1,7 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { createPortal } from 'react-dom'
 import { getWidgetEntry, type WidgetId } from '@/lib/widgets'
+import { RpModal, RpTag } from '@/components/rp'
 
 interface WidgetItem {
   widget_id: WidgetId
@@ -31,75 +30,39 @@ interface Props {
 // simplicity — building a preview-with-pending-config flow would require a
 // signed config payload or a session-scoped draft table.
 export default function PreviewPrincipalModal({ principalId, principalName, config, onClose }: Props) {
-  const [mounted, setMounted] = useState(false)
-
-  useEffect(() => {
-    setMounted(true)
-    function onKey(e: KeyboardEvent) { if (e.key === 'Escape') onClose() }
-    window.addEventListener('keydown', onKey)
-    const prevOverflow = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    return () => {
-      window.removeEventListener('keydown', onKey)
-      document.body.style.overflow = prevOverflow
-    }
-  }, [onClose])
-
-  if (!mounted) return null
-
   // Static enabled-list summary so EA can confirm the structure at a glance,
   // even before they save. The iframe below shows the live, saved version.
   const widgetSummary = config.widgets.map(w => getWidgetEntry(w.widget_id)?.label).filter(Boolean).join(' · ')
 
-  return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={onClose}>
-      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
-
-      <div
-        className="relative w-full sm:w-[min(92vw,440px)] sm:max-w-[440px] sm:rounded-sm bg-nexus border border-[#26292C] flex flex-col h-full sm:max-h-[90vh]"
-        style={{ background: '#0E0F11' }}
-        onClick={e => e.stopPropagation()}
-      >
-        <div className="flex items-center justify-between gap-3 px-5 py-3 border-b border-[#1F1F1F] shrink-0">
-          <div>
-            <h2 className="rp-eyebrow">Preview as owner</h2>
-            <p className="text-[11px] text-gray-500 mt-0.5">{principalName}</p>
-          </div>
-          <button
-            onClick={onClose}
-            aria-label="Close"
-            className="text-gray-400 hover:text-white w-8 h-8 rounded-md hover:bg-white/5 transition-colors flex items-center justify-center"
-          >
-            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-              <path d="M18 6L6 18M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-
-        <div className="px-5 py-4 border-b border-[#1F1F1F] bg-white/[0.02] shrink-0">
-          <p className="text-[11px] text-amber-400 uppercase tracking-wider mb-1">Heads up</p>
-          <p className="text-xs text-gray-400 leading-relaxed">
-            This preview reflects the <span className="text-white">last saved</span> config.
-            Save your changes first to see them live here. The owner&apos;s view always uses the saved version.
+  return (
+    <RpModal
+      open
+      onClose={onClose}
+      size="xl"
+      eyebrow="Preview"
+      title={principalName}
+    >
+      <div className="flex flex-col gap-3 border border-rp-line bg-rp-panel px-5 py-4">
+        <div className="flex flex-wrap items-center gap-3">
+          <RpTag tone="gold">Last saved view</RpTag>
+          <p className="text-[14px] text-rp-muted">
+            The preview shows the <span className="text-rp-text">saved</span> view. Save your changes first to see them here; the owner always sees the saved version.
           </p>
-          {widgetSummary && (
-            <div className="mt-3">
-              <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-1">In-progress order</p>
-              <p className="text-xs text-gray-300 leading-relaxed">{widgetSummary || '—'}</p>
-            </div>
-          )}
         </div>
-
-        <div className="flex-1 overflow-hidden bg-[#0a0c12]">
-          <iframe
-            src={`/executive-preview/${principalId}`}
-            title="Owner view preview"
-            className="w-full h-full border-0"
-            sandbox="allow-same-origin allow-scripts allow-forms"
-          />
-        </div>
+        {widgetSummary && (
+          <p className="text-[13px] leading-relaxed text-rp-muted">
+            <span className="mr-2 font-display text-[11px] uppercase tracking-[.16em] text-rp-dim">In-progress order</span>
+            {widgetSummary}
+          </p>
+        )}
       </div>
-    </div>,
-    document.body,
+
+      <iframe
+        src={`/executive-preview/${principalId}`}
+        title="Owner view preview"
+        className="block aspect-[9/16] w-full shrink-0 border border-rp-line bg-rp-bg sm:aspect-[16/10] sm:max-h-[calc(100vh-280px)] sm:min-h-[360px]"
+        sandbox="allow-same-origin allow-scripts allow-forms"
+      />
+    </RpModal>
   )
 }

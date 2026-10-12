@@ -1,25 +1,26 @@
 "use client";
 
-import { useState, useMemo, useCallback, useEffect } from "react";
-import { motion } from "framer-motion";
-import {
-  ChevronLeft,
-  ChevronRight,
-  Filter,
-  X,
-  Loader2,
-  AlertTriangle,
-  CheckCircle,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { useState, useMemo, useCallback } from "react";
 import { BillDrawer } from "./BillDrawer";
 import { fetchBillsForMonth, type Bill } from "@/lib/bill-service";
-import { formatCurrency } from "@/lib/utils";
+import { cn } from "@/lib/utils";
+import {
+  RpButton,
+  RpSelect,
+  RpLoading,
+  ChevronLeft,
+  ChevronRight,
+  RP_ICON,
+  fmtMoney,
+  fmtDate,
+  dot,
+} from "@/components/rp";
 
 interface FiscalCalendarProps {
   initialBills: Bill[];
   categories: string[];
+  /** "Cash outflow" eyebrow over the month figure; off when a section head already says it. */
+  eyebrow?: boolean;
 }
 
 const DAYS_OF_WEEK = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -28,9 +29,25 @@ const MONTH_NAMES = [
   "July", "August", "September", "October", "November", "December",
 ];
 
+/** Gold wash by the day's share of the busiest day (replaces the amber/orange/red ramp). */
+const HEAT = ["", "rgba(205,161,75,.05)", "rgba(205,161,75,.10)", "rgba(205,161,75,.16)", "rgba(205,161,75,.24)"];
+const GOLD = "#CDA14B";
+const LINE3 = "#3A3E42";
+
+const UNPAID = new Set<Bill["status"]>(["pending", "approved", "overdue"]);
+
+/** Local calendar date → YYYY-MM-DD (matches the bills' date-only due_date). */
+function formatDateKey(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
 export function FiscalCalendar({
   initialBills,
   categories,
+  eyebrow = true,
 }: FiscalCalendarProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
@@ -120,13 +137,6 @@ export function FiscalCalendar({
     }
   }, []);
 
-  // Always sync with the currently-viewed month when it changes.
-  // (initialBills cover the page's first render; nav updates fetch fresh.)
-  useEffect(() => {
-    // Only refetch if the visible month differs from today's month that
-    // initialBills populated. Cheap guard — we just always refetch on nav.
-  }, []);
-
   const goToPreviousMonth = async () => {
     const newDate = new Date(
       currentDate.getFullYear(),
@@ -162,16 +172,7 @@ export function FiscalCalendar({
     return 4;
   };
 
-  const formatDateKey = (date: Date): string =>
-    date.toISOString().split("T")[0];
-
-  const isToday = (date: Date): boolean =>
-    date.toDateString() === new Date().toDateString();
-
-  const isOverdue = (dateStr: string): boolean => {
-    const today = new Date().toISOString().split("T")[0];
-    return dateStr < today;
-  };
+  const todayKey = formatDateKey(new Date());
 
   const selectedDayBills = selectedDate
     ? billsByDate[selectedDate] || []
@@ -183,233 +184,203 @@ export function FiscalCalendar({
   const pendingCount = filteredBills.filter(
     (b) => b.status === "pending"
   ).length;
+  const paidCount = filteredBills.filter(
+    (b) => b.status === "paid"
+  ).length;
+
+  const monthName = MONTH_NAMES[currentDate.getMonth()];
 
   return (
-    <div>
-      <motion.div
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="mb-6 flex items-center justify-between rp-panel p-4"
-      >
-        <div>
-          <p className="rp-eyebrow--muted">
-            {MONTH_NAMES[currentDate.getMonth()]} cash outflow
-          </p>
-          <p className="rp-stat-value mt-1">
-            {formatCurrency(monthlyTotal)}
-          </p>
+    <div className="flex flex-col gap-5">
+      {/* Header: the month's outflow, month navigation, category filter */}
+      <div className="flex flex-wrap items-end justify-between gap-x-8 gap-y-5">
+        <div className="flex min-w-0 flex-col gap-2">
+          {eyebrow && <span className="rp-eyebrow--muted">Cash outflow</span>}
+          <span className="font-display text-[32px] font-medium uppercase leading-none tracking-[.01em] tabular-nums text-rp-text">
+            {monthName} · {fmtMoney(monthlyTotal, { compact: true })}
+          </span>
+          <span className="text-[13px] text-rp-muted">
+            {dot(`${pendingCount} pending`, `${paidCount} paid`, selectedCategory)}
+          </span>
         </div>
-        <div className="flex items-center gap-4">
-          <div className="text-right">
-            <p className="rp-eyebrow--muted">Pending bills</p>
-            <p className="font-display text-lg font-medium tabular-nums text-foreground mt-1">{pendingCount}</p>
-          </div>
-          {selectedCategory && (
-            <Badge
-              variant="outline"
-              className="flex items-center gap-1 border-primary/50 text-primary"
+
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
+          <div className="flex items-center gap-2">
+            <RpButton
+              variant="icon"
+              aria-label="Previous month"
+              onClick={goToPreviousMonth}
+              disabled={isLoading}
             >
-              {selectedCategory}
-              <button onClick={() => setSelectedCategory(null)}>
-                <X className="h-3 w-3" />
-              </button>
-            </Badge>
-          )}
-        </div>
-      </motion.div>
+              <ChevronLeft size={RP_ICON.size} strokeWidth={RP_ICON.strokeWidth} aria-hidden />
+            </RpButton>
+            <h3
+              className="min-w-[150px] text-center font-display text-lg font-normal uppercase tracking-[.06em] text-rp-text"
+              aria-live="polite"
+            >
+              {monthName} {currentDate.getFullYear()}
+            </h3>
+            <RpButton
+              variant="icon"
+              aria-label="Next month"
+              onClick={goToNextMonth}
+              disabled={isLoading}
+            >
+              <ChevronRight size={RP_ICON.size} strokeWidth={RP_ICON.strokeWidth} aria-hidden />
+            </RpButton>
+            <RpButton
+              variant="ghost"
+              size="sm"
+              onClick={goToToday}
+              disabled={isLoading}
+              className="ml-1"
+            >
+              Today
+            </RpButton>
+          </div>
 
-      <div className="mb-4 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={goToPreviousMonth}
-            disabled={isLoading}
-          >
-            <ChevronLeft className="h-5 w-5" />
-          </Button>
-          <h2 className="min-w-[200px] text-center font-display text-lg font-medium uppercase tracking-[0.08em] text-foreground">
-            {MONTH_NAMES[currentDate.getMonth()]} {currentDate.getFullYear()}
-          </h2>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={goToNextMonth}
-            disabled={isLoading}
-          >
-            <ChevronRight className="h-5 w-5" />
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={goToToday}
-            disabled={isLoading}
-            className="ml-2"
-          >
-            Today
-          </Button>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <Filter className="h-4 w-4 text-muted-foreground" />
-          <select
+          <RpSelect
+            aria-label="Filter by category"
             value={selectedCategory || ""}
             onChange={(e) => setSelectedCategory(e.target.value || null)}
-            className="rounded-sm border border-[#26292C] bg-[#0E0F11] px-3 py-1.5 text-sm text-foreground focus:outline-none focus:border-[#CDA14B]"
+            className="w-[220px] max-w-full"
           >
-            <option value="">All Categories</option>
+            <option value="">All categories</option>
             {categories.map((cat) => (
               <option key={cat} value={cat}>
                 {cat}
               </option>
             ))}
-          </select>
+          </RpSelect>
         </div>
       </div>
 
-      {isLoading && (
-        <div className="flex items-center justify-center py-8">
-          <Loader2 className="h-6 w-6 animate-spin text-primary" />
-        </div>
-      )}
+      {isLoading ? (
+        <RpLoading label={`Loading ${monthName}`} className="h-[320px]" />
+      ) : (
+        <div className="rp-ruled grid-cols-7" role="group" aria-label={`${monthName} ${currentDate.getFullYear()} bills by due date`}>
+          {DAYS_OF_WEEK.map((day) => (
+            <div
+              key={day}
+              aria-hidden
+              className="px-1.5 py-2.5 font-display text-[11px] uppercase tracking-[.16em] text-rp-dim sm:px-2.5"
+            >
+              <span className="sm:hidden">{day.slice(0, 1)}</span>
+              <span className="hidden sm:inline">{day}</span>
+            </div>
+          ))}
 
-      {!isLoading && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="overflow-hidden rp-panel"
-        >
-          <div className="grid grid-cols-7 border-b border-border">
-            {DAYS_OF_WEEK.map((day) => (
-              <div
-                key={day}
-                className="px-2 py-3 text-center font-display text-[11px] uppercase tracking-[0.16em] text-muted-foreground"
+          {calendarDays.map(({ date, isCurrentMonth }, index) => {
+            const dateKey = formatDateKey(date);
+            const dayBills = billsByDate[dateKey] || [];
+            const dayTotal = dailyTotals[dateKey] || 0;
+            const intensity = isCurrentMonth ? getHeatmapIntensity(dayTotal) : 0;
+            const today = dateKey === todayKey;
+            const selected = selectedDate === dateKey;
+            const has = dayBills.length > 0;
+            const show = has && isCurrentMonth;
+            const hasPending = dayBills.some((b) => b.status === "pending");
+            const unpaid = dayBills.some((b) => UNPAID.has(b.status));
+            const paidOnly = has && dayBills.every((b) => b.status === "paid" || b.status === "rejected");
+            const pastDue = isCurrentMonth && dateKey < todayKey && unpaid;
+
+            // One square per cell; the colour carries the state on phones where the text is hidden.
+            const square = pastDue ? "bg-rp-alert" : hasPending ? "bg-rp-gold" : paidOnly ? "bg-rp-green" : unpaid ? "bg-rp-gold" : "";
+
+            const edges = [
+              today ? `inset 0 2px 0 ${GOLD}` : "",
+              selected ? `inset 0 0 0 1px ${LINE3}` : "",
+            ].filter(Boolean).join(", ");
+
+            return (
+              <button
+                key={index}
+                type="button"
+                onClick={() => has && setSelectedDate(dateKey)}
+                disabled={!has}
+                aria-label={
+                  has
+                    ? `${fmtDate(dateKey, "weekday")} · ${dayBills.length} bill${dayBills.length !== 1 ? "s" : ""} · ${fmtMoney(dayTotal)}`
+                    : fmtDate(dateKey, "weekday")
+                }
+                aria-current={today ? "date" : undefined}
+                style={{
+                  backgroundImage: intensity ? `linear-gradient(${HEAT[intensity]}, ${HEAT[intensity]})` : undefined,
+                  boxShadow: edges || undefined,
+                }}
+                className={cn(
+                  "relative flex min-h-[56px] flex-col gap-1 p-1.5 text-left transition-colors duration-200 sm:min-h-[88px] sm:p-2.5",
+                  has ? "cursor-pointer hover:!bg-rp-surface" : "cursor-default",
+                  selected && "!bg-rp-surface",
+                  !isCurrentMonth && "opacity-40"
+                )}
               >
-                {day}
-              </div>
-            ))}
-          </div>
-
-          <div className="grid grid-cols-7">
-            {calendarDays.map(({ date, isCurrentMonth }, index) => {
-              const dateKey = formatDateKey(date);
-              const dayBills = billsByDate[dateKey] || [];
-              const dayTotal = dailyTotals[dateKey] || 0;
-              const intensity = getHeatmapIntensity(dayTotal);
-              const today = isToday(date);
-              const overdue =
-                isCurrentMonth &&
-                isOverdue(dateKey) &&
-                dayBills.some((b) => b.status === "pending");
-
-              return (
-                <button
-                  key={index}
-                  onClick={() =>
-                    dayBills.length > 0 && setSelectedDate(dateKey)
-                  }
-                  disabled={dayBills.length === 0}
-                  style={{ minHeight: "100px" }}
-                  className={`
-                    relative border-b border-r border-border/50 p-2
-                    text-left transition-colors
-                    ${!isCurrentMonth ? "opacity-30" : ""}
-                    ${
-                      dayBills.length > 0
-                        ? "cursor-pointer hover:bg-muted/30"
-                        : "cursor-default"
-                    }
-                    ${
-                      selectedDate === dateKey
-                        ? "ring-2 ring-inset ring-[#3989CB]"
-                        : ""
-                    }
-                  `}
-                >
-                  <div
-                    className={`
-                    mb-1 font-display text-sm tabular-nums
-                    ${
-                      !isCurrentMonth
-                        ? "text-muted-foreground/50"
-                        : "text-muted-foreground"
-                    }
-                    ${
-                      today
-                        ? "flex h-7 w-7 items-center justify-center rounded-none border border-[#CDA14B] !text-[#CDA14B]"
-                        : ""
-                    }
-                  `}
+                <span className="flex items-center justify-between gap-1">
+                  <span
+                    className={cn(
+                      "font-display text-xs tabular-nums tracking-[.06em]",
+                      today ? "text-rp-gold" : "text-rp-dim"
+                    )}
                   >
                     {date.getDate()}
-                  </div>
-
-                  {dayTotal > 0 && isCurrentMonth && (
-                    <div
-                      className={`
-                      mt-1 rounded-sm p-1.5
-                      ${intensity === 1 ? "bg-amber-500/10" : ""}
-                      ${intensity === 2 ? "bg-orange-500/15" : ""}
-                      ${intensity === 3 ? "bg-red-500/15" : ""}
-                      ${intensity === 4 ? "bg-red-500/25" : ""}
-                      ${overdue ? "ring-2 ring-red-500/50" : ""}
-                    `}
-                    >
-                      <div className="mb-1 flex items-center gap-1">
-                        {dayBills.some((b) => b.status === "pending") ? (
-                          <AlertTriangle className="h-3 w-3 text-amber-400" />
-                        ) : (
-                          <CheckCircle className="h-3 w-3 text-[#A4CC5C]" />
-                        )}
-                        <div
-                          className={`text-xs font-bold ${
-                            dayBills.some((b) => b.status === "pending")
-                              ? "text-amber-400"
-                              : "text-[#A4CC5C]"
-                          }`}
-                        >
-                          {formatCurrency(dayTotal)}
-                        </div>
-                      </div>
-                      <div
-                        className={`text-xs ${
-                          intensity <= 2
-                            ? "text-amber-500/70"
-                            : "text-red-500/70"
-                        }`}
-                      >
-                        {dayBills.length} bill{dayBills.length !== 1 ? "s" : ""}
-                      </div>
-                    </div>
+                  </span>
+                  {show && square && (
+                    <span aria-hidden className={cn("h-1.5 w-1.5 shrink-0", square, !hasPending && "sm:hidden")} />
                   )}
-                </button>
-              );
-            })}
-          </div>
-        </motion.div>
+                </span>
+
+                {show && dayTotal > 0 && (
+                  <>
+                    <span className="hidden font-display text-[13px] tracking-[.02em] tabular-nums text-rp-text sm:block">
+                      {fmtMoney(dayTotal, { compact: true })}
+                    </span>
+                    <span
+                      className={cn(
+                        "hidden font-display text-[10px] uppercase tracking-[.14em] sm:block",
+                        pastDue ? "text-rp-alert" : paidOnly ? "text-rp-green" : "text-rp-dim"
+                      )}
+                    >
+                      {pastDue ? "Due" : paidOnly ? "Paid" : `${dayBills.length} bill${dayBills.length !== 1 ? "s" : ""}`}
+                    </span>
+                  </>
+                )}
+              </button>
+            );
+          })}
+        </div>
       )}
 
-      <div className="mt-4 flex flex-wrap items-center justify-end gap-4 text-xs text-muted-foreground">
-        <span>Cash Outflow:</span>
-        <div className="flex items-center gap-1">
-          <div className="h-3 w-3 rounded-none bg-amber-500/20" />
-          <span>Low</span>
+      {/* Key */}
+      <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-3 border-t border-rp-line pt-4 text-xs text-rp-muted">
+        <div className="flex items-center gap-3">
+          <span className="rp-eyebrow--muted">Daily outflow</span>
+          <span className="text-rp-dim">Less</span>
+          <span className="flex" aria-hidden>
+            {HEAT.slice(1).map((c) => (
+              <span
+                key={c}
+                className="-ml-px h-3 w-5 border border-rp-line first:ml-0"
+                style={{ backgroundImage: `linear-gradient(${c}, ${c})` }}
+              />
+            ))}
+          </span>
+          <span className="text-rp-dim">More</span>
         </div>
-        <div className="flex items-center gap-1">
-          <div className="h-3 w-3 rounded-none bg-orange-500/25" />
-          <span>Medium</span>
-        </div>
-        <div className="flex items-center gap-1">
-          <div className="h-3 w-3 rounded-none bg-red-500/30" />
-          <span>High</span>
-        </div>
-        <div className="flex items-center gap-1">
-          <AlertTriangle className="h-3 w-3 text-amber-400" />
-          <span>Pending</span>
-        </div>
-        <div className="flex items-center gap-1">
-          <CheckCircle className="h-3 w-3 text-[#A4CC5C]" />
-          <span>Paid</span>
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 font-display text-[11px] uppercase tracking-[.14em]">
+          <span className="flex items-center gap-2">
+            <span aria-hidden className="h-1.5 w-1.5 bg-rp-gold" />
+            Pending
+          </span>
+          <span className="text-rp-dim" aria-hidden>·</span>
+          <span className="flex items-center gap-2 text-rp-green">
+            <span aria-hidden className="h-1.5 w-1.5 bg-rp-green sm:hidden" />
+            Paid
+          </span>
+          <span className="text-rp-dim" aria-hidden>·</span>
+          <span className="flex items-center gap-2 text-rp-alert">
+            <span aria-hidden className="h-1.5 w-1.5 bg-rp-alert sm:hidden" />
+            Past due
+          </span>
         </div>
       </div>
 

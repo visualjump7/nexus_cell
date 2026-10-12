@@ -15,10 +15,10 @@ import {
   STATUS_META,
   planToLngLat,
   pctSpent,
-  formatMoneyShort,
   type PlanPoint,
   type SiteProject,
 } from '@/lib/site-map'
+import { RpPending, fmtMoney } from '@/components/rp'
 import { zoneColor, escapeHtml, type LayerKey, type PinSpec, type ZoneStat } from './utils'
 
 interface Props {
@@ -55,8 +55,8 @@ export function projectPopupHtml(p: SiteProject): string {
   const pct = pctSpent(p.budgeted, p.actual)
   return `<div class="rp-sm-pop">
     <div class="rp-sm-pop__name">${escapeHtml(p.name)}</div>
-    <div class="rp-sm-pop__row"><span>${formatMoneyShort(p.budgeted)} budget</span><span>${pct.toFixed(0)}% spent</span></div>
-    <div class="rp-sm-pop__status" style="color:${meta.color}">● ${meta.label}</div>
+    <div class="rp-sm-pop__row"><span>${fmtMoney(p.budgeted, { compact: true })} budget</span><span>${pct.toFixed(0)}% spent</span></div>
+    <div class="rp-sm-pop__status" style="color:${meta.color}"><i class="rp-sm-pop__sq" style="background:${meta.color}"></i>${meta.label}</div>
   </div>`
 }
 
@@ -203,7 +203,7 @@ export default function MapboxView({
         root.style.cssText = `width:${pin.size}px;height:${pin.size}px;cursor:pointer;`
         const dot = document.createElement('div')
         const archived = pin.project.status === 'archived'
-        dot.style.cssText = `width:100%;height:100%;border-radius:50%;background:${pin.color};opacity:${archived ? 0.7 : 1};border:2px solid #0A0B0C;box-shadow:0 0 0 1px ${pin.color}80,0 0 10px ${pin.color}66;transition:transform .2s ease,box-shadow .2s ease,opacity .2s ease;`
+        dot.style.cssText = `width:100%;height:100%;border-radius:50%;background:${pin.color};opacity:${archived ? 0.7 : 1};border:2px solid #0A0B0C;box-shadow:0 0 0 1px ${pin.color}80;transition:transform .2s ease,box-shadow .2s ease,opacity .2s ease;`
         root.appendChild(dot)
         root.setAttribute('role', 'button')
         root.setAttribute('aria-label', pin.project.name)
@@ -275,9 +275,7 @@ export default function MapboxView({
       root.style.display = visible ? '' : 'none'
       const sel = id === selectedProjectId
       dot.style.transform = sel ? 'scale(1.45)' : 'scale(1)'
-      dot.style.boxShadow = sel
-        ? `0 0 0 2px #F5F5F5, 0 0 18px ${color}`
-        : `0 0 0 1px ${color}80, 0 0 10px ${color}66`
+      dot.style.boxShadow = sel ? '0 0 0 2px #F5F5F5' : `0 0 0 1px ${color}80`
       root.style.zIndex = sel ? '5' : ''
     })
   }, [visibleIds, layers.pins, selectedProjectId, loaded])
@@ -294,11 +292,8 @@ export default function MapboxView({
     <div className="absolute inset-0">
       <div ref={container} className="absolute inset-0" />
       {!loaded && (
-        <div className="absolute inset-0 bg-[#0E0F11] flex items-center justify-center pointer-events-none">
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 bg-[#CDA14B] rounded-full animate-pulse" />
-            <p className="rp-eyebrow--muted">Loading site map…</p>
-          </div>
+        <div className="pointer-events-none absolute inset-0 bg-rp-panel" role="status" aria-live="polite">
+          <RpPending label="Loading site map" name="Satellite · State Road 100, Palatka" />
         </div>
       )}
     </div>

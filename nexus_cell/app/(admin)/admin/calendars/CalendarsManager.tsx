@@ -3,7 +3,23 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useToast } from '@/components/shared/Toast'
+import DeleteConfirm from '@/components/DeleteConfirm'
 import type { ExternalCalendar } from '@/lib/types'
+import {
+  RpSubhead,
+  RpTable,
+  RpTag,
+  RpStatus,
+  RpButton,
+  RpEmpty,
+  RpModal,
+  RpField,
+  RpInput,
+  RpTabs,
+  Plus,
+  timeAgo,
+  dot,
+} from '@/components/rp'
 
 type CalendarRow = ExternalCalendar & { event_count: number }
 
@@ -18,23 +34,14 @@ const PROVIDER_LABEL: Record<string, string> = {
   ics: 'ICS',
 }
 
-const PROVIDER_DOT: Record<string, string> = {
-  apple: 'bg-gray-300',
-  outlook: 'bg-blue-400',
-  google: 'bg-emerald-400',
-  ics: 'bg-purple-400',
+function syncState(c: CalendarRow): 'ok' | 'error' | 'never' {
+  if (c.last_sync_error) return 'error'
+  return c.last_synced_at ? 'ok' : 'never'
 }
 
-function timeAgo(iso: string | null): string {
-  if (!iso) return 'never'
-  const diff = Date.now() - new Date(iso).getTime()
-  const mins = Math.floor(diff / 60000)
-  if (mins < 1) return 'just now'
-  if (mins < 60) return `${mins}m ago`
-  const hrs = Math.floor(mins / 60)
-  if (hrs < 24) return `${hrs}h ago`
-  const days = Math.floor(hrs / 24)
-  return `${days}d ago`
+/** 8px colour square (calendar colours are data, not decoration). */
+function Swatch({ color }: { color: string }) {
+  return <i aria-hidden className="block h-2 w-2 shrink-0" style={{ background: color }} />
 }
 
 export default function CalendarsManager({ initialCalendars }: Props) {
@@ -44,6 +51,7 @@ export default function CalendarsManager({ initialCalendars }: Props) {
   const [editing, setEditing] = useState<CalendarRow | null>(null)
   const [adding, setAdding] = useState(false)
   const [syncingId, setSyncingId] = useState<string | null>(null)
+  const [deleting, setDeleting] = useState<CalendarRow | null>(null)
 
   const active = calendars.filter(c => !c.archived)
   const archived = calendars.filter(c => c.archived)
@@ -80,8 +88,8 @@ export default function CalendarsManager({ initialCalendars }: Props) {
   }
 
   async function hardDelete(c: CalendarRow) {
-    if (!confirm(`Delete "${c.name}" permanently? This removes all cached events.`)) return
     const res = await fetch(`/api/external-calendars/${c.id}`, { method: 'DELETE' })
+    setDeleting(null)
     if (res.ok) {
       toast('Deleted', 'success')
       router.refresh()
@@ -92,58 +100,99 @@ export default function CalendarsManager({ initialCalendars }: Props) {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-end">
-        <button
-          onClick={() => setAdding(true)}
-          className="px-3 py-1.5 bg-emerald-500 hover:brightness-110 text-white text-xs font-medium rounded-lg transition-all"
-        >
-          + Add calendar
-        </button>
-      </div>
-
+    <div className="flex flex-col gap-[var(--rp-gap)]">
       {/* Active calendars */}
-      <section className="rp-panel">
-        <div className="px-5 py-3 border-b border-white/5">
-          <h2 className="rp-eyebrow--muted">Active</h2>
-        </div>
+      <section className="flex flex-col gap-5">
+        <RpSubhead
+          flush
+          title="Active"
+          spec={dot(`${active.length} calendar${active.length === 1 ? '' : 's'}`, `${active.reduce((s, c) => s + c.event_count, 0)} events cached`)}
+          aside={<RpButton size="sm" icon={<Plus size={14} strokeWidth={1.5} />} onClick={() => setAdding(true)}>Add calendar</RpButton>}
+        />
         {active.length === 0 ? (
-          <p className="text-sm text-gray-500 italic px-5 py-8 text-center">
-            No external calendars yet. Click &ldquo;Add calendar&rdquo; to subscribe to an iCal feed.
-          </p>
+          <RpEmpty
+            compact
+            title="No calendars yet."
+            line="Add a calendar to subscribe to an iCal feed. Its events appear beside the build schedule."
+          />
         ) : (
-          <ul className="divide-y divide-white/5 m-0 p-0 list-none">
-            {active.map(c => (
-              <CalendarRow
-                key={c.id}
-                cal={c}
-                syncing={syncingId === c.id}
-                onSync={() => syncNow(c.id)}
-                onEdit={() => setEditing(c)}
-                onArchive={() => archive(c)}
-              />
-            ))}
-          </ul>
+          <RpTable minWidth={900} caption="Active calendars">
+            <thead>
+              <tr>
+                <th>Calendar</th>
+                <th>Provider</th>
+                <th className="num">Events</th>
+                <th>Last synced</th>
+                <th>Status</th>
+                <th className="num relative"><span className="sr-only">Actions</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              {active.map(c => (
+                <tr key={c.id}>
+                  <td>
+                    <span className="flex items-center gap-3">
+                      <Swatch color={c.color} />
+                      <span className="font-medium text-rp-text">{c.name}</span>
+                    </span>
+                    {c.last_sync_error && (
+                      <span className="sub max-w-[320px] truncate pl-5" title={c.last_sync_error}>{c.last_sync_error}</span>
+                    )}
+                  </td>
+                  <td><RpTag>{PROVIDER_LABEL[c.provider] || c.provider}</RpTag></td>
+                  <td className="num">{c.event_count}</td>
+                  <td className="whitespace-nowrap text-rp-muted" suppressHydrationWarning>{c.last_synced_at ? timeAgo(c.last_synced_at) : 'Never'}</td>
+                  <td><RpStatus kind="sync" value={syncState(c)} /></td>
+                  <td className="num">
+                    <span className="inline-flex items-center gap-2">
+                      <RpButton variant="ghost" size="sm" onClick={() => syncNow(c.id)} disabled={syncingId === c.id}>
+                        {syncingId === c.id ? 'Syncing…' : 'Sync now'}
+                      </RpButton>
+                      <RpButton variant="ghost" size="sm" onClick={() => setEditing(c)}>Edit</RpButton>
+                      <RpButton variant="ghost" size="sm" onClick={() => archive(c)}>Archive</RpButton>
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </RpTable>
         )}
       </section>
 
       {/* Archived */}
       {archived.length > 0 && (
-        <section className="rp-panel">
-          <div className="px-5 py-3 border-b border-white/5 flex items-center justify-between">
-            <h2 className="rp-eyebrow--muted">Archived</h2>
-            <span className="text-xs text-gray-600">{archived.length}</span>
-          </div>
-          <ul className="divide-y divide-white/5 m-0 p-0 list-none">
-            {archived.map(c => (
-              <li key={c.id} className="px-5 py-3 flex items-center gap-3 opacity-60">
-                <div className="w-2 h-2 rounded-full" style={{ background: c.color }} />
-                <p className="text-sm text-gray-300 flex-1">{c.name}</p>
-                <button onClick={() => archive(c)} className="text-xs text-emerald-400 hover:underline">Restore</button>
-                <button onClick={() => hardDelete(c)} className="text-xs text-red-400 hover:underline">Delete</button>
-              </li>
-            ))}
-          </ul>
+        <section className="flex flex-col gap-5">
+          <RpSubhead size="md" title="Archived" spec={`${archived.length} calendar${archived.length === 1 ? '' : 's'} · hidden from members`} />
+          <RpTable minWidth={640} caption="Archived calendars">
+            <thead>
+              <tr>
+                <th>Calendar</th>
+                <th>Provider</th>
+                <th className="num">Events</th>
+                <th className="num relative"><span className="sr-only">Actions</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              {archived.map(c => (
+                <tr key={c.id} className="text-rp-muted">
+                  <td>
+                    <span className="flex items-center gap-3 opacity-70">
+                      <Swatch color={c.color} />
+                      <span>{c.name}</span>
+                    </span>
+                  </td>
+                  <td><RpTag tone="dim">{PROVIDER_LABEL[c.provider] || c.provider}</RpTag></td>
+                  <td className="num">{c.event_count}</td>
+                  <td className="num">
+                    <span className="inline-flex items-center gap-2">
+                      <RpButton variant="ghost" size="sm" onClick={() => archive(c)}>Restore</RpButton>
+                      <RpButton variant="danger" size="sm" onClick={() => setDeleting(c)}>Delete</RpButton>
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </RpTable>
         </section>
       )}
 
@@ -154,61 +203,15 @@ export default function CalendarsManager({ initialCalendars }: Props) {
           onSaved={() => { setAdding(false); setEditing(null); router.refresh() }}
         />
       )}
+      {deleting && (
+        <DeleteConfirm
+          itemName={`"${deleting.name}" and its cached events`}
+          onConfirm={() => hardDelete(deleting)}
+          onCancel={() => setDeleting(null)}
+        />
+      )}
     </div>
   )
-
-  function CalendarRow({ cal, syncing, onSync, onEdit, onArchive }: {
-    cal: CalendarRow
-    syncing: boolean
-    onSync: () => void
-    onEdit: () => void
-    onArchive: () => void
-  }) {
-    return (
-      <li className="px-5 py-3 flex items-center gap-3">
-        <div className="w-3 h-3 rounded-full shrink-0" style={{ background: cal.color }} />
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <p className="text-sm text-white font-medium truncate">{cal.name}</p>
-            <span className={`inline-block w-1.5 h-1.5 rounded-full ${PROVIDER_DOT[cal.provider]}`} />
-            <span className="text-[10px] text-gray-500 uppercase tracking-wider">{PROVIDER_LABEL[cal.provider]}</span>
-          </div>
-          <div className="flex items-center gap-2 mt-0.5 text-[11px] text-gray-500">
-            <span>{cal.event_count} event{cal.event_count === 1 ? '' : 's'}</span>
-            <span>·</span>
-            <span>synced {timeAgo(cal.last_synced_at)}</span>
-            {cal.last_sync_error && (
-              <>
-                <span>·</span>
-                <span className="text-red-400 truncate" title={cal.last_sync_error}>error: {cal.last_sync_error}</span>
-              </>
-            )}
-          </div>
-        </div>
-        <div className="flex items-center gap-1 shrink-0">
-          <button
-            onClick={onSync}
-            disabled={syncing}
-            className="text-xs text-gray-400 hover:text-white px-2 py-1 rounded hover:bg-white/5 disabled:opacity-50"
-          >
-            {syncing ? 'Syncing…' : 'Sync'}
-          </button>
-          <button
-            onClick={onEdit}
-            className="text-xs text-gray-400 hover:text-white px-2 py-1 rounded hover:bg-white/5"
-          >
-            Edit
-          </button>
-          <button
-            onClick={onArchive}
-            className="text-xs text-gray-400 hover:text-amber-400 px-2 py-1 rounded hover:bg-white/5"
-          >
-            Archive
-          </button>
-        </div>
-      </li>
-    )
-  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -221,6 +224,8 @@ const PROVIDER_HELP: Record<string, string> = {
   google:  'Google Calendar → Settings → integrate calendar → Public address in iCal format → copy URL.',
   ics:     'Paste any iCal/ICS feed URL (https:// or webcal://).',
 }
+
+const COLORS = ['#CDA14B', '#3989CB', '#A4CC5C', '#E0BF7B', '#7FB3DE', '#9AA0A4', '#C8DE9A', '#8C6830']
 
 function CalendarFormModal({
   calendar,
@@ -289,92 +294,69 @@ function CalendarFormModal({
     setSaving(false)
   }
 
-  const inputCls = 'w-full bg-[#141618] border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-400/50'
-  const COLORS = ['#CDA14B', '#3989CB', '#A4CC5C', '#E0BF7B', '#7FB3DE', '#9AA0A4', '#C8DE9A', '#8C6830']
-
   return (
-    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4" onClick={onClose}>
-      <div className="bg-[#0E0F11] border-[#26292C] rounded-sm w-full max-w-md p-6 border" onClick={e => e.stopPropagation()}>
-        <h3 className="rp-eyebrow mb-4">
-          {isEditing ? 'Edit calendar' : 'Add a calendar'}
-        </h3>
+    <RpModal
+      open
+      onClose={onClose}
+      eyebrow={isEditing ? 'Edit calendar' : 'Add a calendar'}
+      title={name.trim() || (isEditing ? 'Calendar' : 'New calendar')}
+      footer={
+        <>
+          <RpButton variant="ghost" onClick={onClose}>Cancel</RpButton>
+          <RpButton onClick={save} disabled={saving || !name.trim() || !icsUrl.trim()}>
+            {saving ? 'Saving…' : isEditing ? 'Save' : 'Add calendar'}
+          </RpButton>
+        </>
+      }
+    >
+      <div className="flex flex-col gap-2">
+        <span className="rp-label">Provider</span>
+        <RpTabs
+          size="sm"
+          ariaLabel="Provider"
+          value={provider}
+          onChange={id => setProvider(id as typeof provider)}
+          items={(['apple', 'outlook', 'google', 'ics'] as const).map(p => ({ id: p, label: PROVIDER_LABEL[p] }))}
+        />
+        <p className="rp-hint leading-relaxed">{PROVIDER_HELP[provider]}</p>
+      </div>
 
-        <div className="space-y-3">
-          <div>
-            <label className="block text-xs text-gray-500 uppercase tracking-wider mb-1.5">Provider</label>
-            <div className="grid grid-cols-4 gap-1.5">
-              {(['apple', 'outlook', 'google', 'ics'] as const).map(p => (
-                <button
-                  key={p}
-                  onClick={() => setProvider(p)}
-                  className={`px-2 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                    provider === p
-                      ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                      : 'bg-white/5 text-gray-400 hover:bg-white/10 border border-transparent'
-                  }`}
-                >
-                  {PROVIDER_LABEL[p]}
-                </button>
-              ))}
-            </div>
-            <p className="text-[11px] text-gray-500 mt-2 leading-relaxed">{PROVIDER_HELP[provider]}</p>
-          </div>
+      <RpField label="Name" htmlFor="cal-name">
+        <RpInput id="cal-name" value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Site office iCloud" />
+      </RpField>
 
-          <div>
-            <label className="block text-xs text-gray-500 uppercase tracking-wider mb-1.5">Name</label>
-            <input className={inputCls} value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Stefanie's iCloud" />
-          </div>
+      <RpField label="ICS URL" htmlFor="cal-url">
+        <RpInput id="cal-url" className="text-[14px]" value={icsUrl} onChange={e => { setIcsUrl(e.target.value); setTestResult(null) }} placeholder="https://… or webcal://…" />
+      </RpField>
+      <div className="-mt-2 flex flex-wrap items-center gap-3">
+        <RpButton variant="text" size="sm" onClick={testUrl} disabled={!icsUrl.trim() || testing}>
+          {testing ? 'Testing…' : 'Test fetch'}
+        </RpButton>
+        {testResult && (
+          <RpTag tone={testResult.ok ? 'green' : 'alert'}>{testResult.ok ? 'Reachable' : 'Failed'} · {testResult.msg}</RpTag>
+        )}
+      </div>
 
-          <div>
-            <label className="block text-xs text-gray-500 uppercase tracking-wider mb-1.5">ICS URL</label>
-            <input className={inputCls + ' font-mono text-xs'} value={icsUrl} onChange={e => { setIcsUrl(e.target.value); setTestResult(null) }} placeholder="https://… or webcal://…" />
-            <div className="flex items-center gap-3 mt-1.5">
-              <button
-                onClick={testUrl}
-                disabled={!icsUrl.trim() || testing}
-                className="text-[11px] text-emerald-400 hover:underline disabled:opacity-50"
-              >
-                {testing ? 'Testing…' : 'Test fetch'}
-              </button>
-              {testResult && (
-                <span className={`text-[11px] ${testResult.ok ? 'text-emerald-400' : 'text-red-400'}`}>
-                  {testResult.ok ? '✓' : '✗'} {testResult.msg}
-                </span>
-              )}
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-xs text-gray-500 uppercase tracking-wider mb-1.5">Color</label>
-            <div className="flex flex-wrap gap-1.5">
-              {COLORS.map(c => (
-                <button
-                  key={c}
-                  onClick={() => setColor(c)}
-                  className={`w-6 h-6 rounded-full transition-transform ${color === c ? 'ring-2 ring-white ring-offset-2 ring-offset-[#0E0F11] scale-110' : 'hover:scale-110'}`}
-                  style={{ background: c }}
-                  aria-label={`Color ${c}`}
-                />
-              ))}
-            </div>
-          </div>
-
-          {err && <p className="text-sm text-red-400">{err}</p>}
-
-          <div className="flex gap-2 justify-end pt-2">
-            <button onClick={onClose} className="rp-btn-ghost">
-              Cancel
-            </button>
+      <div className="flex flex-col gap-2">
+        <span className="rp-label">Colour</span>
+        <div className="flex flex-wrap gap-2" role="group" aria-label="Calendar colour">
+          {COLORS.map(c => (
             <button
-              onClick={save}
-              disabled={saving || !name.trim() || !icsUrl.trim()}
-              className="px-4 py-2 bg-emerald-500 hover:brightness-110 disabled:opacity-50 text-white font-medium text-sm rounded-lg"
-            >
-              {saving ? 'Saving…' : isEditing ? 'Save' : 'Add calendar'}
-            </button>
-          </div>
+              key={c}
+              type="button"
+              onClick={() => setColor(c)}
+              aria-pressed={color === c}
+              aria-label={`Colour ${c}`}
+              className={`h-7 w-7 transition-[outline-color] duration-200 ${
+                color === c ? 'outline outline-1 outline-offset-2 outline-rp-text' : 'outline outline-1 outline-offset-2 outline-transparent hover:outline-rp-line3'
+              }`}
+              style={{ background: c }}
+            />
+          ))}
         </div>
       </div>
-    </div>
+
+      {err && <p className="rp-error" role="alert">{err}</p>}
+    </RpModal>
   )
 }

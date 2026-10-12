@@ -1,26 +1,31 @@
 import { createClient } from '@/utils/supabase/server'
 import WidgetCard, { WidgetEmpty } from './WidgetCard'
+import {
+  RpFigure, RpList, RpRow, RpStatus, fmtRange, daysUntil, dot,
+  Plane, BedDouble, Car, TrainFront, MapPin,
+} from '@/components/rp'
+import { tripImage } from '@/lib/project-imagery'
 import type { Trip, TripSegment } from '@/lib/types'
 
 interface Props {
   orgId: string
 }
 
-function daysUntil(dateStr: string | null): number | null {
-  if (!dateStr) return null
-  const target = new Date(dateStr + 'T00:00')
-  const now = new Date()
-  now.setHours(0, 0, 0, 0)
-  const diff = Math.round((target.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
-  return diff
+const SEGMENT_ICON: Record<string, typeof Plane> = {
+  flight: Plane,
+  hotel: BedDouble,
+  car: Car,
+  ground_transport: Car,
+  train: TrainFront,
 }
 
-function formatRange(start: string | null, end: string | null): string {
-  if (!start) return ''
-  const s = new Date(start + 'T00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-  if (!end || end === start) return s
-  const e = new Date(end + 'T00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-  return `${s} – ${e}`
+const SEGMENT_LABEL: Record<string, string> = {
+  flight: 'Flight',
+  hotel: 'Hotel',
+  car: 'Car',
+  ground_transport: 'Ground',
+  train: 'Train',
+  other: 'Other',
 }
 
 export default async function NextTripWidget({ orgId }: Props) {
@@ -54,36 +59,49 @@ export default async function NextTripWidget({ orgId }: Props) {
     .limit(3)
 
   const segs = (segments || []) as TripSegment[]
-  const days = daysUntil(trip.start_date)
+  const days = trip.start_date ? daysUntil(trip.start_date) : NaN
+  const countdown = days === 0 ? 'Today' : days > 0 ? `In ${days} day${days !== 1 ? 's' : ''}` : null
+  const img = tripImage(trip)
 
   return (
     <WidgetCard
       title="Next site visit"
-      subtitle={formatRange(trip.start_date, trip.end_date)}
-      trailing={
-        days !== null && days > 0 ? (
-          <span className="text-xs text-emerald-400 font-medium">In {days} day{days !== 1 ? 's' : ''}</span>
-        ) : days === 0 ? (
-          <span className="text-xs text-emerald-400 font-medium">Today</span>
-        ) : null
-      }
+      subtitle={fmtRange(trip.start_date, trip.end_date)}
+      trailing={<RpStatus kind="trip" value={trip.status} />}
     >
-      <p className="text-base text-white font-medium mb-3">{trip.title}</p>
+      <RpFigure
+        {...img}
+        aspect="aerial"
+        caption={trip.title}
+        qualifier={img.caption}
+        overlay={
+          countdown ? (
+            <span className="font-display text-[40px] font-medium uppercase leading-none tracking-[.01em] text-rp-text">
+              {countdown}
+            </span>
+          ) : undefined
+        }
+      />
       {segs.length === 0 ? (
-        <p className="text-xs text-[#6E7578]">Itinerary not yet built.</p>
+        <p className="text-[13px] text-rp-dim">Itinerary not yet built.</p>
       ) : (
-        <ul className="space-y-1.5 m-0 p-0 list-none">
-          {segs.map(s => (
-            <li key={s.id} className="text-sm text-gray-300 flex items-center gap-2">
-              <span className="rp-eyebrow--muted w-16">{s.segment_type.replace('_', ' ')}</span>
-              <span className="flex-1 truncate">
-                {s.from_location && s.to_location
-                  ? `${s.from_location} → ${s.to_location}`
-                  : s.from_location || s.to_location || ''}
-              </span>
-            </li>
-          ))}
-        </ul>
+        <RpList as="ul">
+          {segs.map(s => {
+            const Icon = SEGMENT_ICON[s.segment_type] ?? MapPin
+            const route = s.from_location && s.to_location
+              ? `${s.from_location} → ${s.to_location}`
+              : s.from_location || s.to_location || SEGMENT_LABEL[s.segment_type] || 'Segment'
+            return (
+              <RpRow
+                key={s.id}
+                as="li"
+                lead={<Icon size={16} strokeWidth={1.5} className="mt-0.5 text-rp-muted" aria-hidden />}
+                title={route}
+                meta={dot(SEGMENT_LABEL[s.segment_type] ?? s.segment_type.replace('_', ' '), s.carrier)}
+              />
+            )
+          })}
+        </RpList>
       )}
     </WidgetCard>
   )

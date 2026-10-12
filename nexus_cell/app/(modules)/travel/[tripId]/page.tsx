@@ -11,9 +11,5 @@ export default async function TripDetailPage({ params }: { params: { tripId: str
   const { data: segments } = await supabase.from('trip_segments').select('*').eq('trip_id', trip.id).order('sort_order', { ascending: true })
   const { data: docs } = await supabase.from('travel_docs').select('*').eq('trip_id', trip.id).order('created_at', { ascending: false })
 
-  return (
-    <div>
-      <TripDetail trip={trip} segments={segments || []} docs={docs || []} role={role} />
-    </div>
-  )
+  return <TripDetail trip={trip} segments={segments || []} docs={docs || []} role={role} />
 }

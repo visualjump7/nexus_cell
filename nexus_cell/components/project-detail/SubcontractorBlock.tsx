@@ -3,35 +3,28 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import type { ProjectContact } from '@/lib/types'
+import {
+  RpButton, RpCardGrid, RpCheck, RpField, RpFormGrid, RpInput, RpKV, RpModal, RpStatus, RpTag,
+  Plus, RP_ICON, fmtDate, fmtMoney, fmtRange,
+} from '@/components/rp'
 
-const tradeColors: Record<string, string> = {
-  General: 'bg-[#CDA14B]/15 text-[#E0BF7B]',
-  Paving: 'bg-[#CDA14B]/15 text-[#E0BF7B]',
-  Track: 'bg-[#CDA14B]/15 text-[#E0BF7B]',
-  Sitework: 'bg-[#CDA14B]/15 text-[#E0BF7B]',
-  Civil: 'bg-[#CDA14B]/15 text-[#E0BF7B]',
-  Architecture: 'bg-[#3989CB]/15 text-[#7FB3DE]',
-  Engineering: 'bg-[#3989CB]/15 text-[#7FB3DE]',
-  Electrical: 'bg-[#3989CB]/15 text-[#7FB3DE]',
-  Mechanical: 'bg-[#3989CB]/15 text-[#7FB3DE]',
-  HVAC: 'bg-[#3989CB]/15 text-[#7FB3DE]',
-  Plumbing: 'bg-[#3989CB]/15 text-[#7FB3DE]',
-  Landscaping: 'bg-[#A4CC5C]/15 text-[#A4CC5C]',
-  Legal: 'bg-[#9AA0A4]/15 text-[#9AA0A4]',
-  Interior: 'bg-[#9AA0A4]/15 text-[#9AA0A4]',
+// Design and consulting trades read blue; field trades stay neutral.
+const DESIGN_TRADE = /architect|engineer|design|survey|consult|legal|interior/i
+
+function insuranceState(c: ProjectContact): 'on_file' | 'expiring' | 'expired' | 'missing' {
+  if (!c.insurance_on_file) return 'missing'
+  if (!c.insurance_expiry) return 'on_file'
+  const diff = new Date(c.insurance_expiry).getTime() - Date.now()
+  if (diff < 0) return 'expired'
+  if (diff < 30 * 86400000) return 'expiring'
+  return 'on_file'
 }
 
-function getTradeColor(trade: string | null) {
-  if (!trade) return 'bg-gray-500/15 text-gray-400'
-  for (const [key, val] of Object.entries(tradeColors)) {
-    if (trade.toLowerCase().includes(key.toLowerCase())) return val
-  }
-  return 'bg-gray-500/15 text-gray-400'
-}
-
-function formatCents(cents: number | null) {
-  if (!cents) return '—'
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(cents / 100)
+function term(c: ProjectContact): string {
+  if (c.contract_start && c.contract_end) return fmtRange(c.contract_start, c.contract_end)
+  if (c.contract_start) return `From ${fmtDate(c.contract_start)}`
+  if (c.contract_end) return `To ${fmtDate(c.contract_end)}`
+  return '—'
 }
 
 interface Props { blockId: string; contacts: ProjectContact[]; canWrite: boolean }
@@ -62,80 +55,82 @@ export default function SubcontractorBlock({ blockId, contacts, canWrite }: Prop
     router.refresh()
   }
 
-  const inputClass = 'w-full px-3 py-2 bg-[#0A0B0C] border border-[#26292C] rounded-sm text-white placeholder-[#6E7578] focus:outline-none focus:border-[#CDA14B] text-sm'
-
-  function isInsuranceExpiring(expiry: string | null) {
-    if (!expiry) return false
-    const diff = new Date(expiry).getTime() - Date.now()
-    return diff > 0 && diff < 30 * 86400000
-  }
-
-  function isInsuranceExpired(expiry: string | null) {
-    if (!expiry) return false
-    return new Date(expiry).getTime() < Date.now()
+  if (contacts.length === 0 && !canWrite) {
+    return <p className="text-[15px] text-rp-muted">No trades on the package yet.</p>
   }
 
   return (
     <div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        {contacts.map(c => (
-          <div key={c.id} className="rp-surface p-4">
-            <div className="flex items-center justify-between mb-2">
-              <h4 className="font-display text-[15px] uppercase tracking-[0.06em] text-white">{c.company_name || c.name}</h4>
-              {c.trade && <span className={`font-display text-[10px] uppercase tracking-[0.12em] px-2 py-0.5 rounded-sm ${getTradeColor(c.trade)}`}>{c.trade}</span>}
-            </div>
-            <p className="text-xs text-gray-400">{c.name}{c.role ? ` — ${c.role}` : ''}</p>
-            <div className="flex items-center gap-3 mt-2 text-xs text-gray-500">
-              {c.contract_value_cents && <span className="text-white font-mono">{formatCents(c.contract_value_cents)}</span>}
-              {c.contract_start && c.contract_end && (
-                <span>{new Date(c.contract_start).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })} — {new Date(c.contract_end).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}</span>
-              )}
-            </div>
-            {/* Insurance indicator */}
-            <div className="flex items-center gap-1.5 mt-2">
-              {c.insurance_on_file ? (
-                isInsuranceExpired(c.insurance_expiry) ? (
-                  <span className="text-[10px] text-red-400 flex items-center gap-1">&#9888; Insurance expired</span>
-                ) : isInsuranceExpiring(c.insurance_expiry) ? (
-                  <span className="text-[10px] text-amber-400 flex items-center gap-1">&#9888; Insurance expiring soon</span>
-                ) : (
-                  <span className="text-[10px] text-[#A4CC5C] flex items-center gap-1">&#10003; Insurance on file</span>
-                )
-              ) : (
-                <span className="text-[10px] text-red-400 flex items-center gap-1">&#9888; No insurance on file</span>
-              )}
-            </div>
-            {canWrite && (
-              <div className="flex gap-2 mt-3 pt-2 border-t border-[#1F1F1F]">
-                <button onClick={() => { setEditing(c); setShowForm(true) }} className="text-[10px] text-gray-500 hover:text-white">Edit</button>
-                <button onClick={() => handleDelete(c.id)} className="text-[10px] text-gray-500 hover:text-red-400">Delete</button>
+      <RpCardGrid min={320} max={2}>
+        {contacts.map(c => {
+          const ins = insuranceState(c)
+          return (
+            <article key={c.id} className="flex flex-col gap-4 p-5">
+              <div className="flex flex-col gap-2">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <h4 className="min-w-0 font-display text-xl uppercase leading-[1.15] tracking-[.03em] text-rp-text">
+                    {c.company_name || c.name}
+                  </h4>
+                  {c.trade && (
+                    <RpTag tone={DESIGN_TRADE.test(c.trade) ? 'blue' : 'neutral'} className="shrink-0">{c.trade}</RpTag>
+                  )}
+                </div>
+                <p className="text-sm leading-snug text-rp-muted">
+                  {c.name}{c.role ? ` — ${c.role}` : ''}
+                </p>
               </div>
-            )}
+              <RpKV
+                items={[
+                  {
+                    label: 'Contract',
+                    value: c.contract_value_cents
+                      ? <span className="font-display text-base font-medium tracking-[.02em]">{fmtMoney(c.contract_value_cents / 100)}</span>
+                      : '—',
+                    num: true,
+                  },
+                  { label: 'Term', value: term(c) },
+                  { label: 'Insurance', value: <RpStatus kind="insurance" value={ins} /> },
+                ]}
+              />
+              {canWrite && (
+                <div className="mt-auto flex items-center gap-4">
+                  <RpButton variant="text" size="sm" className="text-rp-muted" onClick={() => { setEditing(c); setShowForm(true) }}>Edit</RpButton>
+                  <RpButton variant="text" size="sm" className="text-rp-muted hover:text-rp-alert" onClick={() => handleDelete(c.id)}>Remove</RpButton>
+                </div>
+              )}
+            </article>
+          )
+        })}
+        {canWrite && (
+          <div className="flex min-h-[160px] flex-col items-start justify-center gap-3 p-5">
+            <span className="rp-eyebrow--muted">{contacts.length ? 'Add a trade' : 'No trades listed yet'}</span>
+            <RpButton
+              variant="ghost"
+              size="sm"
+              icon={<Plus {...RP_ICON} size={14} />}
+              onClick={() => { setEditing(null); setShowForm(true) }}
+            >
+              Add subcontractor
+            </RpButton>
           </div>
-        ))}
-      </div>
-
-      {canWrite && !showForm && (
-        <button onClick={() => { setEditing(null); setShowForm(true) }} className="mt-3 rp-btn-ghost !min-h-[30px] !px-3 !py-1">Add subcontractor</button>
-      )}
+        )}
+      </RpCardGrid>
 
       {showForm && (
         <SubcontractorForm
           contact={editing}
           onSave={handleSave}
           onCancel={() => { setShowForm(false); setEditing(null) }}
-          inputClass={inputClass}
         />
       )}
     </div>
   )
 }
 
-function SubcontractorForm({ contact, onSave, onCancel, inputClass }: {
+function SubcontractorForm({ contact, onSave, onCancel }: {
   contact: ProjectContact | null
   onSave: (data: Record<string, unknown>) => void
   onCancel: () => void
-  inputClass: string
 }) {
   const [form, setForm] = useState({
     company_name: contact?.company_name || '',
@@ -166,32 +161,68 @@ function SubcontractorForm({ contact, onSave, onCancel, inputClass }: {
     })
   }
 
+  type TextKey = Exclude<keyof typeof form, 'insurance_on_file'>
+  const set = (k: TextKey) => (e: React.ChangeEvent<HTMLInputElement>) =>
+    setForm(p => ({ ...p, [k]: e.target.value }))
+
   return (
-    <div className="mt-3 rp-surface p-4 space-y-3">
-      <div className="grid grid-cols-2 gap-3">
-        <input className={inputClass} placeholder="Company Name *" value={form.company_name} onChange={e => setForm(p => ({ ...p, company_name: e.target.value }))} />
-        <input className={inputClass} placeholder="Trade * (e.g. Paving, Electrical)" value={form.trade} onChange={e => setForm(p => ({ ...p, trade: e.target.value }))} />
-        <input className={inputClass} placeholder="Contact Name *" value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} />
-        <input className={inputClass} placeholder="Email" value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))} />
-        <input className={inputClass} placeholder="Phone" value={form.phone} onChange={e => setForm(p => ({ ...p, phone: e.target.value }))} />
-        <input className={inputClass} placeholder="Contract Value ($)" type="number" step="0.01" value={form.contract_value_cents} onChange={e => setForm(p => ({ ...p, contract_value_cents: e.target.value }))} />
-        <input className={inputClass} type="date" placeholder="Contract Start" value={form.contract_start} onChange={e => setForm(p => ({ ...p, contract_start: e.target.value }))} />
-        <input className={inputClass} type="date" placeholder="Contract End" value={form.contract_end} onChange={e => setForm(p => ({ ...p, contract_end: e.target.value }))} />
-        <input className={inputClass} placeholder="License #" value={form.license_number} onChange={e => setForm(p => ({ ...p, license_number: e.target.value }))} />
-        <div className="flex items-center gap-2">
-          <input type="checkbox" id="ins" checked={form.insurance_on_file} onChange={e => setForm(p => ({ ...p, insurance_on_file: e.target.checked }))} className="rounded bg-white/5 border-white/20" />
-          <label htmlFor="ins" className="text-sm text-gray-400">Insurance on file</label>
-        </div>
-      </div>
-      {form.insurance_on_file && (
-        <input className={inputClass} type="date" placeholder="Insurance Expiry" value={form.insurance_expiry} onChange={e => setForm(p => ({ ...p, insurance_expiry: e.target.value }))} />
-      )}
-      <div className="flex gap-2">
-        <button onClick={handleSubmit} className="rp-btn-solid !min-h-[34px] !px-4 !py-1.5 !text-[11px]">
-          {contact ? 'Update' : 'Add'}
-        </button>
-        <button onClick={onCancel} className="rp-btn-ghost !min-h-[30px] !px-3 !py-1">Cancel</button>
-      </div>
-    </div>
+    <RpModal
+      open
+      onClose={onCancel}
+      size="lg"
+      eyebrow={contact ? 'Edit subcontractor' : 'Add subcontractor'}
+      title={form.company_name || 'Subcontractor'}
+      footer={
+        <>
+          <RpButton variant="ghost" onClick={onCancel}>Cancel</RpButton>
+          <RpButton type="submit" form="subcontractor-form">{contact ? 'Save' : 'Add'}</RpButton>
+        </>
+      }
+    >
+      <form id="subcontractor-form" onSubmit={e => { e.preventDefault(); handleSubmit() }}>
+        <RpFormGrid>
+          <RpField label="Company" htmlFor="sc-company" required>
+            <RpInput id="sc-company" value={form.company_name} onChange={set('company_name')} required />
+          </RpField>
+          <RpField label="Trade" htmlFor="sc-trade" required>
+            <RpInput id="sc-trade" value={form.trade} onChange={set('trade')} placeholder="Paving, electrical, civil" required />
+          </RpField>
+          <RpField label="Contact name" htmlFor="sc-name" required>
+            <RpInput id="sc-name" value={form.name} onChange={set('name')} required />
+          </RpField>
+          <RpField label="Email" htmlFor="sc-email">
+            <RpInput id="sc-email" inputMode="email" value={form.email} onChange={set('email')} />
+          </RpField>
+          <RpField label="Phone" htmlFor="sc-phone">
+            <RpInput id="sc-phone" type="tel" value={form.phone} onChange={set('phone')} />
+          </RpField>
+          <RpField label="Contract value ($)" htmlFor="sc-value">
+            <RpInput id="sc-value" type="number" step="0.01" value={form.contract_value_cents} onChange={set('contract_value_cents')} />
+          </RpField>
+          <RpField label="Contract start" htmlFor="sc-start">
+            <RpInput id="sc-start" type="date" value={form.contract_start} onChange={set('contract_start')} />
+          </RpField>
+          <RpField label="Contract end" htmlFor="sc-end">
+            <RpInput id="sc-end" type="date" value={form.contract_end} onChange={set('contract_end')} />
+          </RpField>
+          <RpField label="Licence no." htmlFor="sc-licence">
+            <RpInput id="sc-licence" value={form.license_number} onChange={set('license_number')} />
+          </RpField>
+          <div className="flex items-end pb-3">
+            <RpCheck
+              id="sc-ins"
+              checked={form.insurance_on_file}
+              onChange={v => setForm(p => ({ ...p, insurance_on_file: v }))}
+              label="Insurance on file"
+            />
+          </div>
+          {form.insurance_on_file && (
+            <RpField label="Insurance expiry" htmlFor="sc-ins-exp">
+              <RpInput id="sc-ins-exp" type="date" value={form.insurance_expiry} onChange={set('insurance_expiry')} />
+            </RpField>
+          )}
+        </RpFormGrid>
+      </form>
+    </RpModal>
   )
 }

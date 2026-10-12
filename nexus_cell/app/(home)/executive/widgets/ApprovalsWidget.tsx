@@ -21,9 +21,17 @@ export default async function ApprovalsWidget({ orgId }: Props) {
   const approvals = (data || []) as Alert[]
 
   return (
-    <WidgetCard title="Awaiting sign-off" subtitle={approvals.length === 0 ? 'All clear' : `${approvals.length} waiting`}>
+    <WidgetCard
+      title="Awaiting sign-off"
+      subtitle={approvals.length === 0 ? 'All clear' : `${approvals.length} waiting on you`}
+      trailing={
+        approvals.length > 0 ? (
+          <span className="font-display text-[15px] leading-none tracking-[.04em] text-rp-gold tabular-nums">{approvals.length}</span>
+        ) : null
+      }
+    >
       {approvals.length === 0 ? (
-        <WidgetEmpty message="Nothing needs your attention right now." />
+        <WidgetEmpty message="Nothing needs your sign-off." />
       ) : (
         <ApprovalsList approvals={approvals} />
       )}

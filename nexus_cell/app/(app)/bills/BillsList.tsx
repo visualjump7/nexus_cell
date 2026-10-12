@@ -5,14 +5,13 @@ import { useRouter } from 'next/navigation'
 import type { Bill, UserRole } from '@/lib/types'
 import BillForm from '@/components/BillForm'
 import DeleteConfirm from '@/components/DeleteConfirm'
+import {
+  RpPage, RpPageHeader, RpFilterBar, RpSelect, RpTable, RpStatus, RpButton, RpEmpty,
+  Plus, RP_ICON, fmtMoney, fmtDate, dot, statusLabel,
+} from '@/components/rp'
+import { sectionEyebrow } from '@/lib/sections'
 
-const statusColors: Record<string, string> = {
-  pending: 'bg-yellow-500/15 text-yellow-400 border-yellow-500/30',
-  approved: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
-  paid: 'bg-blue-500/15 text-blue-400 border-blue-500/30',
-  rejected: 'bg-red-500/15 text-red-400 border-red-500/30',
-  overdue: 'bg-orange-500/15 text-orange-400 border-orange-500/30',
-}
+const STATUSES: Bill['status'][] = ['pending', 'approved', 'paid', 'rejected', 'overdue']
 
 interface BillsListProps {
   bills: Bill[]
@@ -37,15 +36,6 @@ export default function BillsList({ bills, role }: BillsListProps) {
     return true
   })
 
-  function formatCurrency(amount: number, currency: string) {
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(amount)
-  }
-
-  function formatDate(date: string | null) {
-    if (!date) return '—'
-    return new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-  }
-
   async function handleDelete() {
     if (!deletingBill) return
     await fetch(`/api/bills/${deletingBill.id}`, { method: 'DELETE' })
@@ -63,106 +53,84 @@ export default function BillsList({ bills, role }: BillsListProps) {
     setEditingBill(null)
   }
 
-  const selectClass = 'px-3 py-1.5 bg-card border border-white/10 rounded-lg text-sm text-gray-300 focus:outline-none focus:ring-2 focus:ring-emerald-500/50'
-
   return (
-    <div className="max-w-6xl">
-      {/* Header */}
-      <header className="rp-head">
-        <div className="flex items-end justify-between gap-4 flex-wrap">
-        <div className="flex flex-col gap-2.5">
-          <span className="rp-eyebrow">Payables</span>
-          <h1 className="rp-title">Bills</h1>
-          <p className="rp-caption">
-            {filtered.length} bill{filtered.length !== 1 ? 's' : ''}
-            {statusFilter !== 'all' && ` · ${statusFilter}`}
-          </p>
-        </div>
-        {canWrite && (
-          <button
+    <RpPage>
+      <RpPageHeader
+        eyebrow={sectionEyebrow('financial', 'Payables')}
+        title="Bills"
+        line={dot(
+          `${filtered.length} ${filtered.length === 1 ? 'bill' : 'bills'}`,
+          statusFilter !== 'all' && statusLabel('bill', statusFilter),
+          categoryFilter !== 'all' && categoryFilter,
+        )}
+        actions={canWrite && (
+          <RpButton
+            icon={<Plus size={RP_ICON.size} strokeWidth={RP_ICON.strokeWidth} aria-hidden />}
             onClick={() => { setEditingBill(null); setShowForm(true) }}
-            className="rp-btn-solid"
           >
             New bill
-          </button>
+          </RpButton>
         )}
-        </div>
-      </header>
+      />
 
-      {/* Filters */}
-      <div className="flex gap-3 mb-6">
-        <select className={selectClass} value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
-          <option value="all">All Statuses</option>
-          <option value="pending">Pending</option>
-          <option value="approved">Approved</option>
-          <option value="paid">Paid</option>
-          <option value="rejected">Rejected</option>
-          <option value="overdue">Overdue</option>
-        </select>
+      <section className="flex flex-col gap-5">
+        <RpFilterBar count={`${filtered.length} ${filtered.length === 1 ? 'bill' : 'bills'}`}>
+          <RpSelect aria-label="Status" className="w-[200px] max-w-full" value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
+            <option value="all">All statuses</option>
+            {STATUSES.map(s => <option key={s} value={s}>{statusLabel('bill', s)}</option>)}
+          </RpSelect>
 
-        <select className={selectClass} value={categoryFilter} onChange={e => setCategoryFilter(e.target.value)}>
-          <option value="all">All Categories</option>
-          {categories.map(c => <option key={c} value={c!}>{c}</option>)}
-        </select>
-      </div>
+          <RpSelect aria-label="Category" className="w-[220px] max-w-full" value={categoryFilter} onChange={e => setCategoryFilter(e.target.value)}>
+            <option value="all">All categories</option>
+            {categories.map(c => <option key={c} value={c!}>{c}</option>)}
+          </RpSelect>
+        </RpFilterBar>
 
-      {/* Table */}
-      {filtered.length === 0 ? (
-        <div className="rp-panel p-12 text-center">
-          <p className="text-gray-500">No bills found.</p>
-        </div>
-      ) : (
-        <div className="rp-panel overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-[#1F1F1F] text-left rp-eyebrow--muted">
-                  <th className="px-4 py-3 font-medium">Vendor</th>
-                  <th className="px-4 py-3 font-medium">Amount</th>
-                  <th className="px-4 py-3 font-medium">Category</th>
-                  <th className="px-4 py-3 font-medium">Due Date</th>
-                  <th className="px-4 py-3 font-medium">Status</th>
-                  {canWrite && <th className="px-4 py-3 font-medium text-right">Actions</th>}
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map(bill => (
-                  <tr key={bill.id} className="border-b border-[#1F1F1F] hover:bg-[#141618] transition-colors">
-                    <td className="px-4 py-3">
-                      <div>
-                        <p className="text-white font-medium">{bill.vendor}</p>
-                        {bill.description && <p className="text-gray-500 text-xs mt-0.5">{bill.description}</p>}
+        {filtered.length === 0 ? (
+          <RpEmpty title="No bills here." line="Nothing matches these filters." />
+        ) : (
+          <RpTable minWidth={820} caption="Bills">
+            <thead>
+              <tr>
+                <th>Vendor</th>
+                <th>Category</th>
+                <th>Due</th>
+                <th className="num">Amount</th>
+                <th>Status</th>
+                {canWrite && <th className="text-right" aria-label="Actions" />}
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map(bill => (
+                <tr key={bill.id}>
+                  <td className="max-w-[360px]">
+                    <span className="font-medium">{bill.vendor}</span>
+                    {bill.description && <span className="sub">{bill.description}</span>}
+                  </td>
+                  <td className="whitespace-nowrap text-rp-muted">{bill.category || '—'}</td>
+                  <td className={`whitespace-nowrap tabular-nums ${bill.status === 'overdue' ? 'text-rp-alert' : 'text-rp-muted'}`}>
+                    {bill.due_date ? fmtDate(bill.due_date) : '—'}
+                  </td>
+                  <td className="num">{fmtMoney(bill.amount, { currency: bill.currency })}</td>
+                  <td><RpStatus kind="bill" value={bill.status} /></td>
+                  {canWrite && (
+                    <td className="whitespace-nowrap text-right">
+                      <div className="inline-flex items-center gap-4">
+                        <RpButton variant="text" size="sm" onClick={() => handleEdit(bill)}>Edit</RpButton>
+                        <RpButton variant="text" size="sm" onClick={() => setDeletingBill(bill)}>Delete</RpButton>
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-white font-mono">{formatCurrency(bill.amount, bill.currency)}</td>
-                    <td className="px-4 py-3 text-gray-400">{bill.category || '—'}</td>
-                    <td className="px-4 py-3 text-gray-400">{formatDate(bill.due_date)}</td>
-                    <td className="px-4 py-3">
-                      <span className={`inline-block text-[11px] font-medium px-2 py-0.5 rounded border ${statusColors[bill.status] || ''}`}>
-                        {bill.status}
-                      </span>
-                    </td>
-                    {canWrite && (
-                      <td className="px-4 py-3 text-right">
-                        <button onClick={() => handleEdit(bill)} className="text-gray-500 hover:text-white text-xs mr-3 transition-colors">
-                          Edit
-                        </button>
-                        <button onClick={() => setDeletingBill(bill)} className="text-gray-500 hover:text-red-400 text-xs transition-colors">
-                          Delete
-                        </button>
-                      </td>
-                    )}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          </RpTable>
+        )}
+      </section>
 
       {/* Modals */}
       {showForm && <BillForm bill={editingBill} onClose={handleCloseForm} />}
       {deletingBill && <DeleteConfirm itemName={deletingBill.vendor} onConfirm={handleDelete} onCancel={() => setDeletingBill(null)} />}
-    </div>
+    </RpPage>
   )
 }

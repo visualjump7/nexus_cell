@@ -1,5 +1,8 @@
 import { getAuthContext } from '@/lib/auth'
+import { RpPage, RpPageHeader } from '@/components/rp'
 import CalendarsManager from './CalendarsManager'
+
+export const metadata = { title: 'Calendars' }
 import type { ExternalCalendar } from '@/lib/types'
 
 export default async function AdminCalendarsPage() {
@@ -29,16 +32,13 @@ export default async function AdminCalendarsPage() {
   })) as (ExternalCalendar & { event_count: number })[]
 
   return (
-    <div className="max-w-5xl">
-      <header className="rp-head">
-        <span className="rp-eyebrow">Administrator</span>
-        <h1 className="rp-title">Calendars</h1>
-        <p className="rp-lede">
-        Subscribe to external calendars (Apple, Outlook, Google) so the team can see them alongside club events.
-        Each user can toggle which calendars they see on the Calendar page.
-        </p>
-      </header>
+    <RpPage>
+      <RpPageHeader
+        eyebrow="05 · Calendars"
+        title="Calendars"
+        line="External calendars (Apple, Outlook, Google) shown beside the build schedule. Each member chooses which ones they see."
+      />
       <CalendarsManager initialCalendars={calendars} />
-    </div>
+    </RpPage>
   )
 }

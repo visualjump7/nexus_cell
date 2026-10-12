@@ -3,16 +3,10 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import type { Alert } from '@/lib/types'
+import { RpList, RpRow, RpButton, RpPriority, timeAgo } from '@/components/rp'
 
 interface Props {
   approvals: Alert[]
-}
-
-const priorityRing: Record<string, string> = {
-  urgent: 'border-l-red-500',
-  high: 'border-l-orange-500',
-  normal: 'border-l-transparent',
-  low: 'border-l-transparent',
 }
 
 export default function ApprovalsList({ approvals }: Props) {
@@ -34,32 +28,34 @@ export default function ApprovalsList({ approvals }: Props) {
   }
 
   return (
-    <ul className="space-y-3 m-0 p-0 list-none">
-      {approvals.map(alert => (
-        <li
-          key={alert.id}
-          className={`border-l-[3px] pl-3 ${priorityRing[alert.priority] || 'border-l-transparent'}`}
-        >
-          <p className="text-sm text-white font-medium leading-tight">{alert.title}</p>
-          {alert.body && <p className="text-xs text-gray-400 mt-1 line-clamp-2">{alert.body}</p>}
-          <div className="flex items-center gap-2 mt-3">
-            <button
-              onClick={() => decide(alert.id, 'approved')}
-              disabled={pendingId === alert.id}
-              className="rp-btn-solid"
-            >
-              Approve
-            </button>
-            <button
-              onClick={() => decide(alert.id, 'rejected')}
-              disabled={pendingId === alert.id}
-              className="rp-btn-ghost disabled:opacity-50"
-            >
-              Reject
-            </button>
-          </div>
-        </li>
-      ))}
-    </ul>
+    <RpList as="ul">
+      {approvals.map((alert, i) => {
+        const busy = pendingId === alert.id
+        return (
+          <RpRow
+            key={alert.id}
+            as="li"
+            index={i + 1}
+            title={alert.title}
+            edge={alert.priority === 'urgent' ? 'alert' : alert.priority === 'high' ? 'gold' : undefined}
+            aside={alert.priority === 'high' || alert.priority === 'urgent' ? <RpPriority value={alert.priority} withLabel /> : undefined}
+            meta={
+              <>
+                <span suppressHydrationWarning>Requested {timeAgo(alert.created_at)}</span>
+                {alert.body && <span className="mt-1 line-clamp-2 block">{alert.body}</span>}
+                <span className="mt-3 flex flex-wrap gap-2">
+                  <RpButton size="sm" onClick={() => decide(alert.id, 'approved')} disabled={busy}>
+                    Approve
+                  </RpButton>
+                  <RpButton variant="danger" size="sm" onClick={() => decide(alert.id, 'rejected')} disabled={busy}>
+                    Reject
+                  </RpButton>
+                </span>
+              </>
+            }
+          />
+        )
+      })}
+    </RpList>
   )
 }

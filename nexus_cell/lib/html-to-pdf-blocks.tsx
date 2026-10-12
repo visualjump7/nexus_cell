@@ -1,31 +1,49 @@
 import React from "react";
 import { Text, View, StyleSheet } from "@react-pdf/renderer";
 
+// Roaring Pines owner-brief print styles: uppercase tracked headings, thin
+// rules above (never under) headings, gold square bullets, ink on white.
+const INK = "#111111";
+const BODY = "#2A2D30";
+const GOLD = "#B0853A";
+const RULE = "#E6E8E9";
+
 const styles = StyleSheet.create({
   h2: {
-    fontSize: 16,
+    fontSize: 12,
     fontWeight: "bold",
-    color: "#111111",
+    color: INK,
+    textTransform: "uppercase",
+    letterSpacing: 1.5,
     marginTop: 14,
     marginBottom: 6,
-    paddingBottom: 3,
-    borderBottomWidth: 1,
-    borderBottomColor: "#CDA14B",
+    paddingTop: 8,
+    borderTopWidth: 0.75,
+    borderTopColor: RULE,
   },
-  h3: { fontSize: 13, fontWeight: "bold", color: "#111111", marginTop: 10, marginBottom: 4 },
-  p: { fontSize: 10, lineHeight: 1.6, marginBottom: 8 },
-  bold: { fontWeight: "bold" },
+  h3: {
+    fontSize: 10.5,
+    fontWeight: "bold",
+    color: INK,
+    textTransform: "uppercase",
+    letterSpacing: 1.5,
+    marginTop: 10,
+    marginBottom: 4,
+  },
+  p: { fontSize: 10, lineHeight: 1.6, marginBottom: 8, color: BODY },
+  bold: { fontWeight: "bold", color: INK },
   italic: { fontStyle: "italic" },
-  ul: { marginBottom: 8, paddingLeft: 12 },
-  ol: { marginBottom: 8, paddingLeft: 12 },
+  ul: { marginBottom: 8, paddingLeft: 2 },
+  ol: { marginBottom: 8, paddingLeft: 2 },
   li: {
     fontSize: 10,
     lineHeight: 1.6,
     marginBottom: 3,
     flexDirection: "row" as const,
   },
-  liBullet: { width: 12, fontSize: 10, color: "#B0853A" },
-  liContent: { flex: 1, fontSize: 10, lineHeight: 1.6 },
+  liSquare: { width: 3.5, height: 3.5, backgroundColor: GOLD, marginTop: 5.5, marginRight: 9 },
+  liBullet: { width: 14, fontSize: 9, color: GOLD, fontWeight: "bold", paddingTop: 1 },
+  liContent: { flex: 1, fontSize: 10, lineHeight: 1.6, color: BODY },
 });
 
 interface ParsedNode {
@@ -40,15 +58,17 @@ function parseHTML(html: string): ParsedNode[] {
 
   while (cursor < html.length) {
     const tagStart = html.indexOf("<", cursor);
+    // Keep the spaces around inline runs ("<strong>18 Sep.</strong> The pit");
+    // drop whitespace-only gaps that hold a line break (between blocks).
     if (tagStart === -1) {
-      const text = html.slice(cursor).trim();
-      if (text) nodes.push(decodeEntities(text));
+      const text = html.slice(cursor);
+      if (text.trim() || (text.includes(" ") && !text.includes("\n"))) nodes.push(decodeEntities(text));
       break;
     }
 
     if (tagStart > cursor) {
       const text = html.slice(cursor, tagStart);
-      if (text.trim()) nodes.push(decodeEntities(text));
+      if (text.trim() || (text.includes(" ") && !text.includes("\n"))) nodes.push(decodeEntities(text));
     }
 
     if (
@@ -121,8 +141,10 @@ function renderInlineChildren(
   children: (ParsedNode | string)[]
 ): React.ReactNode[] {
   return children.map((child, i) => {
+    // Raw strings stay raw so react-pdf keeps the spaces around inline
+    // <strong>/<em> runs (a nested <Text> drops its leading space).
     if (typeof child === "string") {
-      return <Text key={i}>{child}</Text>;
+      return child;
     }
     if (child.tag === "strong" || child.tag === "b") {
       return (
@@ -203,7 +225,7 @@ function renderNodes(nodes: (ParsedNode | string)[]): React.ReactNode[] {
               )
               .map((li, j) => (
                 <View key={j} style={styles.li}>
-                  <Text style={styles.liBullet}>{"•  "}</Text>
+                  <View style={styles.liSquare} />
                   <Text style={styles.liContent}>
                     {renderInlineChildren(li.children)}
                   </Text>
@@ -224,7 +246,7 @@ function renderNodes(nodes: (ParsedNode | string)[]): React.ReactNode[] {
                 olCounter++;
                 return (
                   <View key={j} style={styles.li}>
-                    <Text style={styles.liBullet}>{`${olCounter}.`}</Text>
+                    <Text style={styles.liBullet}>{String(olCounter).padStart(2, "0")}</Text>
                     <Text style={styles.liContent}>
                       {renderInlineChildren(li.children)}
                     </Text>

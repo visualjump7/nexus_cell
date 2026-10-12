@@ -179,7 +179,7 @@ export interface SiteProject {
 
 export const STATUS_META: Record<SiteProjectStatus, { label: string; color: string }> = {
   active: { label: 'Active', color: '#CDA14B' },
-  completed: { label: 'Completed', color: '#A4CC5C' },
+  completed: { label: 'Complete', color: '#A4CC5C' },
   on_hold: { label: 'On hold', color: '#3989CB' },
   archived: { label: 'Archived', color: '#6E7578' },
 }

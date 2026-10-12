@@ -4,15 +4,18 @@ import { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import type { TripSegment } from '@/lib/types'
 import { segmentColors } from '@/lib/travel-constants'
-import { getSegmentIcon } from '@/components/travel/SegmentIcons'
+import { getSegmentIcon, segmentLabel } from '@/components/travel/SegmentIcons'
+import { RpModal, RpKV, RpField, RpTextarea, RpButton, fmtDate, fmtTime, dot } from '@/components/rp'
+import type { RpKVItem } from '@/components/rp'
 
-const segmentLabels: Record<string, string> = {
-  flight: 'Flight Details',
-  hotel: 'Hotel Details',
-  car: 'Car Rental Details',
-  train: 'Train Details',
-  ground_transport: 'Ground Transport Details',
-  other: 'Segment Details',
+// 2px top edge of the dialog in the segment colour (literal classes so Tailwind emits them).
+const EDGE: Record<string, string> = {
+  flight: 'border-t-2 border-t-[#3989CB]',
+  hotel: 'border-t-2 border-t-[#CDA14B]',
+  car: 'border-t-2 border-t-[#A4CC5C]',
+  ground_transport: 'border-t-2 border-t-[#A4CC5C]',
+  train: 'border-t-2 border-t-[#7FB3DE]',
+  other: 'border-t-2 border-t-[#9AA0A4]',
 }
 
 interface Props {
@@ -21,40 +24,37 @@ interface Props {
   onClose: () => void
 }
 
-function DetailRow({ label, value, mono }: { label: string; value: string | null | undefined; mono?: boolean }) {
-  if (!value) return null
-  return (
-    <div className="flex items-start justify-between py-2.5 border-b border-white/5 last:border-0">
-      <span className="text-xs text-gray-500 uppercase tracking-wider shrink-0 mt-0.5">{label}</span>
-      <span className={`text-sm text-white text-right ml-4 ${mono ? 'font-mono text-[#CDA14B]' : ''}`}>{value}</span>
-    </div>
-  )
+/** 'Jacksonville Intl (JAX)' → 'JAX'; 'Roaring Pines HQ, Jacksonville' → 'Roaring Pines HQ'. */
+function shortPlace(s: string | null): string {
+  if (!s) return '—'
+  return s.split('(')[1]?.replace(')', '') || s.split(',')[0]
+}
+
+function formatDT(d: string | null) {
+  if (!d) return null
+  return dot(fmtDate(d, 'weekday'), fmtTime(d))
+}
+
+function duration(from: string | null, to: string | null) {
+  if (!from || !to) return null
+  const diff = new Date(to).getTime() - new Date(from).getTime()
+  if (diff <= 0) return null
+  const hrs = Math.floor(diff / 3600000)
+  const mins = Math.floor((diff % 3600000) / 60000)
+  if (hrs > 0 && mins > 0) return `${hrs}h ${mins}m`
+  if (hrs > 0) return `${hrs}h`
+  return `${mins}m`
 }
 
 export default function SegmentDetail({ segment: initialSegment, canWrite, onClose }: Props) {
   const router = useRouter()
   const seg = initialSegment
   const color = segmentColors[seg.segment_type] || '#9AA0A4'
+  const isHotel = seg.segment_type === 'hotel'
 
   const [notes, setNotes] = useState(seg.notes || '')
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
-
-  function formatDT(d: string | null) {
-    if (!d) return null
-    return new Date(d).toLocaleString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })
-  }
-
-  function duration(from: string | null, to: string | null) {
-    if (!from || !to) return null
-    const diff = new Date(to).getTime() - new Date(from).getTime()
-    if (diff <= 0) return null
-    const hrs = Math.floor(diff / 3600000)
-    const mins = Math.floor((diff % 3600000) / 60000)
-    if (hrs > 0 && mins > 0) return `${hrs}h ${mins}m`
-    if (hrs > 0) return `${hrs}h`
-    return `${mins}m`
-  }
 
   const saveNotes = useCallback(async () => {
     setSaving(true)
@@ -69,108 +69,92 @@ export default function SegmentDetail({ segment: initialSegment, canWrite, onClo
     router.refresh()
   }, [seg.trip_id, seg.id, notes, router])
 
+  const nights = isHotel && seg.check_in && seg.check_out && duration(seg.check_in, seg.check_out)
+    ? Math.ceil((new Date(seg.check_out).getTime() - new Date(seg.check_in).getTime()) / 86400000)
+    : null
+  const legTime = duration(seg.depart_at, seg.arrive_at)
+
+  const kv: RpKVItem[] = ([
+    isHotel
+      ? { label: 'Check-in', value: formatDT(seg.check_in) }
+      : { label: 'Depart', value: formatDT(seg.depart_at) },
+    isHotel
+      ? { label: 'Check-out', value: formatDT(seg.check_out) }
+      : { label: 'Arrive', value: formatDT(seg.arrive_at) },
+    { label: 'Carrier', value: seg.carrier },
+    { label: 'Confirmation', value: seg.confirmation_code, num: true },
+    { label: 'Booking ref', value: seg.booking_reference, num: true },
+    { label: isHotel ? 'Room' : 'Seat', value: seg.seat_info },
+  ] as { label: string; value: string | null; num?: boolean }[])
+    .filter(i => !!i.value)
+    .map(i => ({ label: i.label, value: i.value as string, num: i.num }))
+
+  const title = isHotel ? (seg.from_location || 'Hotel') : `${shortPlace(seg.from_location)} → ${shortPlace(seg.to_location)}`
+
   return (
-    <div className="fixed inset-0 bg-[rgba(8,9,10,.85)] backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={onClose}>
-      <div className="bg-[#0E0F11] rounded-sm shadow-2xl shadow-black/50 w-full max-w-md max-h-[85vh] overflow-y-auto border border-[#26292C]" onClick={e => e.stopPropagation()}>
-
-        {/* Header with color accent */}
-        <div className="relative px-6 pt-5 pb-4">
-          <div className="absolute top-0 left-0 right-0 h-[2px]" style={{ background: color }} />
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="text-gray-400">{getSegmentIcon(seg.segment_type)}</div>
-              <div>
-                <h2 className="rp-eyebrow">{segmentLabels[seg.segment_type]}</h2>
-                <p className="text-xs text-gray-500 mt-0.5">{seg.carrier || seg.segment_type.replace('_', ' ')}</p>
-              </div>
+    <RpModal
+      open
+      onClose={onClose}
+      size="sm"
+      eyebrow={segmentLabel(seg.segment_type)}
+      title={title}
+      className={EDGE[seg.segment_type] || EDGE.other}
+    >
+      {/* Route / stay plate */}
+      <div className="rp-inset px-5 py-4">
+        {isHotel ? (
+          <div className="flex items-center gap-3">
+            <span style={{ color }}>{getSegmentIcon(seg.segment_type, 20)}</span>
+            <div className="min-w-0">
+              <p className="text-[15px] leading-snug text-rp-text">{seg.from_location || '—'}</p>
+              {nights != null && (
+                <p className="mt-0.5 font-display text-[11px] uppercase tracking-[.16em] text-rp-muted">
+                  {nights} {nights === 1 ? 'night' : 'nights'}
+                </p>
+              )}
             </div>
-            <button onClick={onClose} className="text-gray-600 hover:text-white text-xl transition-colors">&times;</button>
           </div>
-        </div>
-
-        {/* Route / Location hero */}
-        <div className="px-6 pb-4">
-          <div className="rp-surface p-4">
-            {seg.segment_type === 'hotel' ? (
-              <div className="text-center">
-                <p className="text-lg font-medium text-white">{seg.from_location || '—'}</p>
-                {seg.check_in && seg.check_out && (
-                  <p className="text-xs text-gray-500 mt-1">
-                    {duration(seg.check_in, seg.check_out) ? `${Math.ceil((new Date(seg.check_out).getTime() - new Date(seg.check_in).getTime()) / 86400000)} nights` : ''}
-                  </p>
-                )}
-              </div>
-            ) : (
-              <div className="flex items-center justify-between">
-                <div className="text-center flex-1">
-                  <p className="text-lg font-bold text-white">{seg.from_location?.split('(')[1]?.replace(')', '') || seg.from_location?.split(',')[0] || '—'}</p>
-                  <p className="text-[10px] text-gray-500 mt-0.5">{seg.from_location || ''}</p>
-                </div>
-                <div className="mx-3 flex flex-col items-center">
-                  <div className="w-16 h-px" style={{ background: color }} />
-                  {duration(seg.depart_at, seg.arrive_at) && (
-                    <p className="text-[10px] mt-1" style={{ color }}>{duration(seg.depart_at, seg.arrive_at)}</p>
-                  )}
-                </div>
-                <div className="text-center flex-1">
-                  <p className="text-lg font-bold text-white">{seg.to_location?.split('(')[1]?.replace(')', '') || seg.to_location?.split(',')[0] || '—'}</p>
-                  <p className="text-[10px] text-gray-500 mt-0.5">{seg.to_location || ''}</p>
-                </div>
-              </div>
-            )}
+        ) : (
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0 flex-1">
+              <p className="font-display text-[26px] font-medium uppercase leading-none tracking-[.02em] text-rp-text">{shortPlace(seg.from_location)}</p>
+              <p className="mt-1.5 truncate text-[12px] text-rp-dim">{seg.from_location || ''}</p>
+            </div>
+            <div className="flex shrink-0 flex-col items-center gap-1.5">
+              <span style={{ color }}>{getSegmentIcon(seg.segment_type)}</span>
+              <span aria-hidden className="h-px w-14" style={{ background: color }} />
+              {legTime && <span className="font-display text-[11px] tracking-[.12em] tabular-nums text-rp-muted">{legTime}</span>}
+            </div>
+            <div className="min-w-0 flex-1 text-right">
+              <p className="font-display text-[26px] font-medium uppercase leading-none tracking-[.02em] text-rp-text">{shortPlace(seg.to_location)}</p>
+              <p className="mt-1.5 truncate text-[12px] text-rp-dim">{seg.to_location || ''}</p>
+            </div>
           </div>
-        </div>
-
-        {/* Detail rows */}
-        <div className="px-6 pb-4">
-          <div className="rp-surface px-4">
-            {/* Time details */}
-            {seg.segment_type === 'hotel' ? (
-              <>
-                <DetailRow label="Check-in" value={formatDT(seg.check_in)} />
-                <DetailRow label="Check-out" value={formatDT(seg.check_out)} />
-              </>
-            ) : (
-              <>
-                <DetailRow label="Departure" value={formatDT(seg.depart_at)} />
-                <DetailRow label="Arrival" value={formatDT(seg.arrive_at)} />
-              </>
-            )}
-
-            {/* Booking details */}
-            <DetailRow label="Carrier" value={seg.carrier} />
-            <DetailRow label="Confirmation" value={seg.confirmation_code} mono />
-            <DetailRow label="Booking Ref" value={seg.booking_reference} mono />
-            <DetailRow label={seg.segment_type === 'hotel' ? 'Room' : 'Seat'} value={seg.seat_info} />
-          </div>
-        </div>
-
-        {/* Notes section */}
-        <div className="px-6 pb-6">
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-xs text-gray-500 uppercase tracking-wider">Notes</p>
-            {saved && <span className="text-[10px] text-emerald-400">Saved</span>}
-            {saving && <span className="text-[10px] text-gray-500">Saving...</span>}
-          </div>
-          <textarea
-            value={notes}
-            onChange={e => setNotes(e.target.value)}
-            readOnly={!canWrite}
-            placeholder={canWrite ? 'Add notes — meeting details, special requests, reminders...' : 'No notes'}
-            className="w-full bg-[#0A0B0C] border border-[#26292C] rounded-sm px-4 py-3 text-sm text-[#F5F5F5] placeholder-[#6E7578] resize-none focus:outline-none focus:border-[#CDA14B] min-h-[80px]"
-            rows={3}
-          />
-          {canWrite && notes !== (seg.notes || '') && (
-            <button
-              onClick={saveNotes}
-              disabled={saving}
-              className="mt-2 rp-btn-ghost !min-h-[32px]"
-            >
-              Save Notes
-            </button>
-          )}
-        </div>
+        )}
       </div>
-    </div>
+
+      {kv.length > 0 && <RpKV items={kv} />}
+
+      {/* Notes */}
+      <RpField
+        label="Notes"
+        htmlFor={`seg-notes-${seg.id}`}
+        hint={saving ? 'Saving…' : saved ? 'Saved' : undefined}
+      >
+        <RpTextarea
+          id={`seg-notes-${seg.id}`}
+          value={notes}
+          onChange={e => setNotes(e.target.value)}
+          readOnly={!canWrite}
+          placeholder={canWrite ? 'Meeting details, special requests, reminders' : 'No notes'}
+          rows={3}
+        />
+      </RpField>
+      {canWrite && notes !== (seg.notes || '') && (
+        <div className="-mt-2">
+          <RpButton variant="ghost" size="sm" onClick={saveNotes} disabled={saving}>Save notes</RpButton>
+        </div>
+      )}
+    </RpModal>
   )
 }

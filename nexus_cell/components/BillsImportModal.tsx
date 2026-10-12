@@ -5,6 +5,12 @@ import { useRouter } from 'next/navigation'
 import { useToast } from '@/components/shared/Toast'
 import { parseBillsFile, exportTemplate, type ParsedBill, type InvalidRow } from '@/lib/billsExcel'
 import type { Bill } from '@/lib/types'
+import { cn } from '@/lib/utils'
+import {
+  RpModal, RpButton, RpTabs, RpTag, RpSource, RpTable, RpStatus, RpStatStrip, RpStat, RpLoading,
+  FileSpreadsheet, ChevronDown, ChevronRight, RP_ICON,
+  fmtMoney, fmtDate, dot,
+} from '@/components/rp'
 
 type Phase = 'picking' | 'parsing' | 'preview' | 'overwrite' | 'importing' | 'done'
 
@@ -43,6 +49,23 @@ function detectDuplicates(
   return { newBills, duplicates }
 }
 
+/** The striped ground the dropzone sits on (same idiom as the project uploader). */
+const DROPZONE_BG = 'bg-[repeating-linear-gradient(135deg,transparent_0_14px,rgba(205,161,75,.05)_14px_28px)]'
+
+const STEPS = [
+  { id: 'choose', num: '01', label: 'Choose file' },
+  { id: 'review', num: '02', label: 'Review' },
+  { id: 'duplicates', num: '03', label: 'Duplicates' },
+  { id: 'import', num: '04', label: 'Import' },
+]
+
+function stepFor(phase: Phase): string {
+  if (phase === 'picking') return 'choose'
+  if (phase === 'parsing' || phase === 'preview') return 'review'
+  if (phase === 'overwrite') return 'duplicates'
+  return 'import'
+}
+
 export default function BillsImportModal({ onClose, onComplete, existingBills }: Props) {
   const router = useRouter()
   const { toast } = useToast()
@@ -55,6 +78,7 @@ export default function BillsImportModal({ onClose, onComplete, existingBills }:
   const [overwriteMode, setOverwriteMode] = useState<'overwrite' | 'skip'>('overwrite')
   const [showErrors, setShowErrors] = useState(false)
   const [importError, setImportError] = useState('')
+  const [dragOver, setDragOver] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
 
   async function handleFile(file: File) {
@@ -137,7 +161,7 @@ export default function BillsImportModal({ onClose, onComplete, existingBills }:
       onComplete?.(insertedCount + updatedCount)
       onClose()
     } catch {
-      setImportError('Network error — please try again')
+      setImportError('Network error. Try again.')
       setPhase(duplicates.length > 0 ? 'overwrite' : 'preview')
     }
   }
@@ -151,279 +175,295 @@ export default function BillsImportModal({ onClose, onComplete, existingBills }:
     }
   }
 
+  function resetToPicking() {
+    setPhase('picking')
+    setValid([])
+    setInvalid([])
+    setNewBills([])
+    setDuplicates([])
+  }
+
   const totalInFile = valid.length + invalid.length
-  const fmtCurrency = (amt: number, cur: string) => new Intl.NumberFormat('en-US', { style: 'currency', currency: cur }).format(amt)
-  const fmtDate = (d: string | null) => d ? new Date(d + 'T00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'
+  const money = (amt: number, cur: string) => fmtMoney(amt, { currency: cur })
+  const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`
+
+  let footer: React.ReactNode = null
+  if (phase === 'picking') {
+    footer = <RpButton variant="ghost" onClick={onClose}>Cancel</RpButton>
+  } else if (phase === 'preview') {
+    footer = (
+      <>
+        <RpButton variant="ghost" onClick={onClose}>Cancel</RpButton>
+        <RpButton onClick={handleConfirmPreview} disabled={newBills.length === 0 && duplicates.length === 0}>
+          {duplicates.length > 0 ? 'Continue' : `Import ${plural(newBills.length, 'bill')}`}
+        </RpButton>
+      </>
+    )
+  } else if (phase === 'overwrite') {
+    footer = (
+      <>
+        <RpButton variant="ghost" onClick={() => setPhase('preview')}>Back</RpButton>
+        <RpButton onClick={runImport}>
+          {overwriteMode === 'overwrite'
+            ? `Import ${newBills.length} new, overwrite ${duplicates.length}`
+            : `Import ${newBills.length} new, skip ${duplicates.length}`}
+        </RpButton>
+      </>
+    )
+  }
 
   return (
-    <div className="fixed inset-0 bg-[rgba(8,9,10,.85)] flex items-center justify-center z-50 p-4" onClick={onClose}>
-      <div className="rp-panel w-full max-w-2xl max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+    <>
+      {/* Lives outside the dialog so the modal's autofocus lands on a real control. */}
+      <input
+        ref={fileRef}
+        type="file"
+        accept=".xlsx,.xls,.csv"
+        className="hidden"
+        onChange={e => {
+          const f = e.target.files?.[0]
+          if (f) handleFile(f)
+          e.target.value = ''
+        }}
+      />
 
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[#1F1F1F]">
-          <h2 className="rp-eyebrow">
-            {phase === 'overwrite' ? 'Overwrite existing bills?' : 'Import bills'}
-          </h2>
-          <button onClick={onClose} aria-label="Close" className="text-[#6E7578] hover:text-white text-xl leading-none">&times;</button>
-        </div>
+      <RpModal
+        open
+        onClose={onClose}
+        size="xl"
+        eyebrow="Financial · Import"
+        title={phase === 'overwrite' ? 'Overwrite existing bills?' : 'Import bills'}
+        footer={footer}
+      >
+        <RpTabs
+          size="sm"
+          ariaLabel="Import steps"
+          value={stepFor(phase)}
+          onChange={() => {}}
+          items={STEPS.map(s => ({ ...s, disabled: true }))}
+          scroll
+          className="[&_[aria-pressed=true]]:!opacity-100"
+        />
 
-        <div className="p-6">
-          {/* ── Picking ── */}
-          {phase === 'picking' && (
-            <div>
-              <button
-                onClick={() => fileRef.current?.click()}
-                className="w-full border border-dashed border-[#26292C] rounded-sm py-10 text-center hover:border-[#CDA14B] transition-colors cursor-pointer"
+        {/* ── Picking ── */}
+        {phase === 'picking' && (
+          <>
+            <div
+              onClick={() => fileRef.current?.click()}
+              onDragOver={e => { e.preventDefault(); setDragOver(true) }}
+              onDragLeave={() => setDragOver(false)}
+              onDrop={e => {
+                e.preventDefault()
+                setDragOver(false)
+                const f = e.dataTransfer.files?.[0]
+                if (f) handleFile(f)
+              }}
+              className={cn(
+                'rp-box relative flex min-h-[180px] cursor-pointer flex-col items-center justify-center gap-3 px-6 py-10 text-center transition-colors duration-200',
+                DROPZONE_BG,
+                dragOver ? 'border-rp-gold bg-[rgba(205,161,75,.06)]' : 'hover:border-rp-line3',
+              )}
+            >
+              <FileSpreadsheet size={24} strokeWidth={RP_ICON.strokeWidth} aria-hidden className="text-rp-muted" />
+              <RpTag tone="gold">Drop an Excel or CSV file</RpTag>
+              <p className="text-[13px] text-rp-muted">XLSX, XLS or CSV · one bill per row</p>
+              <RpButton
+                variant="ghost"
+                size="sm"
+                onClick={e => { e.stopPropagation(); fileRef.current?.click() }}
               >
-                <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-white/5 flex items-center justify-center">
-                  <svg className="w-6 h-6 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
-                  </svg>
-                </div>
-                <p className="text-sm text-white font-medium">Click to choose a file</p>
-                <p className="text-xs text-gray-500 mt-1">Supports .xlsx and .csv</p>
-              </button>
-              <input
-                ref={fileRef}
-                type="file"
-                accept=".xlsx,.xls,.csv"
-                className="hidden"
-                onChange={e => e.target.files?.[0] && handleFile(e.target.files[0])}
-              />
-
-              <div className="mt-4 flex items-center justify-between">
-                <p className="text-xs text-gray-500">
-                  Need the format?{' '}
-                  <button onClick={exportTemplate} className="text-emerald-400 hover:text-emerald-300 underline">
-                    Download template
-                  </button>
-                </p>
-              </div>
-
-              <div className="mt-4 bg-white/[0.03] rounded-lg p-3">
-                <p className="rp-eyebrow--muted mb-2">Columns</p>
-                <p className="text-xs text-gray-400 leading-relaxed">
-                  <span className="text-white">Vendor*</span>, <span className="text-white">Amount*</span>, Currency, Category, Due Date, Status, Description, Payment Method, Paid Date, Notes
-                </p>
-                <p className="text-[11px] text-gray-600 mt-2">Duplicates are detected by matching Vendor + Due Date.</p>
-              </div>
+                Choose file
+              </RpButton>
             </div>
-          )}
 
-          {/* ── Parsing ── */}
-          {phase === 'parsing' && (
-            <div className="py-12 text-center">
-              <div className="inline-flex items-center gap-2 text-sm text-gray-400">
-                <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse" />
-                Reading {fileName}...
-              </div>
+            <div className="rp-inset flex flex-col gap-3 p-5">
+              <span className="rp-eyebrow--muted">Columns</span>
+              <p className="text-sm leading-relaxed text-rp-muted">
+                <span className="text-rp-text">Vendor</span>, <span className="text-rp-text">Amount</span>, Currency, Category, Due Date, Status, Description, Payment Method, Paid Date, Notes
+              </p>
+              <p className="text-xs text-rp-dim">Vendor and Amount are required. Duplicates are matched on vendor and due date.</p>
             </div>
-          )}
 
-          {/* ── Preview ── */}
-          {phase === 'preview' && (
-            <div>
-              <div className="flex items-center justify-between mb-4 pb-3 border-b border-[#1F1F1F]">
-                <div>
-                  <p className="text-sm text-white">{fileName}</p>
-                  <p className="text-xs text-gray-500 mt-0.5">{totalInFile} row{totalInFile !== 1 ? 's' : ''} parsed</p>
-                </div>
-                <button onClick={() => { setPhase('picking'); setValid([]); setInvalid([]); setNewBills([]); setDuplicates([]) }} className="text-xs text-gray-500 hover:text-white">
-                  Choose different file
-                </button>
-              </div>
+            <RpSource tag="Template">
+              Need the format?{' '}
+              <button type="button" onClick={exportTemplate} className="rp-link text-rp-text underline decoration-rp-line3 underline-offset-4">Download the template</button>
+            </RpSource>
+          </>
+        )}
 
-              {/* Summary cards */}
-              <div className="grid grid-cols-3 gap-3 mb-4">
-                <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg px-3 py-2.5">
-                  <p className="text-[10px] text-emerald-400 uppercase tracking-wider">New</p>
-                  <p className="text-xl font-display font-medium tabular-nums text-white mt-0.5">{newBills.length}</p>
-                </div>
-                <div className={`rounded-lg px-3 py-2.5 border ${duplicates.length > 0 ? 'bg-amber-500/10 border-amber-500/20' : 'bg-white/5 border-white/5'}`}>
-                  <p className={`text-[10px] uppercase tracking-wider ${duplicates.length > 0 ? 'text-amber-400' : 'text-gray-500'}`}>Duplicates</p>
-                  <p className="text-xl font-display font-medium tabular-nums text-white mt-0.5">{duplicates.length}</p>
-                </div>
-                <div className={`rounded-lg px-3 py-2.5 border ${invalid.length > 0 ? 'bg-red-500/10 border-red-500/20' : 'bg-white/5 border-white/5'}`}>
-                  <p className={`text-[10px] uppercase tracking-wider ${invalid.length > 0 ? 'text-red-400' : 'text-gray-500'}`}>Invalid</p>
-                  <p className="text-xl font-display font-medium tabular-nums text-white mt-0.5">{invalid.length}</p>
+        {/* ── Parsing ── */}
+        {phase === 'parsing' && <RpLoading label={`Reading ${fileName}`} />}
+
+        {/* ── Preview ── */}
+        {phase === 'preview' && (
+          <>
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-rp-line pb-4">
+              <div className="flex min-w-0 items-center gap-3">
+                <FileSpreadsheet size={RP_ICON.size} strokeWidth={RP_ICON.strokeWidth} aria-hidden className="shrink-0 text-rp-muted" />
+                <div className="min-w-0">
+                  <p className="truncate text-[15px] text-rp-text">{fileName}</p>
+                  <p className="text-[13px] text-rp-muted">{plural(totalInFile, 'row')} parsed</p>
                 </div>
               </div>
+              <RpButton variant="text" size="sm" onClick={resetToPicking}>Choose another file</RpButton>
+            </div>
 
-              {duplicates.length > 0 && (
-                <div className="mb-4 bg-amber-500/10 border border-amber-500/20 rounded-lg p-3 flex items-start gap-2">
-                  <svg className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
-                  </svg>
-                  <p className="text-xs text-amber-200 leading-relaxed">
-                    <span className="font-medium">{duplicates.length} duplicate{duplicates.length !== 1 ? 's' : ''} detected.</span>{' '}
-                    These match existing bills by vendor + due date. You&apos;ll review what gets overwritten in the next step.
-                  </p>
-                </div>
-              )}
+            <RpStatStrip cols={3}>
+              <RpStat label="New" value={newBills.length} sub="Added as new bills" />
+              <RpStat label="Duplicates" value={duplicates.length} sub="Match vendor and due date" />
+              <RpStat label="Invalid" value={invalid.length} tone={invalid.length > 0 ? 'alert' : 'default'} sub="Skipped on import" />
+            </RpStatStrip>
 
-              {/* New preview */}
+            <div className="flex flex-col gap-2.5">
               {newBills.length > 0 && (
-                <div className="mb-4">
-                  <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-2">New bills (first 5)</p>
-                  <div className="bg-card rounded-lg overflow-hidden">
-                    <table className="w-full text-xs">
-                      <thead>
-                        <tr className="border-b border-[#1F1F1F] text-gray-500 text-left">
-                          <th className="px-3 py-2 font-medium">Vendor</th>
-                          <th className="px-3 py-2 font-medium text-right">Amount</th>
-                          <th className="px-3 py-2 font-medium">Due</th>
-                          <th className="px-3 py-2 font-medium">Status</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {newBills.slice(0, 5).map((b, i) => (
-                          <tr key={i} className="border-b border-[#1F1F1F] last:border-0">
-                            <td className="px-3 py-2 text-white">{b.vendor}</td>
-                            <td className="px-3 py-2 text-right text-white font-mono">{fmtCurrency(b.amount, b.currency)}</td>
-                            <td className="px-3 py-2 text-gray-400">{b.due_date || '—'}</td>
-                            <td className="px-3 py-2 text-gray-400">{b.status}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
+                <RpSource tag={`Ready ${newBills.length}`} tone="green">
+                  {plural(newBills.length, 'bill')} will be added
+                </RpSource>
               )}
-
-              {/* Errors */}
+              {duplicates.length > 0 && (
+                <RpSource tag={`Check ${duplicates.length}`} tone="gold">
+                  {duplicates.length === 1 ? 'Matches an existing bill' : 'Match existing bills'} by vendor and due date · you review what changes next
+                </RpSource>
+              )}
               {invalid.length > 0 && (
-                <div className="mb-4">
-                  <button onClick={() => setShowErrors(!showErrors)} className="text-xs text-red-400 hover:text-red-300 flex items-center gap-1">
-                    {showErrors ? '▾' : '▸'} {invalid.length} row{invalid.length !== 1 ? 's' : ''} with errors (will be skipped)
-                  </button>
-                  {showErrors && (
-                    <div className="mt-2 bg-white/[0.03] rounded-lg px-3 py-2 max-h-40 overflow-y-auto space-y-1">
-                      {invalid.map(r => (
-                        <div key={r.row} className="text-xs">
-                          <span className="text-gray-500">Row {r.row}:</span>{' '}
-                          <span className="text-red-400">{r.errors.join('; ')}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                <RpSource tag={`Errors ${invalid.length}`} tone="alert">
+                  {plural(invalid.length, 'row')} with errors will be skipped
+                </RpSource>
               )}
-
-              {importError && <p className="text-red-400 text-sm mb-3">{importError}</p>}
-
-              <div className="flex gap-3">
-                <button onClick={onClose} className="rp-btn-ghost flex-1">Cancel</button>
-                <button
-                  onClick={handleConfirmPreview}
-                  disabled={newBills.length === 0 && duplicates.length === 0}
-                  className="rp-btn-solid flex-1"
-                >
-                  {duplicates.length > 0 ? 'Continue' : `Import ${newBills.length} bill${newBills.length !== 1 ? 's' : ''}`}
-                </button>
-              </div>
             </div>
-          )}
 
-          {/* ── Overwrite review ── */}
-          {phase === 'overwrite' && (
-            <div>
-              <div className="mb-4 bg-amber-500/10 border border-amber-500/20 rounded-lg p-3 flex items-start gap-2">
-                <svg className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
-                </svg>
-                <p className="text-xs text-amber-200 leading-relaxed">
-                  <span className="font-medium">{duplicates.length} bill{duplicates.length !== 1 ? 's' : ''} already exist</span> with the same vendor and due date. Review what will change below.
-                </p>
+            {/* New preview */}
+            {newBills.length > 0 && (
+              <div className="flex flex-col gap-3">
+                <span className="rp-eyebrow--muted">New bills · first {Math.min(5, newBills.length)}</span>
+                <RpTable dense minWidth={560} caption="New bills preview">
+                  <thead>
+                    <tr>
+                      <th>Vendor</th>
+                      <th className="num">Amount</th>
+                      <th>Due</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {newBills.slice(0, 5).map((b, i) => (
+                      <tr key={i}>
+                        <td>{b.vendor}</td>
+                        <td className="num">{money(b.amount, b.currency)}</td>
+                        <td className="whitespace-nowrap text-rp-muted">{fmtDate(b.due_date)}</td>
+                        <td><RpStatus kind="bill" value={b.status} /></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </RpTable>
               </div>
+            )}
 
-              <div className="mb-4 max-h-[320px] overflow-y-auto space-y-2">
-                {duplicates.map((pair, i) => {
-                  const changes: string[] = []
-                  if (pair.existing.amount !== pair.incoming.amount) changes.push('amount')
-                  if (pair.existing.status !== pair.incoming.status) changes.push('status')
-                  if ((pair.existing.category || '') !== (pair.incoming.category || '')) changes.push('category')
-                  if ((pair.existing.description || '') !== (pair.incoming.description || '')) changes.push('description')
-                  if ((pair.existing.notes || '') !== (pair.incoming.notes || '')) changes.push('notes')
-                  if ((pair.existing.paid_date || '') !== (pair.incoming.paid_date || '')) changes.push('paid date')
+            {/* Errors */}
+            {invalid.length > 0 && (
+              <div className="flex flex-col gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowErrors(!showErrors)}
+                  aria-expanded={showErrors}
+                  className="inline-flex items-center gap-1.5 self-start font-display text-xs uppercase tracking-[.14em] text-rp-alert transition-colors hover:text-rp-text"
+                >
+                  {showErrors
+                    ? <ChevronDown size={14} strokeWidth={RP_ICON.strokeWidth} aria-hidden />
+                    : <ChevronRight size={14} strokeWidth={RP_ICON.strokeWidth} aria-hidden />}
+                  {plural(invalid.length, 'row')} with errors
+                </button>
+                {showErrors && (
+                  <ul className="rp-inset flex max-h-40 flex-col overflow-y-auto">
+                    {invalid.map(r => (
+                      <li key={r.row} className="flex gap-3 border-b border-rp-line px-4 py-2 text-[13px] last:border-b-0">
+                        <span className="w-14 shrink-0 font-display tracking-[.08em] tabular-nums text-rp-dim">Row {r.row}</span>
+                        <span className="text-rp-alert">{r.errors.join('; ')}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
 
-                  return (
-                    <div key={i} className="bg-card rounded-lg p-3 border border-white/5">
-                      <div className="flex items-center justify-between mb-2">
-                        <p className="text-sm font-medium text-white">{pair.incoming.vendor}</p>
-                        <p className="text-xs text-gray-500">{fmtDate(pair.incoming.due_date)}</p>
-                      </div>
-                      <div className="grid grid-cols-2 gap-3 text-xs">
-                        <div className="bg-white/[0.03] rounded px-2.5 py-2">
-                          <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-1">Current</p>
-                          <p className="text-gray-300 font-mono">{fmtCurrency(pair.existing.amount, pair.existing.currency)}</p>
-                          <p className="text-gray-500 capitalize mt-0.5">{pair.existing.status}</p>
-                          {pair.existing.category && <p className="text-gray-500 truncate">{pair.existing.category}</p>}
-                        </div>
-                        <div className="bg-emerald-500/[0.08] rounded px-2.5 py-2 border border-emerald-500/15">
-                          <p className="text-[10px] text-emerald-400 uppercase tracking-wider mb-1">Will become</p>
-                          <p className={`font-mono ${pair.existing.amount !== pair.incoming.amount ? 'text-emerald-400' : 'text-gray-300'}`}>
-                            {fmtCurrency(pair.incoming.amount, pair.incoming.currency)}
-                          </p>
-                          <p className={`capitalize mt-0.5 ${pair.existing.status !== pair.incoming.status ? 'text-emerald-400' : 'text-gray-500'}`}>{pair.incoming.status}</p>
-                          {pair.incoming.category && <p className={`truncate ${(pair.existing.category || '') !== pair.incoming.category ? 'text-emerald-400' : 'text-gray-500'}`}>{pair.incoming.category}</p>}
-                        </div>
-                      </div>
-                      {changes.length > 0 && (
-                        <p className="text-[10px] text-amber-400 mt-2">
-                          Changes: {changes.join(', ')}
-                        </p>
-                      )}
-                      {changes.length === 0 && (
-                        <p className="text-[10px] text-gray-600 mt-2">No changes — identical to existing</p>
-                      )}
+            {importError && <p className="rp-error" role="alert">{importError}</p>}
+          </>
+        )}
+
+        {/* ── Overwrite review ── */}
+        {phase === 'overwrite' && (
+          <>
+            <RpSource tag={`Check ${duplicates.length}`} tone="gold">
+              {plural(duplicates.length, 'bill')} already {duplicates.length === 1 ? 'exists' : 'exist'} with the same vendor and due date · review what changes
+            </RpSource>
+
+            <RpTabs
+              ariaLabel="Duplicates"
+              value={overwriteMode}
+              onChange={id => setOverwriteMode(id as 'overwrite' | 'skip')}
+              items={[
+                { id: 'overwrite', label: 'Overwrite all duplicates' },
+                { id: 'skip', label: 'Skip duplicates, import new only' },
+              ]}
+            />
+
+            <ol className="flex flex-col border-t border-rp-line">
+              {duplicates.map((pair, i) => {
+                const changes: string[] = []
+                if (pair.existing.amount !== pair.incoming.amount) changes.push('amount')
+                if (pair.existing.status !== pair.incoming.status) changes.push('status')
+                if ((pair.existing.category || '') !== (pair.incoming.category || '')) changes.push('category')
+                if ((pair.existing.description || '') !== (pair.incoming.description || '')) changes.push('description')
+                if ((pair.existing.notes || '') !== (pair.incoming.notes || '')) changes.push('notes')
+                if ((pair.existing.paid_date || '') !== (pair.incoming.paid_date || '')) changes.push('paid date')
+                const amountChanged = pair.existing.amount !== pair.incoming.amount
+                const statusChanged = pair.existing.status !== pair.incoming.status
+                const categoryChanged = (pair.existing.category || '') !== (pair.incoming.category || '')
+
+                return (
+                  <li key={i} className="flex flex-col gap-3 border-b border-rp-line py-4">
+                    <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                      <span className="font-display text-[13px] tracking-[.08em] text-rp-gold tabular-nums">{String(i + 1).padStart(2, '0')}</span>
+                      <span className="min-w-0 flex-1 text-[15px] font-medium text-rp-text">{pair.incoming.vendor}</span>
+                      <span className="text-[13px] text-rp-muted">Due {fmtDate(pair.incoming.due_date)}</span>
                     </div>
-                  )
-                })}
-              </div>
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      <div className="rp-inset flex flex-col gap-1.5 px-4 py-3">
+                        <span className="rp-eyebrow--muted">Current</span>
+                        <span className="text-[15px] tabular-nums text-rp-text">{money(pair.existing.amount, pair.existing.currency)}</span>
+                        <span className="flex flex-wrap items-center gap-2 text-[13px] text-rp-muted">
+                          <RpStatus kind="bill" value={pair.existing.status} />
+                          {pair.existing.category && <span className="truncate">{pair.existing.category}</span>}
+                        </span>
+                      </div>
+                      <div className="rp-inset flex flex-col gap-1.5 border-rp-gold/40 px-4 py-3">
+                        <span className="rp-eyebrow--muted !text-rp-gold">Will become</span>
+                        <span className={cn('text-[15px] tabular-nums', amountChanged ? 'text-rp-gold' : 'text-rp-text')}>
+                          {money(pair.incoming.amount, pair.incoming.currency)}
+                        </span>
+                        <span className="flex flex-wrap items-center gap-2 text-[13px] text-rp-muted">
+                          <RpStatus kind="bill" value={pair.incoming.status} className={statusChanged ? undefined : 'opacity-70'} />
+                          {pair.incoming.category && (
+                            <span className={cn('truncate', categoryChanged && 'text-rp-gold')}>{pair.incoming.category}</span>
+                          )}
+                        </span>
+                      </div>
+                    </div>
+                    <p className={cn('text-xs', changes.length > 0 ? 'text-rp-gold' : 'text-rp-dim')}>
+                      {changes.length > 0 ? dot('Changes', changes.join(', ')) : 'No changes · identical to the existing bill'}
+                    </p>
+                  </li>
+                )
+              })}
+            </ol>
 
-              {/* Mode selector */}
-              <div className="flex gap-2 mb-4">
-                <button
-                  onClick={() => setOverwriteMode('overwrite')}
-                  className={`flex-1 py-2 px-3 rounded-lg text-xs font-medium transition-all ${overwriteMode === 'overwrite' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' : 'bg-white/5 text-gray-400 border border-transparent hover:bg-white/10'}`}
-                >
-                  Overwrite all duplicates
-                </button>
-                <button
-                  onClick={() => setOverwriteMode('skip')}
-                  className={`flex-1 py-2 px-3 rounded-lg text-xs font-medium transition-all ${overwriteMode === 'skip' ? 'bg-white/15 text-white border border-white/20' : 'bg-white/5 text-gray-400 border border-transparent hover:bg-white/10'}`}
-                >
-                  Skip duplicates, import new only
-                </button>
-              </div>
+            {importError && <p className="rp-error" role="alert">{importError}</p>}
+          </>
+        )}
 
-              {importError && <p className="text-red-400 text-sm mb-3">{importError}</p>}
-
-              <div className="flex gap-3">
-                <button onClick={() => setPhase('preview')} className="rp-btn-ghost flex-1">Back</button>
-                <button
-                  onClick={runImport}
-                  className="rp-btn-solid flex-1"
-                >
-                  {overwriteMode === 'overwrite'
-                    ? `Import ${newBills.length} new, overwrite ${duplicates.length}`
-                    : `Import ${newBills.length} new, skip ${duplicates.length}`}
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* ── Importing ── */}
-          {phase === 'importing' && (
-            <div className="py-12 text-center">
-              <div className="inline-flex items-center gap-2 text-sm text-gray-400">
-                <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse" />
-                Importing...
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
+        {/* ── Importing ── */}
+        {phase === 'importing' && <RpLoading label="Importing" />}
+      </RpModal>
+    </>
   )
 }

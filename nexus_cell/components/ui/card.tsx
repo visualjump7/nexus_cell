@@ -1,16 +1,15 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 
+// Legacy Card, restyled as an RpBox: #0A0B0C ground, 1px #1F1F1F rule,
+// square, no shadow. New code should use RpBox / RpCard from '@/components/rp'.
 const Card = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
 >(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn(
-      "rounded-sm border border-[#1F1F1F] bg-[#0E0F11] text-[#F5F5F5]",
-      className
-    )}
+    className={cn("rp-box text-rp-text", className)}
     {...props}
   />
 ));
@@ -22,7 +21,7 @@ const CardHeader = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn("flex flex-col space-y-1.5 p-6", className)}
+    className={cn("flex flex-col gap-1.5 p-5 pb-3", className)}
     {...props}
   />
 ));
@@ -34,10 +33,7 @@ const CardTitle = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <h3
     ref={ref}
-    className={cn(
-      "font-display text-base font-medium uppercase leading-tight tracking-[0.06em]",
-      className
-    )}
+    className={cn("rp-eyebrow--muted m-0", className)}
     {...props}
   />
 ));
@@ -47,7 +43,7 @@ const CardDescription = React.forwardRef<
   HTMLParagraphElement,
   React.HTMLAttributes<HTMLParagraphElement>
 >(({ className, ...props }, ref) => (
-  <p ref={ref} className={cn("text-sm text-[#9AA0A4]", className)} {...props} />
+  <p ref={ref} className={cn("text-sm leading-[1.45] text-rp-muted", className)} {...props} />
 ));
 CardDescription.displayName = "CardDescription";
 
@@ -55,7 +51,7 @@ const CardContent = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
 >(({ className, ...props }, ref) => (
-  <div ref={ref} className={cn("px-6 pb-6 pt-0", className)} {...props} />
+  <div ref={ref} className={cn("p-5 pt-0", className)} {...props} />
 ));
 CardContent.displayName = "CardContent";
 
@@ -65,7 +61,7 @@ const CardFooter = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn("flex items-center px-6 pb-6 pt-0", className)}
+    className={cn("flex items-center p-5 pt-0", className)}
     {...props}
   />
 ));
