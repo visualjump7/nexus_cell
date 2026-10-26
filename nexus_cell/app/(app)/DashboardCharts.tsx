@@ -1,7 +1,8 @@
 'use client'
 
 import { BarChart, Bar, Cell, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
-import { RP_CHART, RpChartFrame, RpBarList, RpEmpty, fmtMoney, dot } from '@/components/rp'
+import { RP_CHART, RpChartFrame, RpBarList, RpEmpty, RpLoopLink, fmtMoney, dot } from '@/components/rp'
+import { watchLoop } from '@/lib/dashboard-loops'
 
 interface MonthPoint {
   /** Axis tick: 'Oct'. */
@@ -41,6 +42,7 @@ export default function DashboardCharts({ months, drawsTotal, categories, billed
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-[3fr_2fr]">
       <RpChartFrame
         eyebrow="Draws by month"
+        aside={<RpLoopLink {...watchLoop('draws')} />}
         value={compact(drawsTotal)}
         sub={dot('Paid bills by payment date', 'last 12 months', busiest && `peak ${busiest.label} ${compact(busiest.v)}`)}
         height={0}
@@ -84,6 +86,7 @@ export default function DashboardCharts({ months, drawsTotal, categories, billed
 
       <RpChartFrame
         eyebrow="Where the money goes"
+        aside={<RpLoopLink {...watchLoop('money')} />}
         value={compact(billedTotal)}
         sub={dot('Bills by category', 'excluding rejected', categories.length > 0 && `top ${categories.length}`)}
         height={0}

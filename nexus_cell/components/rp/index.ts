@@ -1,7 +1,7 @@
 // Roaring Pines kit — import everything from '@/components/rp'.
 // Server-safe modules have no directive; modules with hooks are 'use client'
 // (RpTabs/RpUrlTabs, RpFigure, RpGallery, RpLightbox, RpModal, RpForm,
-// RpSidebar/RpTopBar, RpFootNav, RpSectionNav). All of them can be rendered
+// RpSidebar/RpTopBar, RpFootNav, RpSectionNav, RpLoopPlayer/RpLoopLink). All of them can be rendered
 // from server pages with serialisable props.
 
 export type { RpTone, RpAspect, RpImage, RpNavItem } from './types'
@@ -64,6 +64,8 @@ export { RpPending } from './RpPending'
 export type { RpPendingProps } from './RpPending'
 export { RpFilm } from './RpFilm'
 export type { RpFilmProps } from './RpFilm'
+export { RpLoopPlayer, RpLoopLink } from './RpLoopPlayer'
+export type { RpLoopItem, RpLoopPlayerProps, RpLoopLinkProps } from './RpLoopPlayer'
 export { RpPines } from './RpPines'
 export type { RpPinesPlacement } from './RpPines'
 

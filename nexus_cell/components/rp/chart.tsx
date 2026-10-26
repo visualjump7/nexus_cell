@@ -48,6 +48,8 @@ export interface RpChartFrameProps {
   value?: React.ReactNode
   sub?: React.ReactNode
   legend?: RpLegendItem[]
+  /** Small action on the eyebrow's line, at the right (e.g. a text link). */
+  aside?: React.ReactNode
   children: React.ReactNode
   /** Chart area height in px. Default 240. Pass 0 to let children size themselves. */
   height?: number
@@ -55,12 +57,20 @@ export interface RpChartFrameProps {
 }
 
 /** Bordered chart cell: eyebrow + figure + sub, legend, then the chart area. */
-export function RpChartFrame({ eyebrow, value, sub, legend, children, height = 240, className }: RpChartFrameProps) {
+export function RpChartFrame({ eyebrow, value, sub, legend, aside, children, height = 240, className }: RpChartFrameProps) {
   return (
     <section className={cn('rp-box flex min-w-0 flex-col gap-4 p-5', className)}>
       <header className="flex flex-wrap items-end justify-between gap-x-6 gap-y-2">
-        <div className="flex min-w-0 flex-col gap-2">
-          <span className="rp-eyebrow--muted">{eyebrow}</span>
+        <div className={cn('flex min-w-0 flex-col gap-2', aside != null && 'flex-1')}>
+          {aside != null ? (
+            // The action's padding hangs into the gap so the eyebrow line keeps its height.
+            <div className="flex items-center justify-between gap-4">
+              <span className="rp-eyebrow--muted">{eyebrow}</span>
+              <div className="-my-1.5 flex shrink-0 items-center gap-3">{aside}</div>
+            </div>
+          ) : (
+            <span className="rp-eyebrow--muted">{eyebrow}</span>
+          )}
           {value != null && <span className="rp-stat-value">{value}</span>}
           {sub != null && <span className="text-[13px] leading-snug text-rp-muted">{sub}</span>}
         </div>

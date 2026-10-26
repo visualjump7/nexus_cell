@@ -73,11 +73,14 @@ export interface RpUrlTabsProps {
   mode?: 'replace' | 'push'
   /** Other params to drop when the tab changes (e.g. ['page']). */
   clear?: string[]
+  /** Update the URL through the native History API instead of the router: no
+   *  server round trip. For client-only state, e.g. which loop plays. */
+  shallow?: boolean
   scroll?: boolean
   className?: string
 }
 
-function UrlTabsInner({ items, param, defaultId, size, ariaLabel, mode = 'replace', clear, scroll, className }: RpUrlTabsProps) {
+function UrlTabsInner({ items, param, defaultId, size, ariaLabel, mode = 'replace', clear, shallow, scroll, className }: RpUrlTabsProps) {
   const router = useRouter()
   const pathname = usePathname()
   const params = useSearchParams()
@@ -91,7 +94,9 @@ function UrlTabsInner({ items, param, defaultId, size, ariaLabel, mode = 'replac
     clear?.forEach(k => next.delete(k))
     const qs = next.toString()
     const url = qs ? `${pathname}?${qs}` : pathname
-    router[mode](url, { scroll: false })
+    // Next (14.1+) syncs usePathname/useSearchParams with pushState/replaceState.
+    if (shallow) window.history[mode === 'push' ? 'pushState' : 'replaceState'](null, '', url)
+    else router[mode](url, { scroll: false })
   }
 
   return <Seg items={items} value={value} onSelect={select} size={size} ariaLabel={ariaLabel} scroll={scroll} className={className} />

@@ -6,10 +6,11 @@ import DashboardUpcoming from '@/app/(app)/DashboardUpcoming'
 import type { Alert, Trip, TripSegment } from '@/lib/types'
 import {
   RpPage, RpPageHeader, RpStatStrip, RpStat, RpSubhead, RpTable, RpMeter, RpGroup, RpGroupHead,
-  RpList, RpRow, RpFigure, RpSource, RpButton, RpEmpty, RpTag,
+  RpList, RpRow, RpFigure, RpSource, RpButton, RpEmpty, RpTag, RpLoopPlayer, RpLoopLink,
   fmtMoney, fmtPct, fmtDate, dot, pad2, statusLabel,
 } from '@/components/rp'
 import { SECTION_HERO } from '@/lib/project-imagery'
+import { DASHBOARD_LOOPS, DASHBOARD_LOOPS_AS_OF, DEFAULT_LOOP, LOOP_ANCHOR, LOOP_PARAM, watchLoop } from '@/lib/dashboard-loops'
 import { sectionEyebrow } from '@/lib/sections'
 
 const MONTHS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
@@ -162,9 +163,20 @@ export default async function DashboardPage() {
         )}
       />
 
+      {/* The build in motion: the four data loops. ?loop=<id> picks one; each
+          summary below links here with a quiet "Watch". */}
+      <RpGroup id={LOOP_ANCHOR}>
+        <RpGroupHead
+          title="The build in motion"
+          as="h2"
+          line={dot(`${DASHBOARD_LOOPS.length} loops`, '12 seconds each', `figures as of ${fmtDate(DASHBOARD_LOOPS_AS_OF, 'long')}`)}
+        />
+        <RpLoopPlayer items={DASHBOARD_LOOPS} param={LOOP_PARAM} defaultId={DEFAULT_LOOP} ariaLabel="Choose a loop" />
+      </RpGroup>
+
       {/* Program strip */}
       <section className="flex flex-col gap-3" aria-label="Program">
-        <RpGroupHead num={1} title="The program" as="h2" />
+        <RpGroupHead num={1} title="The program" as="h2" aside={<RpLoopLink {...watchLoop('program')} />} />
         <RpStatStrip cols={5}>
           <RpStat
             label="Program budget"
@@ -222,7 +234,7 @@ export default async function DashboardPage() {
           num={3}
           title="Program by package type"
           spec={dot(`${byType.length} types`, `${program.length} ${pkg(program.length)}`, totalBudget > 0 && `${fmtMoney(totalBudget, { compact: true })} budgeted`)}
-          aside={<RpButton variant="text" arrow href="/projects">All packages</RpButton>}
+          aside={<><RpLoopLink {...watchLoop('packages')} /><RpButton variant="text" arrow href="/projects">All packages</RpButton></>}
         />
         {byType.length === 0 ? (
           <RpEmpty compact title="No packages yet." line="Packages appear here once projects and budgets are loaded." />
@@ -293,7 +305,7 @@ export default async function DashboardPage() {
             num={4}
             title="Over budget"
             tag={overBudget.length > 0 ? <RpTag tone="alert">{overBudget.length} {pkg(overBudget.length)}</RpTag> : undefined}
-            aside={<RpButton variant="text" arrow href="/projects">Projects</RpButton>}
+            aside={<><RpLoopLink {...watchLoop('packages')} /><RpButton variant="text" arrow href="/projects">Projects</RpButton></>}
           />
           {overBudget.length === 0 ? (
             <RpEmpty compact title="Nothing over budget." line="Every package is drawing inside its budget." />

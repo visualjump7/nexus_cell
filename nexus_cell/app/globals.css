@@ -1083,6 +1083,48 @@ button.rp-frame { cursor: pointer; }
   .rp-frame.rp-film { aspect-ratio: 16 / 10; }
 }
 
+/* Loop player: tabs, a 16:9 frame (fixed box, no layout shift) and a caption
+   row with the Pause/Play toggle. The frame ground matches the loops' ground. */
+.rp-loop {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+.rp-loop:focus,
+.rp-loop:focus-visible { outline: none; }
+.rp-loop-frame { background: var(--rp-bg); }
+.rp-loop-frame video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.rp-loop-cap { flex-wrap: nowrap; align-items: center; }
+.rp-loop-cap .rp-figcap-text { flex: 1 1 auto; }
+.rp-loop-lines { display: grid; min-width: 0; }
+.rp-loop-lines > * { grid-area: 1 / 1; }
+.rp-loop-toggle { flex: none; min-width: 88px; }
+/* Play triangle / pause bars, drawn in currentColor (the kit uses no icon font here). */
+.rp-loop-glyph {
+  display: inline-block;
+  flex: none;
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 4.5px 0 4.5px 7px;
+  border-color: transparent transparent transparent currentColor;
+}
+.rp-loop-glyph--pause {
+  width: 8px;
+  height: 9px;
+  border-width: 0 3px;
+  border-color: currentColor;
+}
+/* "Watch": the quietest link on the page, muted until hover. */
+.rp-loop-link { gap: 7px; color: var(--rp-muted); }
+.rp-loop-link:hover { color: var(--rp-accent); }
+
 /* Lightbox */
 .rp-lightbox {
   position: fixed;
