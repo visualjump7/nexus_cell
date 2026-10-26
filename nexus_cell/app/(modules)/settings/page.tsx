@@ -24,7 +24,7 @@ export default async function SettingsPage() {
       <RpPageHeader
         eyebrow="Account"
         title="Your account"
-        line="Profile, password and how Nexus appears on your home screen."
+        line="Profile, password and the look of Ask the team on your home screen."
       />
       <SettingsTabs
         initialFullName={profile?.full_name || ''}

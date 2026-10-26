@@ -114,8 +114,8 @@ export default function CommandLanding({ metrics, heroGreeting, contextStrip, op
         }
       />
 
-      {/* Ask Nexus: the orb (or character) beside a gate-style input */}
-      <section aria-label={`Ask ${BRAND.assistantName}`} className="flex max-w-[780px] flex-col gap-4">
+      {/* Ask the team: the orb (or character) beside a gate-style input */}
+      <section aria-label={BRAND.askLabel} className="flex max-w-[780px] flex-col gap-4">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-5">
           <div className="flex items-center gap-4">
             <HeroMark
@@ -123,7 +123,7 @@ export default function CommandLanding({ metrics, heroGreeting, contextStrip, op
               onOpen={openAsk}
               attention={attentionFromContext(contextStrip)}
             />
-            <span className="rp-eyebrow--muted sm:hidden">Ask {BRAND.assistantName}</span>
+            <span className="rp-eyebrow--muted sm:hidden">{BRAND.askLabel}</span>
           </div>
           <form
             className="flex min-w-0 flex-1"
@@ -138,8 +138,8 @@ export default function CommandLanding({ metrics, heroGreeting, contextStrip, op
                 type="text"
                 value={askInput}
                 onChange={e => setAskInput(e.target.value)}
-                placeholder="Ask Nexus about the build…"
-                aria-label={`Ask ${BRAND.assistantName}`}
+                placeholder="Ask the team about the build…"
+                aria-label={BRAND.askLabel}
                 autoComplete="off"
                 className="rp-input min-h-12 border-r-0 text-base tracking-[.02em] placeholder:font-display placeholder:text-xs placeholder:uppercase placeholder:tracking-[.16em] sm:pr-20"
               />

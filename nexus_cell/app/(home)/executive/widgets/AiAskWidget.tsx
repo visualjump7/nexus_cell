@@ -58,7 +58,7 @@ export default function AiAskWidget({ openingMessage, suggestions }: Props) {
       setMessages(m => [...m, aiMsg])
       setHistory(data.conversationHistory || [])
     } catch {
-      setMessages(m => [...m, { role: 'assistant', content: 'Nexus is unavailable right now. Please try again.' }])
+      setMessages(m => [...m, { role: 'assistant', content: "We couldn't get an answer just now. Please try again." }])
     }
     setLoading(false)
   }
@@ -79,7 +79,7 @@ export default function AiAskWidget({ openingMessage, suggestions }: Props) {
   return (
     <WidgetCard
       prominent
-      title={`Ask ${BRAND.assistantName}`}
+      title={BRAND.askLabel}
       subtitle="Anything about the build, the budget or the calendar."
       trailing={
         <span
@@ -109,7 +109,7 @@ export default function AiAskWidget({ openingMessage, suggestions }: Props) {
             onChange={e => setInput(e.target.value)}
             onKeyDown={handleKey}
             placeholder="Type or ask…"
-            aria-label={`Ask ${BRAND.assistantName}`}
+            aria-label={BRAND.askLabel}
             className="rp-input min-h-12 min-w-0 flex-1 border-r-0"
             disabled={loading}
           />

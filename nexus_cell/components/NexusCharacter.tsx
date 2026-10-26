@@ -55,7 +55,7 @@ export default function NexusCharacter({
   mood = 'default',
   attentionTarget = null,
   onClick,
-  label = 'Ask Nexus',
+  label = 'Ask the team',
 }: Props) {
   // Eye offset — driven by glance + attentionTarget loops
   const [eyeOffset, setEyeOffset] = useState({ x: 0, y: 0 })

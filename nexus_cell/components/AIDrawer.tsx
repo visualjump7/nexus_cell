@@ -106,7 +106,7 @@ export default function AIDrawer({ isOpen, onClose, initialMessage, onInitialMes
         window.dispatchEvent(new CustomEvent('nexus:positive'))
       }
     } catch {
-      setMessages(prev => [...prev, { role: 'assistant', content: 'Nexus is unavailable right now. Please try again.' }])
+      setMessages(prev => [...prev, { role: 'assistant', content: "We couldn't get an answer just now. Please try again." }])
     }
     setLoading(false)
   }
@@ -137,7 +137,7 @@ export default function AIDrawer({ isOpen, onClose, initialMessage, onInitialMes
             style={{ background: 'radial-gradient(circle at 35% 30%, #E6C98A 0%, #CDA14B 40%, #8C6830 78%, #2D2112 100%)', boxShadow: '0 0 18px rgba(205,161,75,.25)' }}
           />
           <div className="min-w-0 flex-1">
-            <h2 id="nexus-drawer-title" className="rp-eyebrow">{BRAND.assistantName}</h2>
+            <h2 id="nexus-drawer-title" className="rp-eyebrow">{BRAND.askLabel}</h2>
             <p className="mt-1 text-[13px] leading-snug text-rp-muted">{BRAND.name} development partner</p>
           </div>
           <RpButton variant="ghost" size="sm" onClick={onClose}>Close</RpButton>
@@ -184,7 +184,7 @@ export default function AIDrawer({ isOpen, onClose, initialMessage, onInitialMes
               onChange={e => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="Ask about the build, budget or schedule…"
-              aria-label={`Message ${BRAND.assistantName}`}
+              aria-label="Message the team"
               className="rp-input min-h-12 min-w-0 flex-1 border-r-0"
             />
             <RpButton
@@ -225,7 +225,7 @@ export function ChatTyping() {
   return (
     <div className="flex flex-col items-start gap-1.5">
       <span className="font-display text-[10px] uppercase tracking-[.16em] text-rp-dim">{BRAND.assistantName}</span>
-      <div className="flex items-center gap-1.5 border border-rp-line bg-rp-panel px-4 py-4" role="status" aria-label={`${BRAND.assistantName} is typing`}>
+      <div className="flex items-center gap-1.5 border border-rp-line bg-rp-panel px-4 py-4" role="status" aria-label="Getting an answer">
         <span className="h-[5px] w-[5px] animate-pulse bg-rp-gold" />
         <span className="h-[5px] w-[5px] animate-pulse bg-rp-gold" style={{ animationDelay: '150ms' }} />
         <span className="h-[5px] w-[5px] animate-pulse bg-rp-gold" style={{ animationDelay: '300ms' }} />

@@ -11,7 +11,7 @@ interface Props {
   // Right-aligned slot (e.g. an Oswald figure or a text link)
   trailing?: React.ReactNode
   children: React.ReactNode
-  // The full-width Ask Nexus cell: gold label instead of muted
+  // The full-width Ask the team cell: gold label instead of muted
   prominent?: boolean
 }
 

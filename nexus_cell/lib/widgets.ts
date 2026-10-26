@@ -81,8 +81,8 @@ export const WIDGET_CATALOG: WidgetCatalogEntry[] = [
   },
   {
     id: 'ai_ask',
-    label: 'Ask Nexus',
-    description: "Always-on AI chat — the owner's fastest way to ask about the build and request actions.",
+    label: 'Ask the team',
+    description: "An always-on line to the team: the owner's fastest way to ask about the build and request actions.",
     interactive: true,
     pinned: true,
   },

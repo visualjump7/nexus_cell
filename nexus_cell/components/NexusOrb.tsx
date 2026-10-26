@@ -11,7 +11,7 @@ export default function NexusOrb({ size = 'large', onClick }: NexusOrbProps) {
       <button
         onClick={onClick}
         type="button"
-        aria-label="Ask Nexus"
+        aria-label="Ask the team"
         className="relative w-9 h-9 rounded-full animate-nexus-pulse cursor-pointer"
         style={{ background: 'radial-gradient(circle, #E0BF7B 0%, #B0853A 50%, #4F3B20 100%)' }}
       >
@@ -26,7 +26,7 @@ export default function NexusOrb({ size = 'large', onClick }: NexusOrbProps) {
       <button
         onClick={onClick}
         type="button"
-        aria-label="Ask Nexus"
+        aria-label="Ask the team"
         className="relative w-[120px] h-[120px] rounded-full animate-nexus-pulse cursor-pointer flex items-center justify-center z-10"
         style={{
           background: 'radial-gradient(circle, #E0BF7B 0%, #B0853A 40%, #4F3B20 100%)',

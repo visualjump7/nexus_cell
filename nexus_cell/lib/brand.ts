@@ -8,7 +8,9 @@ export const BRAND = {
   tagline: 'Development portal',
   location: 'Florida',
   status: 'Under construction',
-  assistantName: 'Nexus',
+  // The ask experience speaks for the development team, not as a named AI.
+  assistantName: 'The team',
+  askLabel: 'Ask the team',
   poweredBy: 'Powered by Nexus Cell',
   badge: '/brand/badge-satin-aluminum.svg',
   badgeAlt: '/brand/badge-polished-steel.svg',
