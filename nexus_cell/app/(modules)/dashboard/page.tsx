@@ -163,17 +163,6 @@ export default async function DashboardPage() {
         )}
       />
 
-      {/* The build in motion: the four data loops. ?loop=<id> picks one; each
-          summary below links here with a quiet "Watch". */}
-      <RpGroup id={LOOP_ANCHOR}>
-        <RpGroupHead
-          title="The build in motion"
-          as="h2"
-          line={dot(`${DASHBOARD_LOOPS.length} loops`, '12 seconds each', `figures as of ${fmtDate(DASHBOARD_LOOPS_AS_OF, 'long')}`)}
-        />
-        <RpLoopPlayer items={DASHBOARD_LOOPS} param={LOOP_PARAM} defaultId={DEFAULT_LOOP} ariaLabel="Choose a loop" />
-      </RpGroup>
-
       {/* Program strip */}
       <section className="flex flex-col gap-3" aria-label="Program">
         <RpGroupHead num={1} title="The program" as="h2" aside={<RpLoopLink {...watchLoop('program')} />} />
@@ -209,6 +198,18 @@ export default async function DashboardPage() {
           />
         </RpStatStrip>
       </section>
+
+      {/* The build in motion: the four data loops, after the live program
+          figures so those lead the page. ?loop=<id> picks one; each summary
+          links here with a quiet "Watch". */}
+      <RpGroup id={LOOP_ANCHOR}>
+        <RpGroupHead
+          title="The build in motion"
+          as="h2"
+          line={dot(`${DASHBOARD_LOOPS.length} loops`, '12 seconds each', `figures as of ${fmtDate(DASHBOARD_LOOPS_AS_OF, 'long')}`)}
+        />
+        <RpLoopPlayer items={DASHBOARD_LOOPS} param={LOOP_PARAM} defaultId={DEFAULT_LOOP} ariaLabel="Choose a loop" />
+      </RpGroup>
 
       {/* Payables strip */}
       <section className="flex flex-col gap-3" aria-label="Payables">

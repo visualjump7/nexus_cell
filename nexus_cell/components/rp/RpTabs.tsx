@@ -1,8 +1,24 @@
 'use client'
 
-import { Suspense } from 'react'
+import { Suspense, useEffect, useRef } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { cn } from '@/lib/utils'
+
+/** Width of the right-edge fade on a scrolling row (the .rp-seg--scroll mask). */
+const SCROLL_FADE = 32
+
+/** Scrolls a sideways row just enough to show its pressed tab whole, clear of
+ *  the fade. Sets scrollLeft on the row itself: scrollIntoView could also move
+ *  the page. */
+function revealPressed(row: HTMLElement) {
+  const btn = row.querySelector<HTMLElement>('[aria-pressed="true"]')
+  if (!btn) return
+  const start = btn.getBoundingClientRect().left - row.getBoundingClientRect().left - row.clientLeft + row.scrollLeft
+  const end = start + btn.offsetWidth
+  const visible = row.clientWidth - SCROLL_FADE
+  if (start < row.scrollLeft) row.scrollLeft = start
+  else if (end > row.scrollLeft + visible) row.scrollLeft = Math.min(start, end - visible)
+}
 
 export interface RpTabItem {
   id: string
@@ -25,8 +41,22 @@ interface SegProps {
 }
 
 function Seg({ items, value, onSelect, size = 'md', ariaLabel, scroll, className }: SegProps) {
+  const rowRef = useRef<HTMLDivElement>(null)
+
+  // A scrolling row keeps its pressed tab in view: a deep link (?loop=packages)
+  // or an outside control can select a tab that sits past the right edge on a phone.
+  useEffect(() => {
+    const row = rowRef.current
+    if (!scroll || !row) return
+    revealPressed(row)
+    // The display face can land after the first layout and widen the tabs.
+    let live = true
+    document.fonts?.ready.then(() => { if (live) revealPressed(row) })
+    return () => { live = false }
+  }, [scroll, value])
+
   return (
-    <div role="group" aria-label={ariaLabel} className={cn('rp-seg', size === 'sm' && 'rp-seg--sm', scroll && 'rp-seg--scroll', className)}>
+    <div ref={rowRef} role="group" aria-label={ariaLabel} className={cn('rp-seg', size === 'sm' && 'rp-seg--sm', scroll && 'rp-seg--scroll', className)}>
       {items.map(it => (
         <button
           key={it.id}

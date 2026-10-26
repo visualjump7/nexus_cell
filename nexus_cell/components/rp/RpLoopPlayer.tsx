@@ -1,6 +1,6 @@
 'use client'
 
-import { Suspense, useEffect, useRef, useState } from 'react'
+import { Suspense, useEffect, useId, useRef, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { RpUrlTabs } from './RpTabs'
@@ -12,12 +12,17 @@ export interface RpLoopItem {
   num?: string
   /** Short tab label: 'Draws by month'. */
   label: string
-  /** One sentence: the video's aria-label and the caption under the frame. */
+  /** One sentence: the caption under the frame and the video's description. */
   line: string
   /** MP4 (H.264, faststart). Muted, looped, no controls. */
   src: string
   /** Still shown before playback, under reduced motion and if the video fails. */
   poster: string
+  /** Seconds into the loop where the poster was taken: a still, complete frame.
+   *  Playback starts here, so the poster flows into the video instead of
+   *  snapping to an empty frame 0, and Pause rests here, so a paused loop shows
+   *  the finished figures the caption states, never half-counted ones. */
+  posterAt?: number
 }
 
 export interface RpLoopPlayerProps {
@@ -35,11 +40,23 @@ export interface RpLoopPlayerProps {
 const PLAY_EVENT = 'rp-loop-play'
 const REDUCED_MOTION = '(prefers-reduced-motion: reduce)'
 
-/** Plays muted. If autoplay is refused (power saving, policy) or interrupted,
- *  the toggle falls back to Play and the frame rests where it is. */
-function startVideo(v: HTMLVideoElement, ref: React.RefObject<HTMLVideoElement>, setPlaying: (p: boolean) => void) {
+/** Plays muted, from the poster frame the first time. If autoplay is refused
+ *  (power saving, policy) or interrupted, the toggle falls back to Play and the
+ *  frame rests where it is. */
+function startVideo(v: HTMLVideoElement, ref: React.RefObject<HTMLVideoElement>, setPlaying: (p: boolean) => void, posterAt?: number) {
   v.muted = true
+  // Before metadata this sets the default playback start position, which the
+  // browser applies once it loads.
+  if (posterAt != null && v.currentTime === 0) v.currentTime = posterAt
   v.play()?.catch(() => { if (ref.current === v) setPlaying(false) })
+}
+
+/** Pauses a playing loop on its poster frame. A loop that never started is left
+ *  alone: it still shows its poster, and seeking would load the video for nothing. */
+function restVideo(v: HTMLVideoElement, posterAt?: number) {
+  if (v.paused) return
+  v.pause()
+  if (posterAt != null) v.currentTime = posterAt
 }
 
 interface ViewProps extends Required<Omit<RpLoopPlayerProps, 'className'>> {
@@ -54,7 +71,8 @@ function LoopView({ items, active, param, defaultId, ariaLabel, className }: Vie
   const [reduced, setReduced] = useState<boolean | null>(null)
   const [playing, setPlaying] = useState(false)
   const [failed, setFailed] = useState<string | null>(null)
-  const { src } = active
+  const lineId = useId()
+  const { src, posterAt } = active
   const broken = failed === src
 
   useEffect(() => {
@@ -65,8 +83,10 @@ function LoopView({ items, active, param, defaultId, ariaLabel, className }: Vie
     return () => mq.removeEventListener('change', sync)
   }, [])
 
-  // A newly selected loop plays from the start, unless the viewer prefers
-  // reduced motion: then it rests on its poster until they press Play.
+  // A newly selected loop plays (from its poster frame), unless the viewer
+  // prefers reduced motion: then it rests on its poster until they press Play.
+  // Playback is started here only, never by an autoPlay attribute, so it always
+  // goes through startVideo and opens on the poster frame.
   useEffect(() => {
     const v = videoRef.current
     if (!v || reduced === null) return
@@ -78,29 +98,29 @@ function LoopView({ items, active, param, defaultId, ariaLabel, className }: Vie
       return
     }
     if (reduced) {
-      v.pause()
+      restVideo(v, posterAt)
       setPlaying(false)
     } else {
-      startVideo(v, videoRef, setPlaying)
+      startVideo(v, videoRef, setPlaying, posterAt)
     }
-  }, [src, reduced])
+  }, [src, reduced, posterAt])
 
   // "Watch" on the loop that is already selected restarts it if it was paused.
   useEffect(() => {
     const onRequest = (e: Event) => {
       const v = videoRef.current
       if (!v || reduced !== false || !v.paused || (e as CustomEvent<string>).detail !== active.id) return
-      startVideo(v, videoRef, setPlaying)
+      startVideo(v, videoRef, setPlaying, posterAt)
     }
     window.addEventListener(PLAY_EVENT, onRequest)
     return () => window.removeEventListener(PLAY_EVENT, onRequest)
-  }, [active.id, reduced])
+  }, [active.id, reduced, posterAt])
 
   function toggle() {
     const v = videoRef.current
     if (!v) return
-    if (v.paused) startVideo(v, videoRef, setPlaying)
-    else v.pause()
+    if (v.paused) startVideo(v, videoRef, setPlaying, posterAt)
+    else restVideo(v, posterAt)
   }
 
   const tabs = items.map(({ id, num, label }) => ({ id, num, label }))
@@ -108,7 +128,8 @@ function LoopView({ items, active, param, defaultId, ariaLabel, className }: Vie
   return (
     <div className={cn('rp-loop', className)} tabIndex={-1} data-rp-loop>
       <RpUrlTabs items={tabs} param={param} defaultId={defaultId} mode="replace" shallow scroll ariaLabel={ariaLabel} />
-      <figure className="rp-figure">
+      {/* Named by the sentence alone, not the whole caption with its "Pause". */}
+      <figure className="rp-figure" aria-labelledby={lineId}>
         <div className="rp-frame rp-frame--wide rp-frame--static rp-loop-frame">
           {broken ? (
             // eslint-disable-next-line @next/next/no-img-element
@@ -119,12 +140,12 @@ function LoopView({ items, active, param, defaultId, ariaLabel, className }: Vie
               ref={videoRef}
               src={src}
               poster={active.poster}
-              autoPlay={reduced === false}
               muted
               loop
               playsInline
               preload="metadata"
-              aria-label={active.line}
+              aria-label={active.num ? `Loop ${active.num}: ${active.label}` : active.label}
+              aria-describedby={lineId}
               onPlay={e => { if (e.currentTarget === videoRef.current) setPlaying(true) }}
               onPause={e => { if (e.currentTarget === videoRef.current) setPlaying(false) }}
               onError={e => {
@@ -142,7 +163,9 @@ function LoopView({ items, active, param, defaultId, ariaLabel, className }: Vie
                 the longest: switching loops never moves the page below. */}
             <span className="rp-loop-lines">
               {items.map(it => (
-                <span key={it.id} className={it.id === active.id ? undefined : 'invisible'}>{it.line}</span>
+                it.id === active.id
+                  ? <span key={it.id} id={lineId}>{it.line}</span>
+                  : <span key={it.id} className="invisible">{it.line}</span>
               ))}
             </span>
           </span>

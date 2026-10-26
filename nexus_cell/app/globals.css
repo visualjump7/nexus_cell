@@ -588,8 +588,9 @@ h1, h2, h3 { font-family: inherit; }
   flex-wrap: nowrap;
   overflow-x: auto;
   scrollbar-width: none;
-  /* No scrollbar, so the right edge fades to show there is more. */
-  padding-right: 24px;
+  /* No scrollbar, so the right edge fades to show there is more. The padding
+     matches the fade, so the last tab clears it when scrolled to the end. */
+  padding-right: 32px;
   -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 32px), transparent);
   mask-image: linear-gradient(90deg, #000 calc(100% - 32px), transparent);
 }

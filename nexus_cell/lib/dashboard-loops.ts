@@ -22,7 +22,12 @@ export const DEFAULT_LOOP: DashboardLoopId = 'program'
 /** The loops are a rendered snapshot of the figures on this date; the dashboard itself is live. */
 export const DASHBOARD_LOOPS_AS_OF = '2026-10-26'
 
-const files = (id: DashboardLoopId) => ({ src: `/demo/loops/${id}.mp4`, poster: `/demo/loops/${id}.jpg` })
+/** Every loop holds still and complete from 4.4 s to 9.4 s, and its poster is
+ *  the frame at 6.6 s (the loops' shared timeline; render.js posterT). The
+ *  player starts there and pauses there. Keep in step with the renders. */
+const POSTER_AT = 6.6
+
+const files = (id: DashboardLoopId) => ({ src: `/demo/loops/${id}.mp4`, poster: `/demo/loops/${id}.jpg`, posterAt: POSTER_AT })
 
 export const DASHBOARD_LOOPS: DashboardLoop[] = [
   {
