@@ -21,7 +21,6 @@ interface Props {
   heroGreeting: { line1: string; line2: string }
   contextStrip: ContextItem[]
   openingMessage: string
-  dynamicSuggestions: string[]
   // Hero element style — user's preference from /settings → Appearance.
   // 'orb' = animated energy orb, 'character' = half-dome with eyes.
   heroStyle?: 'orb' | 'character'
@@ -50,7 +49,7 @@ const HERO = SECTION_HERO.overview
  * ask bar into Nexus, the aerial of the whole club, then the section index as
  * a ruled grid of numbered cards carrying their live figures.
  */
-export default function CommandLanding({ metrics, heroGreeting, contextStrip, openingMessage, dynamicSuggestions, heroStyle = 'orb' }: Props) {
+export default function CommandLanding({ metrics, heroGreeting, contextStrip, openingMessage, heroStyle = 'orb' }: Props) {
   const [aiOpen, setAiOpen] = useState(false)
   const [pendingMessage, setPendingMessage] = useState('')
   const [askInput, setAskInput] = useState('')
@@ -153,22 +152,6 @@ export default function CommandLanding({ metrics, heroGreeting, contextStrip, op
           </form>
         </div>
 
-        {/* Live suggestions from real state (questions in sentence case; Oswald stays for labels) */}
-        {dynamicSuggestions.length > 0 && (
-          <div className="flex flex-wrap gap-2 sm:pl-[76px]">
-            {dynamicSuggestions.map(s => (
-              <RpButton
-                key={s}
-                variant="ghost"
-                size="sm"
-                className="font-sans text-[13px] normal-case tracking-normal whitespace-normal text-left"
-                onClick={() => { setPendingMessage(s); setAiOpen(true) }}
-              >
-                {s}
-              </RpButton>
-            ))}
-          </div>
-        )}
       </section>
 
       {/* The whole club, from the air */}

@@ -2,7 +2,7 @@ import { createClient } from '@/utils/supabase/server'
 import { DEFAULT_PRINCIPAL_WIDGETS, getWidgetEntry, type WidgetId } from '@/lib/widgets'
 import { renderWidget } from './widgets/registry'
 import type { WidgetConfig } from '@/lib/types'
-import { buildOpeningMessage, buildPrincipalSuggestions, type JarvisContext } from '@/lib/ai-context'
+import { buildOpeningMessage, type JarvisContext } from '@/lib/ai-context'
 import { RpPage, RpPageHeader, RpFilm, fmtDate, dot } from '@/components/rp'
 import { SECTION_HERO } from '@/lib/project-imagery'
 import { BRAND } from '@/lib/brand'
@@ -91,7 +91,6 @@ export default async function ExecutiveView({ firstName, orgId, principalId }: P
     recentBriefTitle: recentBriefRes.data?.[0]?.title || null,
   }
   const aiOpeningMessage = buildOpeningMessage(jarvisCtx)
-  const aiSuggestions = buildPrincipalSuggestions(jarvisCtx)
 
   const rendered = widgets.flatMap((w, i) => {
     const entry = getWidgetEntry(w.widget_id)
@@ -100,7 +99,7 @@ export default async function ExecutiveView({ firstName, orgId, principalId }: P
       orgId,
       principalUserId: principalId,
       settings: w.settings,
-      jarvis: { openingMessage: aiOpeningMessage, suggestions: aiSuggestions },
+      jarvis: { openingMessage: aiOpeningMessage },
     })
     if (!node) return []
     const wide = WIDE.has(w.widget_id) || (w.widget_id === 'approvals' && approvalsCount >= APPROVALS_WIDE_AT)

@@ -14,17 +14,9 @@ interface ChatMessage {
 interface Props {
   // Jarvis opener — server-derived, shown as the first assistant message.
   openingMessage?: string
-  // Live suggestion chips. Falls back to a static set if not provided.
-  suggestions?: string[]
 }
 
-const FALLBACK_SUGGESTIONS = [
-  "What needs my sign-off this week?",
-  "Where are we on the garage row?",
-  "What's the next milestone on the track?",
-]
-
-export default function AiAskWidget({ openingMessage, suggestions }: Props) {
+export default function AiAskWidget({ openingMessage }: Props) {
   const initialMessages: ChatMessage[] = openingMessage
     ? [{ role: 'assistant', content: openingMessage }]
     : []
@@ -33,8 +25,6 @@ export default function AiAskWidget({ openingMessage, suggestions }: Props) {
   const [history, setHistory] = useState<ChatMessage[]>(initialMessages)
   const [loading, setLoading] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
-
-  const principalSuggestions = suggestions && suggestions.length > 0 ? suggestions : FALLBACK_SUGGESTIONS
 
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight
@@ -70,9 +60,8 @@ export default function AiAskWidget({ openingMessage, suggestions }: Props) {
     }
   }
 
-  // "Conversation" = the principal has actually said something. The opener
-  // alone shouldn't hide the suggestion chips — chips help the principal know
-  // what they can ask next, even after Nexus speaks first.
+  // "Conversation" = the principal has actually said something; until then
+  // the opener shows.
   const hasConversation = messages.some(m => m.role === 'user')
   const showOpener = !!openingMessage && !hasConversation
 
@@ -122,15 +111,6 @@ export default function AiAskWidget({ openingMessage, suggestions }: Props) {
           </RpButton>
         </div>
 
-        {!hasConversation && (
-          <div className="flex flex-wrap gap-2">
-            {principalSuggestions.map(s => (
-              <RpButton key={s} variant="ghost" size="sm" className="font-sans text-[13px] normal-case tracking-normal whitespace-normal text-left" onClick={() => send(s)} disabled={loading}>
-                {s}
-              </RpButton>
-            ))}
-          </div>
-        )}
       </div>
     </WidgetCard>
   )

@@ -18,7 +18,6 @@ interface RenderProps {
   // Jarvis-mode personalization for the AI Ask widget. Other widgets ignore.
   jarvis?: {
     openingMessage: string
-    suggestions: string[]
   }
 }
 
@@ -42,7 +41,7 @@ export function renderWidget(id: WidgetId, props: RenderProps): React.ReactNode 
     case 'comms':
       return <CommsWidget />
     case 'ai_ask':
-      return <AiAskWidget openingMessage={props.jarvis?.openingMessage} suggestions={props.jarvis?.suggestions} />
+      return <AiAskWidget openingMessage={props.jarvis?.openingMessage} />
     default:
       return null
   }

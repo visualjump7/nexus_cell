@@ -22,14 +22,6 @@ interface ChatMessage {
   content: string
 }
 
-const exampleQueries = [
-  'What needs sign-off?',
-  "What's on the critical path?",
-  'How much did we spend this month?',
-  'What bills are overdue?',
-  'Next site visit',
-]
-
 export default function AIDrawer({ isOpen, onClose, initialMessage, onInitialMessageConsumed, openingMessage }: AIDrawerProps) {
   const [input, setInput] = useState('')
   const [messages, setMessages] = useState<ChatMessage[]>([])
@@ -162,17 +154,6 @@ export default function AIDrawer({ isOpen, onClose, initialMessage, onInitialMes
           ))}
           {loading && <ChatTyping />}
         </div>
-
-        {/* Example prompts (only before the conversation starts) */}
-        {messages.length === 0 && (
-          <div className="flex flex-wrap gap-2 px-5 pb-4 sm:px-6">
-            {exampleQueries.map(q => (
-              <RpButton key={q} variant="ghost" size="sm" onClick={() => sendMessage(q)}>
-                {q}
-              </RpButton>
-            ))}
-          </div>
-        )}
 
         {/* Input, joined to Send like the gate */}
         <div className="shrink-0 border-t border-rp-line px-5 py-4 sm:px-6">

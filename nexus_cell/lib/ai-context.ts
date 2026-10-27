@@ -1,8 +1,7 @@
 // Jarvis-mode helpers.
 //
-// Generates the personalized hero copy, live context strip, opening AI
-// message, and dynamic suggestion chips from real data. All server-side and
-// pure — no fetches, no React.
+// Generates the personalized hero copy, live context strip and opening
+// message from real data. All server-side and pure — no fetches, no React.
 //
 // Pass live numbers in via JarvisContext; helpers stay deterministic so the
 // owner's rep landing and the owner widget can share the same logic.
@@ -140,56 +139,4 @@ export function buildOpeningMessage(ctx: JarvisContext): string {
     : "What's first on the list?"
 
   return `${greet}, ${ctx.firstName}. ${joined}. ${closer}`
-}
-
-// ── Dynamic suggestion chips ──
-// Up to 4 short prompts. One always-on, the rest derived from real state.
-export function buildDynamicSuggestions(ctx: JarvisContext): string[] {
-  const out: string[] = []
-
-  if (ctx.topApproval) {
-    out.push(`Why does ${ctx.topApproval.vendor} need approval?`)
-  } else if (ctx.approvalsCount > 0) {
-    out.push("What's pending my approval?")
-  }
-
-  if (ctx.nextTrip && ctx.nextTrip.daysUntil >= 0 && ctx.nextTrip.daysUntil <= 14) {
-    out.push(`Brief me on the ${ctx.nextTrip.city} site visit`)
-  }
-
-  if (ctx.billsOverdueCount > 0) {
-    out.push("Show me what's overdue")
-  } else if (ctx.billsDueTodayCount > 0) {
-    out.push("What bills come due today?")
-  }
-
-  // Always-on closing prompt
-  out.push('Where are we on the build?')
-
-  // Fill toward 4 with build-program prompts.
-  const fillers = [
-    "What's on the critical path this week?",
-    'Any change orders waiting?',
-    "How's the garage row tracking against budget?",
-  ]
-  for (const f of fillers) {
-    if (out.length >= 4) break
-    out.push(f)
-  }
-
-  return out.slice(0, 4)
-}
-
-// Principal-flavored variants. Same data but framed for someone consuming,
-// not configuring.
-export function buildPrincipalSuggestions(ctx: JarvisContext): string[] {
-  const out: string[] = []
-  if (ctx.approvalsCount > 0) out.push('What needs my sign-off?')
-  if (ctx.nextTrip && ctx.nextTrip.daysUntil >= 0 && ctx.nextTrip.daysUntil <= 14) {
-    out.push(`When's the ${ctx.nextTrip.city} site visit?`)
-  }
-  if (ctx.recentBriefTitle) out.push("Read me today's brief")
-  out.push('Anything urgent on site?')
-  if (out.length < 4) out.push('Where are we on the track?')
-  return out.slice(0, 4)
 }

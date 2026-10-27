@@ -8,7 +8,6 @@ import {
   buildHeroGreeting,
   buildContextStrip,
   buildOpeningMessage,
-  buildDynamicSuggestions,
   type JarvisContext,
 } from '@/lib/ai-context'
 
@@ -118,7 +117,6 @@ export default async function HomePage() {
   const heroGreeting = buildHeroGreeting(jarvisCtx)
   const contextStrip = buildContextStrip(jarvisCtx)
   const openingMessage = buildOpeningMessage(jarvisCtx)
-  const dynamicSuggestions = buildDynamicSuggestions(jarvisCtx)
 
   return (
     <CommandLanding
@@ -126,7 +124,6 @@ export default async function HomePage() {
       heroGreeting={heroGreeting}
       contextStrip={contextStrip}
       openingMessage={openingMessage}
-      dynamicSuggestions={dynamicSuggestions}
       heroStyle={heroStyle}
     />
   )
